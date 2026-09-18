@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="./logo-light.png">
-    <img alt="Cdorneles Platform" src="./logo-light.png" width="320">
+    <source media="(prefers-color-scheme: dark)" srcset="./apps/design-system/public/brand/logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./apps/design-system/public/brand/logo-light.png">
+    <img alt="Cdorneles Platform" src="./apps/design-system/public/brand/logo-light.png" width="320">
   </picture>
 </p>
 
