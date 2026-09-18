@@ -1,0 +1,35 @@
+{
+  "name": "@cdorneles/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./permissions": "./src/permissions/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cdorneles/permissions": "workspace:*",
+    "@cdorneles/theme": "workspace:*",
+    "@cdorneles/tokens": "workspace:*",
+    "@cdorneles/types": "workspace:*",
+    "@mantine/core": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "lucide-react": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:"
+  }
+}

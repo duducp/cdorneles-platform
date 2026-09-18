@@ -1,0 +1,75 @@
+import "@testing-library/jest-dom/vitest";
+
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+import { AuthProvider, useAuth } from "./auth-context";
+import { AuthNotConfiguredError, createUnconfiguredAuthService } from "./provider";
+import type { AuthService, AuthUser } from "./types";
+
+const user: AuthUser = {
+  id: "u1",
+  email: "user@example.com",
+  name: "User",
+  emailVerified: true,
+  mfaEnabled: true,
+};
+
+function createFakeService(): AuthService {
+  return {
+    login: vi.fn(async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" })),
+    completeMfa: vi.fn(async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" })),
+    logout: vi.fn(async () => undefined),
+    getSession: vi.fn(async () => null),
+    getCurrentUser: vi.fn(async () => user),
+    requestPasswordRecovery: vi.fn(async () => undefined),
+    confirmPasswordRecovery: vi.fn(async () => undefined),
+  };
+}
+
+describe("unconfigured auth service", () => {
+  it("fails loudly for every operation", async () => {
+    const service = createUnconfiguredAuthService();
+    await expect(service.getCurrentUser()).rejects.toBeInstanceOf(AuthNotConfiguredError);
+    await expect(service.login({ email: "a@b.com", password: "x" })).rejects.toBeInstanceOf(
+      AuthNotConfiguredError,
+    );
+  });
+});
+
+describe("AuthProvider", () => {
+  function Probe() {
+    const { user: currentUser, status, login, logout } = useAuth();
+    return (
+      <div>
+        <span data-testid="status">{status}</span>
+        <span data-testid="email">{currentUser?.email ?? "none"}</span>
+        <button onClick={() => void login({ email: "a@b.com", password: "secret" })}>login</button>
+        <button onClick={() => void logout()}>logout</button>
+      </div>
+    );
+  }
+
+  it("starts anonymous and updates on login/logout", async () => {
+    const service = createFakeService();
+    render(
+      <AuthProvider service={service}>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    expect(screen.getByTestId("status")).toHaveTextContent("anonymous");
+
+    screen.getByRole("button", { name: "login" }).click();
+    await screen.findByText("user@example.com");
+    expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
+
+    screen.getByRole("button", { name: "logout" }).click();
+    await screen.findByText("none");
+    expect(screen.getByTestId("status")).toHaveTextContent("anonymous");
+  });
+
+  it("throws when the hook is used outside the provider", () => {
+    expect(() => render(<Probe />)).toThrow(/AuthProvider/);
+  });
+});
