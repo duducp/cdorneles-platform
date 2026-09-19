@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@cdorneles/api-client": "workspace:*",
     "@cdorneles/types": "workspace:*"
   },
   "peerDependencies": {
