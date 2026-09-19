@@ -29,6 +29,8 @@ capabilities. No business modules yet.
 - [ ] Implement MFA (`completeMfa`) and password recovery
       (`requestPasswordRecovery` / `confirmPasswordRecovery`) — still stubs
       that throw.
+- [ ] MFA challenge UI: a page to enter the 2FA (TOTP) code, or the code sent by
+      e-mail/SMS, after login — calls `completeMfa`.
 - [x] Session bootstrap/refresh in the app `Providers` (all four apps), with a
       graceful `createUnconfiguredAuthService()` fallback when env vars are
       absent.
@@ -75,6 +77,9 @@ capabilities. No business modules yet.
       for client-side resolution; name/email/phone stay hidden).
 - [ ] Feed `TenantProvider` in the apps (TanStack Query over the service) — needs
       a login UI to be meaningful.
+- [ ] Organization picker: after login, when the user belongs to more than one
+      organization, a page to choose the active organization (feeds
+      `TenantProvider`).
 - [ ] Document standard vs. custom domain behaviour (ADR-007).
 
 ### 5. First Appwrite Function (security boundary)
