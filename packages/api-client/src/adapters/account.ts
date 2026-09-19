@@ -33,7 +33,10 @@ export function createAccountApi(client: Client): AccountApi {
 
     async createEmailPasswordSession(input): Promise<AppwriteSession> {
       try {
-        const session = await account.createEmailPasswordSession(input.email, input.password);
+        const session = await account.createEmailPasswordSession({
+          email: input.email,
+          password: input.password,
+        });
         return { $id: session.$id, userId: session.userId, expire: session.expire };
       } catch (error) {
         throw mapAppwriteError(error);
@@ -42,7 +45,7 @@ export function createAccountApi(client: Client): AccountApi {
 
     async deleteSession(sessionId): Promise<void> {
       try {
-        await account.deleteSession(sessionId ?? "current");
+        await account.deleteSession({ sessionId: sessionId ?? "current" });
       } catch (error) {
         throw mapAppwriteError(error);
       }

@@ -20,7 +20,7 @@ export function createTeamsApi(client: Client): TeamsApi {
 
     async listMemberships(teamId): Promise<AppwriteMembership[]> {
       try {
-        const result = await teams.listMemberships(teamId);
+        const result = await teams.listMemberships({ teamId });
         return result.memberships.map((membership) => ({
           $id: membership.$id,
           teamId: membership.teamId,

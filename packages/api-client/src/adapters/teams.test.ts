@@ -86,7 +86,7 @@ describe("createTeamsApi", () => {
     const api = createTeamsApi(client);
     const memberships = await api.listMemberships("t1");
 
-    expect(mocks.teams.listMemberships).toHaveBeenCalledWith("t1");
+    expect(mocks.teams.listMemberships).toHaveBeenCalledWith({ teamId: "t1" });
     expect(memberships).toEqual([{ $id: "m1", teamId: "t1", userId: "u1", roles: ["owner"] }]);
     expect(memberships[0]).not.toHaveProperty("userEmail");
     expect(memberships[0]).not.toHaveProperty("userPhone");

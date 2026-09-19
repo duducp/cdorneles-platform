@@ -11,11 +11,11 @@ export function createDatabasesApi(client: Client): DatabasesApi {
   return {
     async listDocuments(input): Promise<AppwriteDocument[]> {
       try {
-        const result = await databases.listDocuments(
-          input.databaseId,
-          input.collectionId,
-          input.queries,
-        );
+        const result = await databases.listDocuments({
+          databaseId: input.databaseId,
+          collectionId: input.collectionId,
+          queries: input.queries,
+        });
         return result.documents.map((document) => ({ ...document }));
       } catch (error) {
         throw mapAppwriteError(error);
@@ -24,11 +24,11 @@ export function createDatabasesApi(client: Client): DatabasesApi {
 
     async getDocument(input): Promise<AppwriteDocument> {
       try {
-        const document = await databases.getDocument(
-          input.databaseId,
-          input.collectionId,
-          input.documentId,
-        );
+        const document = await databases.getDocument({
+          databaseId: input.databaseId,
+          collectionId: input.collectionId,
+          documentId: input.documentId,
+        });
         return { ...document };
       } catch (error) {
         throw mapAppwriteError(error);

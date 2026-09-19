@@ -51,7 +51,11 @@ describe("createDatabasesApi", () => {
       queries: ["limit(10)"],
     });
 
-    expect(mocks.databases.listDocuments).toHaveBeenCalledWith("db", "col", ["limit(10)"]);
+    expect(mocks.databases.listDocuments).toHaveBeenCalledWith({
+      databaseId: "db",
+      collectionId: "col",
+      queries: ["limit(10)"],
+    });
     expect(documents).toHaveLength(1);
     expect(documents[0]).toMatchObject({
       $id: "d1",
@@ -80,7 +84,11 @@ describe("createDatabasesApi", () => {
       documentId: "d1",
     });
 
-    expect(mocks.databases.getDocument).toHaveBeenCalledWith("db", "col", "d1");
+    expect(mocks.databases.getDocument).toHaveBeenCalledWith({
+      databaseId: "db",
+      collectionId: "col",
+      documentId: "d1",
+    });
     expect(document).toMatchObject({
       $id: "d1",
       $createdAt: "2026-01-01T00:00:00.000Z",
@@ -96,7 +104,9 @@ describe("createDatabasesApi", () => {
     const api = createDatabasesApi(client);
 
     await expect(api.listDocuments({ databaseId: "db", collectionId: "col" })).resolves.toEqual([]);
-    expect(mocks.databases.listDocuments).toHaveBeenCalledWith("db", "col", undefined);
+    expect(mocks.databases.listDocuments).toHaveBeenCalledWith(
+      expect.objectContaining({ databaseId: "db", collectionId: "col" }),
+    );
   });
 
   it("wraps listDocuments failures in ApiError", async () => {

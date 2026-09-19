@@ -73,7 +73,10 @@ describe("createAccountApi", () => {
       password: "secret",
     });
 
-    expect(mocks.account.createEmailPasswordSession).toHaveBeenCalledWith("a@b.c", "secret");
+    expect(mocks.account.createEmailPasswordSession).toHaveBeenCalledWith({
+      email: "a@b.c",
+      password: "secret",
+    });
     expect(session).toEqual({
       $id: "s1",
       userId: "u1",
@@ -87,7 +90,7 @@ describe("createAccountApi", () => {
     const api = createAccountApi(client);
     await api.deleteSession();
 
-    expect(mocks.account.deleteSession).toHaveBeenCalledWith("current");
+    expect(mocks.account.deleteSession).toHaveBeenCalledWith({ sessionId: "current" });
   });
 
   it("deletes an explicit session", async () => {
@@ -96,7 +99,7 @@ describe("createAccountApi", () => {
     const api = createAccountApi(client);
     await api.deleteSession("s9");
 
-    expect(mocks.account.deleteSession).toHaveBeenCalledWith("s9");
+    expect(mocks.account.deleteSession).toHaveBeenCalledWith({ sessionId: "s9" });
   });
 
   it("wraps failures in ApiError", async () => {
