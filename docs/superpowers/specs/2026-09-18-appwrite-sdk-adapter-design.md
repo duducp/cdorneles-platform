@@ -7,8 +7,8 @@ Scope: `packages/api-client` only
 ## Context
 
 The Foundation defines the `@cdorneles/api-client` contracts — `AccountApi`,
-`TeamsApi`, `DatabasesApi`, `FunctionsApi`, `StorageApi`, `ApiClient` and
-`createApiClient` — but ships no concrete backend implementation. The README and
+`TeamsApi`, `TablesApi` (originally `DatabasesApi`), `FunctionsApi`, `StorageApi`,
+`ApiClient` and `createApiClient` — but ships no concrete backend implementation. The README and
 `docs/development/README.md` list "the concrete Appwrite SDK adapter for
 `@cdorneles/api-client`" as intentionally deferred pending approval.
 
@@ -63,9 +63,9 @@ packages/api-client/src/
     storage.ts       # createStorageApi(client) -> StorageApi
     map-error.ts     # mapAppwriteError(error) -> ApiError
     appwrite.ts      # createAppwriteServices / createAppwriteApiClient
-  client.ts          # unchanged (contracts + createApiClient)
+  client.ts          # contracts + createApiClient (TablesApi/AppwriteServices.tables)
   config.ts          # unchanged
-  dto.ts             # unchanged
+  dto.ts             # DTOs, incl. AppwriteRow
   errors.ts          # unchanged
   index.ts           # re-exports the two new factories
 ```

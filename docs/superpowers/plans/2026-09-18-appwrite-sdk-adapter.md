@@ -1168,7 +1168,8 @@ In `TODO.md`, under `### 1. Appwrite SDK adapter (@cdorneles/api-client)`, mark 
 - [x] Implement the concrete adapter behind the existing interfaces
       (`AccountApi`, `TeamsApi`, `TablesApi`, `FunctionsApi`, `StorageApi`).
 - [x] Map Appwrite errors to `ApiError` (`toApiError`) with stable `code`s.
-- [x] Keep the SDK out of app code: applications only ever use `createApiClient`.
+- [x] Keep the SDK out of app code: applications only use
+      `createAppwriteApiClient`.
 - [x] Unit tests with a mocked SDK; no live network in tests.
 ```
 
