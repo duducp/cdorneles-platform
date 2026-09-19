@@ -5,7 +5,11 @@ import {
   createQueryClient,
   resolveApiClientConfig,
 } from "@cdorneles/api-client";
-import { AuthProvider, createAppwriteAuthService } from "@cdorneles/auth";
+import {
+  AuthProvider,
+  createAppwriteAuthService,
+  createUnconfiguredAuthService,
+} from "@cdorneles/auth";
 import { TenantProvider } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
@@ -16,10 +20,10 @@ import { initObservability } from "@/lib/observability";
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => createQueryClient());
   const [authService] = useState(() => {
-    const config = resolveApiClientConfig({
-      endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT,
-      projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID,
-    });
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+    if (!endpoint || !projectId) return createUnconfiguredAuthService();
+    const config = resolveApiClientConfig({ endpoint, projectId });
     const services = createAppwriteServices(config);
     return createAppwriteAuthService(services.account);
   });
