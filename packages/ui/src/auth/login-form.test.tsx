@@ -67,4 +67,22 @@ describe("LoginForm", () => {
 
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it("hides the sign-up link by default", () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    expect(screen.queryByText("Criar conta")).not.toBeInTheDocument();
+  });
+
+  it("shows the sign-up link when enabled", () => {
+    renderForm({ onSubmit: vi.fn(), showSignUp: true });
+
+    expect(screen.getByText("Criar conta")).toBeInTheDocument();
+  });
+
+  it("renders the logo slot when provided", () => {
+    renderForm({ onSubmit: vi.fn(), logo: <span>logo-slot</span> });
+
+    expect(screen.getByText("logo-slot")).toBeInTheDocument();
+  });
 });

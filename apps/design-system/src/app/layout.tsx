@@ -10,6 +10,7 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "Cdorneles Design System",
   description: "Visual playground for the shared Cdorneles design system.",
+  icons: { icon: "/brand/favicon.png" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

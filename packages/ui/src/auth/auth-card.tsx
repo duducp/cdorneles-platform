@@ -27,7 +27,17 @@ export function AuthCard({ form, visual }: AuthCardProps) {
       }}
     >
       <Box style={{ display: "flex", alignItems: "stretch", minHeight: 560 }}>
-        <Box style={{ flex: "1.05 1 0", minWidth: 0 }}>{form}</Box>
+        <Box
+          style={{
+            flex: "1.05 1 0",
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          {form}
+        </Box>
         {visual ? (
           <Box visibleFrom="sm" style={{ flex: "1 1 0", minWidth: 0 }}>
             {visual}

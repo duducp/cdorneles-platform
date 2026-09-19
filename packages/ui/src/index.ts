@@ -6,6 +6,7 @@ export * from "./components/badge";
 export * from "./components/button";
 export * from "./components/card";
 export * from "./components/icon-button";
+export * from "./components/logo";
 export * from "./components/page-container";
 export * from "./components/page-header";
 export * from "./components/responsive-grid";

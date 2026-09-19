@@ -2,7 +2,7 @@
 
 import { isApiError } from "@cdorneles/api-client";
 import { AuthNotConfiguredError, useAuth } from "@cdorneles/auth";
-import { AuthCard, AuthVisual, LoginForm, ThemeToggle } from "@cdorneles/ui";
+import { AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
 import { Anchor, Box, Group, Text } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const enableSignUp = process.env.NEXT_PUBLIC_ENABLE_SIGN_UP === "true";
 
   async function handleSubmit(credentials: { email: string; password: string }) {
     setError(null);
@@ -48,7 +49,15 @@ export default function LoginPage() {
         }}
       >
         <AuthCard
-          form={<LoginForm onSubmit={handleSubmit} loading={loading} error={error} />}
+          form={
+            <LoginForm
+              onSubmit={handleSubmit}
+              loading={loading}
+              error={error}
+              logo={<Logo alt="Cdorneles" height={36} />}
+              showSignUp={enableSignUp}
+            />
+          }
           visual={<AuthVisual />}
         />
       </Box>

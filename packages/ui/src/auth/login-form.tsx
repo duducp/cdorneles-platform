@@ -4,6 +4,7 @@ import { loginSchema, type LoginFormValues } from "@cdorneles/schemas";
 import { Anchor, Box, Divider, Group, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { AlertCircle } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { Button } from "../components/button";
 import { SocialLogin } from "./social-login";
@@ -14,6 +15,8 @@ export interface LoginFormProps {
   onSubmit: (credentials: LoginCredentials) => void | Promise<void>;
   loading?: boolean;
   error?: string | null;
+  logo?: ReactNode;
+  showSignUp?: boolean;
   onGoogleClick?: () => void;
   onForgotPassword?: () => void;
   onSignUp?: () => void;
@@ -23,6 +26,8 @@ export function LoginForm({
   onSubmit,
   loading = false,
   error = null,
+  logo,
+  showSignUp = false,
   onGoogleClick,
   onForgotPassword,
   onSignUp,
@@ -49,6 +54,8 @@ export function LoginForm({
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate p="xl">
+      {logo ? <Box mb="lg">{logo}</Box> : null}
+
       <Stack gap={4}>
         <Text fw={600} fz="xl">
           Bem-vindo de volta
@@ -95,12 +102,14 @@ export function LoginForm({
           Entrar
         </Button>
 
-        <Text fz="sm" ta="center" c="dimmed">
-          Não tem uma conta?{" "}
-          <Anchor component="button" type="button" c="brand" onClick={onSignUp}>
-            Criar conta
-          </Anchor>
-        </Text>
+        {showSignUp ? (
+          <Text fz="sm" ta="center" c="dimmed">
+            Não tem uma conta?{" "}
+            <Anchor component="button" type="button" c="brand" onClick={onSignUp}>
+              Criar conta
+            </Anchor>
+          </Text>
+        ) : null}
       </Stack>
     </Box>
   );
