@@ -4,107 +4,107 @@ import { authorize, type GrantRepo } from "./authorize";
 
 const DATABASE_ID = "cdorneles_platform";
 
-const client = new Client()
-  .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT ?? "")
-  .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID ?? "")
-  .setKey(process.env.APPWRITE_FUNCTION_API_KEY ?? "");
+function createRepo(client: Client): GrantRepo {
+  const teams = new Teams(client);
+  const tables = new TablesDB(client);
 
-const teams = new Teams(client);
-const tables = new TablesDB(client);
+  return {
+    async listMemberships(teamId) {
+      const result = await teams.listMemberships({ teamId });
+      return result.memberships.map((membership) => ({
+        userId: membership.userId,
+        roles: membership.roles,
+      }));
+    },
 
-const repo: GrantRepo = {
-  async listMemberships(teamId) {
-    const result = await teams.listMemberships({ teamId });
-    return result.memberships.map((membership) => ({
-      userId: membership.userId,
-      roles: membership.roles,
-    }));
-  },
-
-  async listOrganizationRoles(organizationId) {
-    const result = await tables.listRows({
-      databaseId: DATABASE_ID,
-      tableId: "roles",
-      queries: [Query.equal("organizationId", organizationId)],
-    });
-    return result.rows.map((row) => ({
-      id: row.$id,
-      name: String(row.data.name ?? ""),
-    }));
-  },
-
-  async listPermissionKeysForRoles(roleIds) {
-    const keys = new Set<string>();
-    for (const roleId of roleIds) {
+    async listOrganizationRoles(organizationId) {
       const result = await tables.listRows({
         databaseId: DATABASE_ID,
-        tableId: "role_permissions",
-        queries: [Query.equal("roleId", roleId)],
+        tableId: "roles",
+        queries: [Query.equal("organizationId", organizationId)],
       });
-      for (const row of result.rows) {
-        const permission = await tables.getRow({
-          databaseId: DATABASE_ID,
-          tableId: "permissions",
-          rowId: String(row.data.permissionId),
-        });
-        keys.add(String(permission.data.key ?? ""));
-      }
-    }
-    return [...keys];
-  },
+      return result.rows.map((row) => ({
+        id: row.$id,
+        name: String(row.name ?? ""),
+      }));
+    },
 
-  async listApplicationIdsForRoles(roleIds) {
-    const ids = new Set<string>();
-    for (const roleId of roleIds) {
+    async listPermissionKeysForRoles(roleIds) {
+      const keys = new Set<string>();
+      for (const roleId of roleIds) {
+        const result = await tables.listRows({
+          databaseId: DATABASE_ID,
+          tableId: "role_permissions",
+          queries: [Query.equal("roleId", roleId)],
+        });
+        for (const row of result.rows) {
+          const permission = await tables.getRow({
+            databaseId: DATABASE_ID,
+            tableId: "permissions",
+            rowId: String(row.permissionId),
+          });
+          keys.add(String(permission.key ?? ""));
+        }
+      }
+      return [...keys];
+    },
+
+    async listApplicationIdsForRoles(roleIds) {
+      const ids = new Set<string>();
+      for (const roleId of roleIds) {
+        const result = await tables.listRows({
+          databaseId: DATABASE_ID,
+          tableId: "role_applications",
+          queries: [Query.equal("roleId", roleId)],
+        });
+        for (const row of result.rows) {
+          const application = await tables.getRow({
+            databaseId: DATABASE_ID,
+            tableId: "applications",
+            rowId: String(row.applicationId),
+          });
+          ids.add(String(application.appId ?? ""));
+        }
+      }
+      return [...ids];
+    },
+
+    async getOrganizationProfile(organizationId) {
       const result = await tables.listRows({
         databaseId: DATABASE_ID,
-        tableId: "role_applications",
-        queries: [Query.equal("roleId", roleId)],
+        tableId: "organization_profiles",
+        queries: [Query.equal("organizationId", organizationId)],
       });
-      for (const row of result.rows) {
-        const application = await tables.getRow({
-          databaseId: DATABASE_ID,
-          tableId: "applications",
-          rowId: String(row.data.applicationId),
-        });
-        ids.add(String(application.data.appId ?? ""));
+      const profile = result.rows[0];
+      if (!profile) {
+        return null;
       }
-    }
-    return [...ids];
-  },
+      return { active: profile.active !== false };
+    },
 
-  async getOrganizationProfile(organizationId) {
-    const result = await tables.listRows({
-      databaseId: DATABASE_ID,
-      tableId: "organization_profiles",
-      queries: [Query.equal("organizationId", organizationId)],
-    });
-    const profile = result.rows[0];
-    if (!profile) {
-      return null;
-    }
-    return { active: profile.data.active !== false && profile.data.active !== undefined };
-  },
-
-  async isFeatureEnabled(organizationId, featureKey) {
-    const features = await tables.listRows({
-      databaseId: DATABASE_ID,
-      tableId: "features",
-      queries: [Query.equal("key", featureKey)],
-    });
-    const feature = features.rows[0];
-    if (!feature) {
-      return false;
-    }
-    const rows = await tables.listRows({
-      databaseId: DATABASE_ID,
-      tableId: "organization_features",
-      queries: [Query.equal("organizationId", organizationId), Query.equal("featureId", feature.$id)],
-    });
-    const orgFeature = rows.rows[0];
-    return orgFeature?.data.enabled === true;
-  },
-};
+    async isFeatureEnabled(organizationId, featureKey) {
+      const features = await tables.listRows({
+        databaseId: DATABASE_ID,
+        tableId: "features",
+        queries: [Query.equal("key", featureKey)],
+      });
+      const feature = features.rows[0];
+      if (!feature) {
+        return false;
+      }
+      const rows = await tables.listRows({
+        databaseId: DATABASE_ID,
+        tableId: "organization_features",
+        queries: [
+          Query.equal("organizationId", organizationId),
+          Query.equal("featureId", feature.$id),
+        ],
+      });
+      const orgFeature = rows.rows[0];
+      return orgFeature?.enabled === true;
+    },
+  };
+}
 
 const PROFILE_FIELDS = [
   "displayName",
@@ -138,6 +138,15 @@ export default async function ({ req, res, log }: Context) {
       400,
     );
   }
+
+  // The per-execution API key reaches the runtime as the `x-appwrite-key`
+  // request header (open-runtimes v5); it is not injected as an env var.
+  const client = new Client()
+    .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT ?? "")
+    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID ?? "")
+    .setKey(req.headers["x-appwrite-key"] ?? "");
+  const repo = createRepo(client);
+  const tables = new TablesDB(client);
 
   const decision = await authorize(
     {
