@@ -51,7 +51,7 @@ export interface StorageApi {
   }): string;
 }
 
-/** Concrete Appwrite-backed services. Implemented in a later step. */
+/** Concrete Appwrite-backed services. Built by `createAppwriteServices`. */
 export interface AppwriteServices {
   account: AccountApi;
   teams: TeamsApi;
@@ -74,8 +74,8 @@ export interface CreateApiClientOptions {
 }
 
 /**
- * Wires a validated configuration to the concrete Appwrite services. The
- * concrete SDK adapter is intentionally not part of the Foundation.
+ * Wires a validated configuration to a set of concrete services. Use
+ * `createAppwriteApiClient` for the Appwrite-backed implementation.
  */
 export function createApiClient(options: CreateApiClientOptions): ApiClient {
   return {
