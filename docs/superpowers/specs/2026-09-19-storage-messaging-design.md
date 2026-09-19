@@ -1,15 +1,25 @@
 # Storage & Messaging — Design Spec
 
 **Date:** 2026-09-19
-**Status:** Approved
-**Scope:** Configure Appwrite Storage buckets, expand api-client StorageApi, add MessagingApi for transactional email
+**Status:** Approved (Messaging scope revised)
+**Scope:** Configure Appwrite Storage buckets and expand api-client StorageApi. Email is deferred to Appwrite Functions.
 
 ## Context
 
-The Cdorneles Platform has Storage and Messaging as first-class Appwrite capabilities (ADR-003, ARCHITECTURE.md §4). Session 3 provisioned the database. This session adds Storage buckets and Messaging email support. Email providers are already configured in Appwrite.
+The Cdorneles Platform has Storage and Messaging as first-class Appwrite capabilities (ADR-003, ARCHITECTURE.md §4). Session 3 provisioned the database. This session adds Storage buckets and the StorageApi expansion. Email providers are already configured in Appwrite.
+
+## Revision — Email via Functions, not browser MessagingApi
+
+The original design proposed a browser-side `MessagingApi.sendEmail`. Verification against the SDKs showed this is not possible:
+
+- Browser `appwrite@27.0.0`'s `Messaging` service exposes only `createSubscriber` / `deleteSubscriber` — there is no `createEmail`.
+- `createEmail` exists only in `node-appwrite` (server-side) and requires an API key.
+
+Sending email is a business operation, and `AGENTS.md` states Appwrite Functions are the security boundary for business operations and API keys must remain server-side. Therefore email sending belongs in an Appwrite Function, invoked through the existing `FunctionsApi.createExecution`. No browser `MessagingApi` is added in this session.
 
 ## Non-Goals
 
+- Browser `MessagingApi` / direct client-side email — rejected; use an Appwrite Function
 - SMS/Push messaging — deferred to when needed
 - UI upload components — this session only creates buckets and API adapters
 - File virus scanning / image transformations — use Appwrite defaults
@@ -66,58 +76,20 @@ interface AppwriteFile {
 2. Frontend calls `storage.uploadFile({ bucketId: "branding-logos", fileId: `${orgId}-light`, file })`
 3. Returned URL saved to `organization_profiles.logoLight`
 
-## Messaging
+## Email (Deferred to Appwrite Functions)
 
-### MessagingApi (New)
-
-```ts
-interface MessagingApi {
-  sendEmail(input: {
-    subject: string;
-    content: string;
-    recipientType: "users" | "topics";
-    userIds?: string[];
-    topicIds?: string[];
-  }): Promise<AppwriteMessage>;
-}
-```
-
-### New DTO: AppwriteMessage
-
-```ts
-interface AppwriteMessage {
-  $id: string;
-  status: string;
-  deliveredAt?: string;
-}
-```
-
-### AppwriteServices Wire
-
-```ts
-interface AppwriteServices {
-  account: AccountApi;
-  teams: TeamsApi;
-  tables: TablesApi;
-  functions: FunctionsApi;
-  storage: StorageApi;
-  messaging: MessagingApi;  // NEW
-}
-```
+No browser messaging adapter is added. When transactional email is needed, create an Appwrite Function that uses `node-appwrite`'s `Messaging.createEmail` server-side, then call it from application code via the existing `FunctionsApi.createExecution`. This keeps the API key server-side and respects the Functions-as-security-boundary rule.
 
 ## Files Created/Modified
 
 | File | Change |
 |---|---|
-| `packages/api-client/src/dto.ts` | Add `AppwriteFile`, `AppwriteMessage` |
-| `packages/api-client/src/client.ts` | Expand `StorageApi`, add `MessagingApi`, expand `AppwriteServices` |
+| `packages/api-client/src/dto.ts` | Add `AppwriteFile` |
+| `packages/api-client/src/client.ts` | Expand `StorageApi` |
 | `packages/api-client/src/adapters/storage.ts` | Add upload, delete, list, download, view methods |
-| `packages/api-client/src/adapters/messaging.ts` | **New** — `createMessagingApi` |
-| `packages/api-client/src/adapters/appwrite.ts` | Add `messaging` to `createAppwriteServices` |
 | `packages/provisioning/src/config.ts` | Add `STORAGE_BUCKETS` constant |
 | `packages/provisioning/src/buckets.ts` | **New** — create buckets via node-appwrite |
 | `packages/api-client/src/adapters/storage.test.ts` | Add ~8 new tests |
-| `packages/api-client/src/adapters/messaging.test.ts` | **New** — ~4 tests |
 | `packages/provisioning/src/__tests__/buckets.test.ts` | **New** — ~5 tests |
 
 ## Validation

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add Storage buckets (branding-logos, documents, avatars) and Messaging email support to the api-client and provisioning packages.
+**Goal:** Add Storage buckets (branding-logos, documents, avatars) to provisioning and expand the api-client StorageApi.
 
-**Architecture:** Expand existing `StorageApi` with upload/delete/list/download/view methods, create new `MessagingApi` for email, provision 3 storage buckets via node-appwrite.
+**Architecture:** Expand existing `StorageApi` with upload/delete/list/download/view methods and provision 3 storage buckets via node-appwrite. Email is out of scope: it belongs in an Appwrite Function (see spec revision) because browser `appwrite@27.0.0` has no `createEmail`.
 
 **Tech Stack:** node-appwrite, TypeScript, Vitest.
 
@@ -14,25 +14,22 @@
 
 | File | Responsibility |
 |---|---|
-| `packages/api-client/src/dto.ts` | Add `AppwriteFile`, `AppwriteMessage` DTOs |
-| `packages/api-client/src/client.ts` | Expand `StorageApi`, add `MessagingApi`, expand `AppwriteServices` |
+| `packages/api-client/src/dto.ts` | Add `AppwriteFile` DTO |
+| `packages/api-client/src/client.ts` | Expand `StorageApi` |
 | `packages/api-client/src/adapters/storage.ts` | Add upload, delete, list, download, view methods |
-| `packages/api-client/src/adapters/messaging.ts` | **New** — `createMessagingApi` |
-| `packages/api-client/src/adapters/appwrite.ts` | Add `messaging` to `createAppwriteServices` |
 | `packages/provisioning/src/config.ts` | Add `STORAGE_BUCKETS` constant |
 | `packages/provisioning/src/buckets.ts` | **New** — create buckets via node-appwrite |
 | `packages/api-client/src/adapters/storage.test.ts` | Add ~8 new tests |
-| `packages/api-client/src/adapters/messaging.test.ts` | **New** — ~4 tests |
 | `packages/provisioning/src/__tests__/buckets.test.ts` | **New** — ~5 tests |
 
 ---
 
-### Task 1: Add DTOs to dto.ts
+### Task 1: Add AppwriteFile DTO
 
 **Files:**
 - Modify: `packages/api-client/src/dto.ts`
 
-- [ ] **Step 1: Add AppwriteFile and AppwriteMessage interfaces**
+- [ ] **Step 1: Add AppwriteFile interface**
 
 Add at the end of `packages/api-client/src/dto.ts`:
 
@@ -46,29 +43,39 @@ export interface AppwriteFile {
   mimeType: string;
   sizeOriginal: number;
 }
-
-export interface AppwriteMessage {
-  $id: string;
-  status: string;
-  deliveredAt?: string;
-}
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add packages/api-client/src/dto.ts
-git commit -m "feat(api-client): add AppwriteFile and AppwriteMessage DTOs"
+git commit -m "feat(api-client): add AppwriteFile DTO"
 ```
 
 ---
 
-### Task 2: Expand StorageApi and add MessagingApi interfaces
+### Task 2: Expand StorageApi interface
 
 **Files:**
 - Modify: `packages/api-client/src/client.ts`
 
-- [ ] **Step 1: Expand StorageApi interface**
+- [ ] **Step 1: Import AppwriteFile**
+
+Add `AppwriteFile` to the existing type import from `./dto`:
+
+```ts
+import type {
+  AppwriteAccount,
+  AppwriteExecution,
+  AppwriteFile,
+  AppwriteMembership,
+  AppwriteRow,
+  AppwriteSession,
+  AppwriteTeam,
+} from "./dto";
+```
+
+- [ ] **Step 2: Expand StorageApi interface**
 
 Replace the existing `StorageApi` in `packages/api-client/src/client.ts`:
 
@@ -104,42 +111,13 @@ export interface StorageApi {
 }
 ```
 
-- [ ] **Step 2: Add MessagingApi interface**
+`AppwriteServices` is unchanged — no `messaging` field is added.
 
-Add after `StorageApi`:
-
-```ts
-export interface MessagingApi {
-  sendEmail(input: {
-    subject: string;
-    content: string;
-    recipientType: "users" | "topics";
-    userIds?: string[];
-    topicIds?: string[];
-  }): Promise<AppwriteMessage>;
-}
-```
-
-- [ ] **Step 3: Expand AppwriteServices interface**
-
-Add `messaging` to `AppwriteServices`:
-
-```ts
-export interface AppwriteServices {
-  account: AccountApi;
-  teams: TeamsApi;
-  tables: TablesApi;
-  functions: FunctionsApi;
-  storage: StorageApi;
-  messaging: MessagingApi;
-}
-```
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add packages/api-client/src/client.ts
-git commit -m "feat(api-client): expand StorageApi, add MessagingApi, update AppwriteServices"
+git commit -m "feat(api-client): expand StorageApi with upload, delete, list, download, view"
 ```
 
 ---
@@ -149,9 +127,11 @@ git commit -m "feat(api-client): expand StorageApi, add MessagingApi, update App
 **Files:**
 - Modify: `packages/api-client/src/adapters/storage.ts`
 
-- [ ] **Step 1: Expand storage adapter with all new methods**
+- [ ] **Step 1: Read the existing adapter**
 
-Read the existing file first, then expand. The existing `createStorageApi` returns `{ getFilePreviewUrl }`. Expand to include all new methods.
+Read `packages/api-client/src/adapters/storage.ts` first to confirm the current imports and `createStorageApi` shape.
+
+- [ ] **Step 2: Expand storage adapter with all new methods**
 
 Replace the full content of `packages/api-client/src/adapters/storage.ts`:
 
@@ -214,10 +194,7 @@ export function createStorageApi(client: Client): StorageApi {
 
     async listFiles(input) {
       try {
-        const result = await storage.listFiles(
-          input.bucketId,
-          input.queries,
-        );
+        const result = await storage.listFiles(input.bucketId, input.queries);
         return result.files.map((file) => ({
           $id: file.$id,
           $createdAt: file.$createdAt,
@@ -245,7 +222,15 @@ export function createStorageApi(client: Client): StorageApi {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 3: Typecheck the package**
+
+```bash
+pnpm --filter @cdorneles/api-client typecheck
+```
+
+Expected: exit 0. If `storage.listFiles` or URL helpers have different signatures in `appwrite@27.0.0`, adjust the calls to match the actual SDK types and note it in your report.
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add packages/api-client/src/adapters/storage.ts
@@ -254,116 +239,50 @@ git commit -m "feat(api-client): expand storage adapter with upload, delete, lis
 
 ---
 
-### Task 4: Create messaging adapter
-
-**Files:**
-- Create: `packages/api-client/src/adapters/messaging.ts`
-
-- [ ] **Step 1: Create messaging adapter**
-
-Create `packages/api-client/src/adapters/messaging.ts`:
-
-```ts
-import type { Client } from "appwrite";
-import { Messaging as AppwriteMessaging } from "appwrite";
-import type { MessagingApi } from "../client.js";
-import { toApiError } from "../errors.js";
-
-function createMessaging(client: Client): AppwriteMessaging {
-  return new AppwriteMessaging(client);
-}
-
-export function createMessagingApi(client: Client): MessagingApi {
-  const messaging = createMessaging(client);
-
-  return {
-    async sendEmail(input) {
-      try {
-        const result = await messaging.createEmail(
-          "unique()",
-          input.subject,
-          input.content,
-          undefined, // cc
-          undefined, // bcc
-          undefined, // attachments
-          undefined, // draft
-          undefined, // html
-          undefined, // scheduledAt
-        );
-        return {
-          $id: result.$id,
-          status: result.status,
-          deliveredAt: result.deliveredAt,
-        };
-      } catch (error) {
-        throw toApiError(error);
-      }
-    },
-  };
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add packages/api-client/src/adapters/messaging.ts
-git commit -m "feat(api-client): create messaging adapter with sendEmail"
-```
-
----
-
-### Task 5: Wire messaging into appwrite.ts
-
-**Files:**
-- Modify: `packages/api-client/src/adapters/appwrite.ts`
-
-- [ ] **Step 1: Import and wire messaging**
-
-Add import and wire into `createAppwriteServices`:
-
-```ts
-import { createMessagingApi } from "./messaging.js";
-```
-
-Add to the return object:
-
-```ts
-export function createAppwriteServices(config: ApiClientConfig): AppwriteServices {
-  const client = createAppwriteClient(config);
-  return {
-    account: createAccountApi(client),
-    teams: createTeamsApi(client),
-    tables: createTablesApi(client),
-    functions: createFunctionsApi(client),
-    storage: createStorageApi(client),
-    messaging: createMessagingApi(client),
-  };
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add packages/api-client/src/adapters/appwrite.ts
-git commit -m "feat(api-client): wire messaging into createAppwriteServices"
-```
-
----
-
-### Task 6: Add storage tests
+### Task 4: Add storage tests
 
 **Files:**
 - Modify: `packages/api-client/src/adapters/storage.test.ts`
 
-- [ ] **Step 1: Read existing test file**
+- [ ] **Step 1: Read the existing test file**
 
-Read `packages/api-client/src/adapters/storage.test.ts` to understand existing mock patterns.
+Read `packages/api-client/src/adapters/storage.test.ts` to learn the existing `vi.mock("appwrite", ...)` factory shape and how `storageApi` is constructed in `beforeEach`.
 
-- [ ] **Step 2: Add tests for new storage methods**
+- [ ] **Step 2: Extend the appwrite mock with the new methods**
 
-Add tests after the existing ones. Follow the same mock pattern (mock `appwrite` module, test each method).
+In the existing `vi.mock("appwrite", ...)` factory, add a `Storage` class mock exposing: `getFilePreview`, `createFile`, `deleteFile`, `listFiles`, `getFileDownload`, `getFileView`. Keep the existing `getFilePreview` behavior. Example shape (adapt names to the existing file's conventions):
 
-Add these test cases:
+```ts
+const mockCreateFile = vi.fn().mockResolvedValue({
+  $id: "test-file-id",
+  $createdAt: "2026-01-01T00:00:00.000Z",
+  $updatedAt: "2026-01-01T00:00:00.000Z",
+  bucketId: "branding-logos",
+  name: "test.png",
+  mimeType: "image/png",
+  sizeOriginal: 4,
+});
+const mockDeleteFile = vi.fn().mockResolvedValue(undefined);
+const mockListFiles = vi.fn().mockResolvedValue({
+  files: [
+    {
+      $id: "test-file-id",
+      $createdAt: "2026-01-01T00:00:00.000Z",
+      $updatedAt: "2026-01-01T00:00:00.000Z",
+      bucketId: "branding-logos",
+      name: "test.png",
+      mimeType: "image/png",
+      sizeOriginal: 4,
+    },
+  ],
+});
+const mockGetFileDownload = vi.fn().mockReturnValue("https://example.test/download");
+const mockGetFileView = vi.fn().mockReturnValue("https://example.test/view");
+```
+
+- [ ] **Step 3: Add tests for the new storage methods**
+
+Append these test cases, reusing the file's existing `storageApi` instance:
 
 ```ts
 describe("uploadFile", () => {
@@ -381,7 +300,11 @@ describe("uploadFile", () => {
   it("wraps errors as ApiError", async () => {
     mockCreateFile.mockRejectedValueOnce(new Error("fail"));
     await expect(
-      storageApi.uploadFile({ bucketId: "test", fileId: "test", file: new File([""], "test") }),
+      storageApi.uploadFile({
+        bucketId: "test",
+        fileId: "test",
+        file: new File([""], "test"),
+      }),
     ).rejects.toThrow();
   });
 });
@@ -411,28 +334,32 @@ describe("listFiles", () => {
 
 describe("getFileDownloadUrl", () => {
   it("returns download URL string", () => {
-    const url = storageApi.getFileDownloadUrl({ bucketId: "test", fileId: "test-id" });
+    const url = storageApi.getFileDownloadUrl({
+      bucketId: "test",
+      fileId: "test-id",
+    });
     expect(typeof url).toBe("string");
   });
 });
 
 describe("getFileViewUrl", () => {
   it("returns view URL string", () => {
-    const url = storageApi.getFileViewUrl({ bucketId: "test", fileId: "test-id" });
+    const url = storageApi.getFileViewUrl({
+      bucketId: "test",
+      fileId: "test-id",
+    });
     expect(typeof url).toBe("string");
   });
 });
 ```
 
-- [ ] **Step 3: Update mock setup to include new methods**
-
-In the mock factory, add mocks for `createFile`, `deleteFile`, `listFiles`, `getFileDownload`, `getFileView`.
-
 - [ ] **Step 4: Run tests**
 
 ```bash
-cd packages/api-client && pnpm test src/adapters/storage.test.ts
+pnpm --filter @cdorneles/api-client test src/adapters/storage.test.ts
 ```
+
+Expected: PASS (existing + new).
 
 - [ ] **Step 5: Commit**
 
@@ -443,86 +370,7 @@ git commit -m "test(api-client): add storage upload, delete, list, download, vie
 
 ---
 
-### Task 7: Create messaging tests
-
-**Files:**
-- Create: `packages/api-client/src/adapters/messaging.test.ts`
-
-- [ ] **Step 1: Create messaging test file**
-
-Create `packages/api-client/src/adapters/messaging.test.ts` following the same pattern as other adapter tests:
-
-```ts
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-const mockCreateEmail = vi.fn().mockResolvedValue({
-  $id: "msg-123",
-  status: "queued",
-  deliveredAt: undefined,
-});
-
-vi.mock("appwrite", () => ({
-  Messaging: vi.fn().mockImplementation(() => ({
-    createEmail: mockCreateEmail,
-  })),
-}));
-
-import { createMessagingApi } from "./messaging.js";
-
-function createMockClient() {
-  return { setEndpoint: vi.fn().mockReturnThis(), setProject: vi.fn().mockReturnThis() } as never;
-}
-
-describe("createMessagingApi", () => {
-  let messagingApi: ReturnType<typeof createMessagingApi>;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    messagingApi = createMessagingApi(createMockClient());
-  });
-
-  it("is a function", () => {
-    expect(typeof createMessagingApi).toBe("function");
-  });
-
-  describe("sendEmail", () => {
-    it("sends email and returns AppwriteMessage", async () => {
-      const result = await messagingApi.sendEmail({
-        subject: "Welcome",
-        content: "<p>Hello</p>",
-        recipientType: "users",
-        userIds: ["user-1"],
-      });
-      expect(result.$id).toBe("msg-123");
-      expect(result.status).toBe("queued");
-    });
-
-    it("wraps errors as ApiError", async () => {
-      mockCreateEmail.mockRejectedValueOnce(new Error("fail"));
-      await expect(
-        messagingApi.sendEmail({ subject: "Test", content: "Test", recipientType: "users" }),
-      ).rejects.toThrow();
-    });
-  });
-});
-```
-
-- [ ] **Step 2: Run tests**
-
-```bash
-cd packages/api-client && pnpm test src/adapters/messaging.test.ts
-```
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add packages/api-client/src/adapters/messaging.test.ts
-git commit -m "test(api-client): add messaging sendEmail tests"
-```
-
----
-
-### Task 8: Add STORAGE_BUCKETS to provisioning config
+### Task 5: Add STORAGE_BUCKETS to provisioning config
 
 **Files:**
 - Modify: `packages/provisioning/src/config.ts`
@@ -544,7 +392,12 @@ export const STORAGE_BUCKETS: BucketDef[] = [
     id: "branding-logos",
     name: "Branding Logos",
     maxSize: 5 * 1024 * 1024,
-    allowedExtensions: ["image/png", "image/jpeg", "image/svg+xml", "image/webp"],
+    allowedExtensions: [
+      "image/png",
+      "image/jpeg",
+      "image/svg+xml",
+      "image/webp",
+    ],
   },
   {
     id: "documents",
@@ -570,27 +423,26 @@ git commit -m "feat(provisioning): add STORAGE_BUCKETS constant"
 
 ---
 
-### Task 9: Create buckets provisioning
+### Task 6: Create buckets provisioning
 
 **Files:**
 - Create: `packages/provisioning/src/buckets.ts`
 - Modify: `packages/provisioning/src/index.ts`
 
-- [ ] **Step 1: Create buckets.ts**
+- [ ] **Step 1: Read existing provisioning sources**
 
-Create `packages/provisioning/src/buckets.ts`:
+Read `packages/provisioning/src/database.ts`, `packages/provisioning/src/config.ts`, and `packages/provisioning/src/index.ts` to match the existing client-construction, config type, logging, and export conventions.
+
+- [ ] **Step 2: Create buckets.ts**
+
+Create `packages/provisioning/src/buckets.ts`. Reuse the package's existing config type and client factory if present (prefer that over redefining). If the package exposes a shared `ProvisioningConfig`/client helper, import it; otherwise:
 
 ```ts
 import { Client, Storage } from "node-appwrite";
-import { STORAGE_BUCKETS, type BucketDef } from "./config.js";
+import { STORAGE_BUCKETS } from "./config.js";
+import type { ProvisioningConfig } from "./config.js";
 
-interface BucketConfig {
-  endpoint: string;
-  projectId: string;
-  apiKey: string;
-}
-
-function createStorageApi(config: BucketConfig): Storage {
+function createStorageApi(config: ProvisioningConfig): Storage {
   const client = new Client()
     .setEndpoint(config.endpoint)
     .setProject(config.projectId)
@@ -598,7 +450,9 @@ function createStorageApi(config: BucketConfig): Storage {
   return new Storage(client);
 }
 
-export async function createBuckets(config: BucketConfig): Promise<void> {
+export async function createBuckets(
+  config: ProvisioningConfig,
+): Promise<void> {
   const storage = createStorageApi(config);
 
   for (const bucket of STORAGE_BUCKETS) {
@@ -608,9 +462,9 @@ export async function createBuckets(config: BucketConfig): Promise<void> {
       await storage.createBucket(
         bucket.id,
         bucket.name,
-        "bucket", // permissions
-        true, // fileSecurity
-        true, // enabled
+        "bucket",
+        true,
+        true,
         bucket.maxSize,
         bucket.allowedExtensions,
       );
@@ -618,7 +472,9 @@ export async function createBuckets(config: BucketConfig): Promise<void> {
     } catch (error: unknown) {
       const code = (error as { code?: number }).code;
       if (code === 409) {
-        console.log(`[provisioning] Bucket ${bucket.id} already exists, skipping.`);
+        console.log(
+          `[provisioning] Bucket ${bucket.id} already exists, skipping.`,
+        );
       } else {
         throw error;
       }
@@ -627,9 +483,9 @@ export async function createBuckets(config: BucketConfig): Promise<void> {
 }
 ```
 
-- [ ] **Step 2: Wire into index.ts**
+- [ ] **Step 3: Wire into index.ts**
 
-Add to `packages/provisioning/src/index.ts`:
+In `packages/provisioning/src/index.ts`, add the export and call `createBuckets` inside `runProvisioning`:
 
 ```ts
 export { createBuckets } from "./buckets.js";
@@ -637,12 +493,12 @@ export { STORAGE_BUCKETS } from "./config.js";
 export type { BucketDef } from "./config.js";
 ```
 
-Add `createBuckets` call to `runProvisioning`:
-
 ```ts
 import { createBuckets } from "./buckets.js";
 
-export async function runProvisioning(config: ProvisioningConfig): Promise<void> {
+export async function runProvisioning(
+  config: ProvisioningConfig,
+): Promise<void> {
   console.log("[provisioning] Starting provisioning...");
 
   await createDatabase(config);
@@ -653,7 +509,17 @@ export async function runProvisioning(config: ProvisioningConfig): Promise<void>
 }
 ```
 
-- [ ] **Step 3: Commit**
+Match the actual existing `runProvisioning` body — only add the `createBuckets` import and call.
+
+- [ ] **Step 4: Typecheck**
+
+```bash
+pnpm --filter @cdorneles/provisioning typecheck
+```
+
+Expected: exit 0. Verify `createBucket`'s positional signature against `node-appwrite@17.2.0`; adjust if the SDK differs.
+
+- [ ] **Step 5: Commit**
 
 ```bash
 git add packages/provisioning/src/buckets.ts packages/provisioning/src/index.ts
@@ -662,32 +528,36 @@ git commit -m "feat(provisioning): add bucket provisioning"
 
 ---
 
-### Task 10: Add buckets tests
+### Task 7: Add buckets tests
 
 **Files:**
 - Create: `packages/provisioning/src/__tests__/buckets.test.ts`
 
-- [ ] **Step 1: Create buckets test file**
+- [ ] **Step 1: Read an existing provisioning test**
 
-Create `packages/provisioning/src/__tests__/buckets.test.ts`:
+Read `packages/provisioning/src/__tests__/database.test.ts` to copy its `vi.mock("node-appwrite", ...)` factory style (remember: `vi.mock` factory constructors must be regular functions, not arrow functions).
+
+- [ ] **Step 2: Create buckets test file**
+
+Create `packages/provisioning/src/__tests__/buckets.test.ts`, matching the existing test file's mock and import conventions:
 
 ```ts
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("node-appwrite", () => {
-  const mockCreateBucket = vi.fn().mockResolvedValue({ $id: "test" });
+const mockCreateBucket = vi.fn().mockResolvedValue({ $id: "test" });
 
-  return {
-    Client: vi.fn().mockImplementation(() => ({
+vi.mock("node-appwrite", () => ({
+  Client: vi.fn().mockImplementation(function () {
+    return {
       setEndpoint: vi.fn().mockReturnThis(),
       setProject: vi.fn().mockReturnThis(),
       setKey: vi.fn().mockReturnThis(),
-    })),
-    Storage: vi.fn().mockImplementation(() => ({
-      createBucket: mockCreateBucket,
-    })),
-  };
-});
+    };
+  }),
+  Storage: vi.fn().mockImplementation(function () {
+    return { createBucket: mockCreateBucket };
+  }),
+}));
 
 import { createBuckets } from "../buckets.js";
 
@@ -700,6 +570,7 @@ describe("createBuckets", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCreateBucket.mockResolvedValue({ $id: "test" });
   });
 
   it("is a function", () => {
@@ -707,39 +578,33 @@ describe("createBuckets", () => {
   });
 
   it("creates 3 buckets", async () => {
-    const { Storage } = await import("node-appwrite");
-    const mockInstance = new (Storage as unknown as new () => { createBucket: ReturnType<typeof vi.fn> })();
-
-    await createBuckets(config);
-
-    expect(mockInstance.createBucket).toHaveBeenCalledTimes(3);
+    await createBuckets(config as never);
+    expect(mockCreateBucket).toHaveBeenCalledTimes(3);
   });
 
   it("handles 409 conflict (bucket already exists)", async () => {
-    const { Storage } = await import("node-appwrite");
-    const mockInstance = new (Storage as unknown as new () => { createBucket: ReturnType<typeof vi.fn> })();
-    mockInstance.createBucket.mockRejectedValue({ code: 409 });
-
-    await expect(createBuckets(config)).resolves.not.toThrow();
+    mockCreateBucket.mockRejectedValue({ code: 409 });
+    await expect(createBuckets(config as never)).resolves.not.toThrow();
   });
 
   it("propagates non-409 errors", async () => {
-    const { Storage } = await import("node-appwrite");
-    const mockInstance = new (Storage as unknown as new () => { createBucket: ReturnType<typeof vi.fn> })();
-    mockInstance.createBucket.mockRejectedValue({ code: 500 });
-
-    await expect(createBuckets(config)).rejects.toThrow();
+    mockCreateBucket.mockRejectedValue({ code: 500 });
+    await expect(createBuckets(config as never)).rejects.toThrow();
   });
 });
 ```
 
-- [ ] **Step 2: Run tests**
+Adapt the `config as never` cast to the real `ProvisioningConfig` type if it is exported and importable.
+
+- [ ] **Step 3: Run tests**
 
 ```bash
-cd packages/provisioning && pnpm test src/__tests__/buckets.test.ts
+pnpm --filter @cdorneles/provisioning test src/__tests__/buckets.test.ts
 ```
 
-- [ ] **Step 3: Commit**
+Expected: PASS.
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add packages/provisioning/src/__tests__/buckets.test.ts
@@ -748,7 +613,7 @@ git commit -m "test(provisioning): add bucket creation tests"
 
 ---
 
-### Task 11: Run verification gates
+### Task 8: Run verification gates
 
 - [ ] **Step 1: Lint**
 
@@ -756,11 +621,15 @@ git commit -m "test(provisioning): add bucket creation tests"
 pnpm lint
 ```
 
+Expected: 0 errors, 0 warnings.
+
 - [ ] **Step 2: Typecheck**
 
 ```bash
 pnpm typecheck
 ```
+
+Expected: exit 0.
 
 - [ ] **Step 3: Tests**
 
@@ -768,18 +637,24 @@ pnpm typecheck
 pnpm test
 ```
 
+Expected: all pass.
+
 - [ ] **Step 4: Build**
 
 ```bash
 pnpm build
 ```
 
-- [ ] **Step 5: Fix any issues and commit**
+Expected: exit 0.
+
+- [ ] **Step 5: Commit any fixes**
 
 ```bash
 git add -A
 git commit -m "fix: address verification gate issues"
 ```
+
+Only commit if there are changes.
 
 ---
 
@@ -787,14 +662,11 @@ git commit -m "fix: address verification gate issues"
 
 | Task | Description | Status |
 |---|---|---|
-| 1 | Add DTOs to dto.ts | TODO |
-| 2 | Expand StorageApi and add MessagingApi interfaces | TODO |
+| 1 | Add AppwriteFile DTO | TODO |
+| 2 | Expand StorageApi interface | TODO |
 | 3 | Expand storage adapter | TODO |
-| 4 | Create messaging adapter | TODO |
-| 5 | Wire messaging into appwrite.ts | TODO |
-| 6 | Add storage tests | TODO |
-| 7 | Create messaging tests | TODO |
-| 8 | Add STORAGE_BUCKETS to provisioning config | TODO |
-| 9 | Create buckets provisioning | TODO |
-| 10 | Add buckets tests | TODO |
-| 11 | Run verification gates | TODO |
+| 4 | Add storage tests | TODO |
+| 5 | Add STORAGE_BUCKETS to provisioning config | TODO |
+| 6 | Create buckets provisioning | TODO |
+| 7 | Add buckets tests | TODO |
+| 8 | Run verification gates | TODO |

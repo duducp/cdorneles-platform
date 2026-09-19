@@ -56,9 +56,3 @@ export interface AppwriteFile {
   mimeType: string;
   sizeOriginal: number;
 }
-
-export interface AppwriteMessage {
-  $id: string;
-  status: string;
-  deliveredAt?: string;
-}
