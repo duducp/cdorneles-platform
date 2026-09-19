@@ -27,6 +27,16 @@ describe("LoginForm", () => {
     expect(onSubmit).toHaveBeenCalledWith({ email: "user@example.com", password: "secret" });
   });
 
+  it("submits the entered credentials on Enter", async () => {
+    const onSubmit = vi.fn();
+    renderForm({ onSubmit });
+
+    await userEvent.type(screen.getByLabelText("E-mail"), "user@example.com");
+    await userEvent.type(screen.getByLabelText("Senha"), "secret{Enter}");
+
+    expect(onSubmit).toHaveBeenCalledWith({ email: "user@example.com", password: "secret" });
+  });
+
   it("validates before submitting", async () => {
     const onSubmit = vi.fn();
     renderForm({ onSubmit });
@@ -47,5 +57,14 @@ describe("LoginForm", () => {
     renderForm({ onSubmit: vi.fn(), loading: true });
 
     expect(screen.getByRole("button", { name: "Entrar" })).toBeDisabled();
+  });
+
+  it("does not submit while loading", async () => {
+    const onSubmit = vi.fn();
+    renderForm({ onSubmit, loading: true });
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,9 @@
 "use client";
 
 import { loginSchema, type LoginFormValues } from "@cdorneles/schemas";
-import { Anchor, Box, Divider, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { Anchor, Box, Divider, Group, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { AlertCircle } from "lucide-react";
 
 import { Button } from "../components/button";
 import { SocialLogin } from "./social-login";
@@ -82,9 +83,12 @@ export function LoginForm({
         </Anchor>
 
         {error ? (
-          <Text role="alert" c="danger" fz="sm">
-            {error}
-          </Text>
+          <Group gap={6} wrap="nowrap" role="alert">
+            <AlertCircle size={16} aria-hidden />
+            <Text c="danger" fz="sm">
+              {error}
+            </Text>
+          </Group>
         ) : null}
 
         <Button type="submit" fullWidth loading={loading} disabled={loading}>
