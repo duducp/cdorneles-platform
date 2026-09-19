@@ -39,6 +39,15 @@ describe("createAppwriteTenantService", () => {
 
       await expect(service.listOrganizations()).resolves.toEqual([]);
     });
+
+    it("propagates lookup failures", async () => {
+      const api = createMockTeamsApi();
+      vi.mocked(api.listTeams).mockRejectedValue(new Error("user_unauthorized"));
+
+      const service = createAppwriteTenantService(api);
+
+      await expect(service.listOrganizations()).rejects.toThrow("user_unauthorized");
+    });
   });
 
   describe("listMemberships", () => {
@@ -87,6 +96,16 @@ describe("createAppwriteTenantService", () => {
       const service = createAppwriteTenantService(api);
 
       await expect(service.listMemberships("u1")).resolves.toEqual([]);
+    });
+
+    it("propagates lookup failures", async () => {
+      const api = createMockTeamsApi();
+      vi.mocked(api.listTeams).mockResolvedValue([{ $id: "org-1", name: "Acme" }]);
+      vi.mocked(api.listMemberships).mockRejectedValue(new Error("general_unauthorized"));
+
+      const service = createAppwriteTenantService(api);
+
+      await expect(service.listMemberships("u1")).rejects.toThrow("general_unauthorized");
     });
   });
 });

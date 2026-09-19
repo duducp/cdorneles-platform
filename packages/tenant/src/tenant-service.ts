@@ -4,6 +4,14 @@ import type { Organization, OrganizationMembership } from "./types";
 
 /** Resolves the authenticated user's organizations from Appwrite Teams (ADR-004). */
 export interface TenantService {
+  /**
+   * Organizations the authenticated user belongs to.
+   *
+   * Relies on `TeamsApi` being session-scoped (the Appwrite Web SDK's
+   * `Teams.list` returns only the caller's teams). A server/API-key-backed
+   * implementation would return every team in the project, so `listMemberships`
+   * — which filters by `userId` — is the safe source when in doubt.
+   */
   listOrganizations(): Promise<Organization[]>;
   listMemberships(userId: string): Promise<OrganizationMembership[]>;
 }
