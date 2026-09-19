@@ -19,25 +19,36 @@ capabilities. No business modules yet.
 - [x] Keep the SDK out of app code: applications only use
       `createAppwriteApiClient`.
 - [x] Unit tests with a mocked SDK; no live network in tests.
+- [x] Expand `StorageApi` beyond preview URLs: upload, delete, list, download
+      and view, with per-file `permissions` on upload.
 
 ### 2. Wire `@cdorneles/auth` to the adapter
 
-- [ ] Replace `createUnconfiguredAuthService()` with an Appwrite-backed
-      `AuthService` (login, logout, session, current user, MFA, recovery).
-- [ ] Session bootstrap/refresh in the app `Providers`.
-- [ ] Prove it end-to-end in `apps/admin` (or `apps/design-system`).
+- [x] Replace `createUnconfiguredAuthService()` with an Appwrite-backed
+      `AuthService` (login, logout, session, current user).
+- [ ] Implement MFA (`completeMfa`) and password recovery
+      (`requestPasswordRecovery` / `confirmPasswordRecovery`) — still stubs
+      that throw.
+- [x] Session bootstrap/refresh in the app `Providers` (all four apps), with a
+      graceful `createUnconfiguredAuthService()` fallback when env vars are
+      absent.
+- [ ] Prove it end-to-end in `apps/admin` (or `apps/design-system`) against a
+      running Appwrite instance.
 
 ### 3. Provision the Appwrite backend
 
-Project is currently empty (0 databases, 0 teams, 0 functions, 0 users).
+The live project is still empty (0 databases, 0 teams, 0 functions, 0 users).
+`pnpm provision` is implemented but has **not** been run against it yet.
 
-- [ ] Create the database and collections from `ARCHITECTURE.md` §7:
-      `organization_profiles`, `roles`, `permissions`, `role_permissions`,
-      `applications`, `role_applications`, `features`, `organization_features`,
-      `domains`, `audit_logs`.
-- [ ] Define collection permissions/attributes and indexes.
-- [ ] Seed the global `applications` registry (`admin`, `client`, `customer`)
+- [x] Scaffold `@cdorneles/provisioning` with the database and the 10
+      collections from `ARCHITECTURE.md` §7 and their attributes.
+- [x] Seed the global `applications` registry (`admin`, `client`, `customer`)
       and the `permissions`/`features` definitions.
+- [x] Idempotent provisioning (409-safe) behind a CLI (`pnpm provision`).
+- [x] Provision the Storage buckets (`branding-logos`, `documents`, `avatars`).
+- [ ] Run `pnpm provision` against the live Appwrite project.
+- [ ] Define collection permissions and indexes (attributes exist; permissions
+      and indexes do not).
 - [ ] Record the schema in `docs/` and, if it changes architecture, an ADR.
 
 ### 4. Tenancy and domain resolution
@@ -62,6 +73,13 @@ Project is currently empty (0 databases, 0 teams, 0 functions, 0 users).
       instead of the empty placeholder in `apps/*/providers.tsx`.
 - [ ] White-label branding: apply `organization_profiles` branding to
       `@cdorneles/theme` (contrast-validated tokens).
+- [ ] Storage upload flow: an `@cdorneles/ui` upload component plus a
+      `branding-logos` flow that writes per-file `read("team:<orgId>")`
+      permissions and stores the resulting URL on `organization_profiles`.
+- [ ] Transactional email via an Appwrite Function. The browser `appwrite`
+      SDK has no `Messaging.createEmail` (it is server-side only), so email
+      must be a Function invoked through `FunctionsApi.createExecution` — never
+      a client-side Messaging API.
 - [ ] CI: confirm `install → lint → typecheck → test → build` stays green on
       every change.
 
