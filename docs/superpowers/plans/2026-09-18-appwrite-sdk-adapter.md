@@ -285,7 +285,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("appwrite", async (importOriginal) => {
   const actual = await importOriginal<typeof import("appwrite")>();
-  return { ...actual, Account: vi.fn(() => mocks.account) };
+  return { ...actual, Account: vi.fn(function Account() { return mocks.account; }) };
 });
 
 const client = {} as Client;
@@ -479,7 +479,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("appwrite", async (importOriginal) => {
   const actual = await importOriginal<typeof import("appwrite")>();
-  return { ...actual, Teams: vi.fn(() => mocks.teams) };
+  return { ...actual, Teams: vi.fn(function Teams() { return mocks.teams; }) };
 });
 
 const client = {} as Client;
@@ -618,7 +618,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("appwrite", async (importOriginal) => {
   const actual = await importOriginal<typeof import("appwrite")>();
-  return { ...actual, Databases: vi.fn(() => mocks.databases) };
+  return { ...actual, Databases: vi.fn(function Databases() { return mocks.databases; }) };
 });
 
 const client = {} as Client;
@@ -775,7 +775,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("appwrite", async (importOriginal) => {
   const actual = await importOriginal<typeof import("appwrite")>();
-  return { ...actual, Functions: vi.fn(() => mocks.functions) };
+  return { ...actual, Functions: vi.fn(function Functions() { return mocks.functions; }) };
 });
 
 const client = {} as Client;
@@ -904,7 +904,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("appwrite", async (importOriginal) => {
   const actual = await importOriginal<typeof import("appwrite")>();
-  return { ...actual, Storage: vi.fn(() => mocks.storage) };
+  return { ...actual, Storage: vi.fn(function Storage() { return mocks.storage; }) };
 });
 
 const client = {} as Client;
@@ -1168,3 +1168,8 @@ git commit -m "docs: record appwrite adapter as implemented"
 - **Spec coverage:** dependency (Task 1), error mapping (Task 2), client factory (Task 3), all five services (Tasks 4–8), public factories + exports (Task 9), docs/verification (Task 10). The spec's `.toString()` on `getFilePreview` is dropped because the v27 type is already `string`.
 - **Type consistency:** every adapter returns the interface imported from `../client`; DTO field names match `../dto.ts` (`$id`, `email`, `name`, `status`, `userId`, `expire`, `teamId`, `roles`, `responseBody`).
 - **No placeholders:** every step contains the code and command to run.
+- **Vitest mock constructability (Task 4 finding):** `vi.mock` factories must return
+  a **regular function** (e.g. `vi.fn(function Account() { return mocks.account; })`),
+  not an arrow function. The adapters call `new Account(client)` and Vitest 5
+  invokes the implementation with `new`, which throws `TypeError: ... is not a
+  constructor` for an arrow. Tasks 4–8 use the regular-function form.
