@@ -6,7 +6,9 @@ import { mapAppwriteError } from "./map-error";
 
 describe("mapAppwriteError", () => {
   it("maps an AppwriteException to an ApiError", () => {
-    const mapped = mapAppwriteError(new AppwriteException("Unauthorized", 401, "user_unauthorized"));
+    const mapped = mapAppwriteError(
+      new AppwriteException("Unauthorized", 401, "user_unauthorized"),
+    );
 
     expect(mapped).toBeInstanceOf(ApiError);
     expect(mapped.message).toBe("Unauthorized");

@@ -100,9 +100,7 @@ describe("createAccountApi", () => {
   });
 
   it("wraps failures in ApiError", async () => {
-    mocks.account.get.mockRejectedValue(
-      new AppwriteException("nope", 401, "user_unauthorized"),
-    );
+    mocks.account.get.mockRejectedValue(new AppwriteException("nope", 401, "user_unauthorized"));
 
     const api = createAccountApi(client);
 
