@@ -20,7 +20,8 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "pnpm -r --if-present build"
+    "build": "pnpm -r --if-present build",
+    "provision": "pnpm --filter @cdorneles/provisioning provision"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
