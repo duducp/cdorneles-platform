@@ -400,7 +400,7 @@ export const STORAGE_BUCKETS: BucketDef[] = [
   {
     id: "documents",
     name: "Documents",
-    maxSize: 50 * 1024 * 1024,
+    maxSize: 30_000_000,
     allowedFileExtensions: [
       "pdf",
       "txt",

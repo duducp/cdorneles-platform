@@ -62,7 +62,7 @@ describe("createBuckets", () => {
       [],
       true,
       true,
-      50 * 1024 * 1024,
+      30_000_000,
       ["pdf", "txt", "csv", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "webp"],
     );
     expect(mockCreateBucket).toHaveBeenNthCalledWith(

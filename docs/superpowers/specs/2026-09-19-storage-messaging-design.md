@@ -31,10 +31,12 @@ Sending email is a business operation, and `AGENTS.md` states Appwrite Functions
 
 Appwrite's `allowedFileExtensions` matches on file **extensions**, not MIME types (Appwrite docs: "Limit the file extensions allowed in the bucket… A maximum of 100 file extensions can be added"). Wildcards such as `image/*` are not supported.
 
+`maximumFileSize` is capped by the Appwrite server at **30,000,000 bytes** (verified against the live project: `Value must be a valid range between 1 and 30,000,000`). The `documents` bucket therefore uses `30_000_000` rather than the original 50MB intent.
+
 | Bucket ID | Purpose | Max Size | Allowed Extensions | Intended access |
 |---|---|---|---|---|
 | `branding-logos` | Org logos (light/dark) + favicon | 5MB | png, jpg, jpeg, svg, webp | org members read, admin write |
-| `documents` | General documents (PDFs, sheets) | 50MB | pdf, txt, csv, doc, docx, xls, xlsx, png, jpg, jpeg, webp | org members read/write |
+| `documents` | General documents (PDFs, sheets) | 30,000,000 B (Appwrite cap) | pdf, txt, csv, doc, docx, xls, xlsx, png, jpg, jpeg, webp | org members read/write |
 | `avatars` | User avatars | 2MB | png, jpg, jpeg, webp | any authenticated read, owner write |
 
 Bucket-level default permissions are provisioned **empty** (deny by default) with `fileSecurity: true`. The "intended access" column describes the per-file permissions the upload flow must set when creating a file — it is not statically provisioned, since it depends on the acting organization/team ID.
