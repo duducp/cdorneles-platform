@@ -49,7 +49,7 @@ export interface StorageApi {
   uploadFile(input: {
     bucketId: string;
     fileId: string;
-    file: File | Blob;
+    file: File;
   }): Promise<AppwriteFile>;
   deleteFile(input: {
     bucketId: string;

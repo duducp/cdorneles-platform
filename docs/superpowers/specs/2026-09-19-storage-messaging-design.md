@@ -48,7 +48,7 @@ Expanded interface:
 ```ts
 interface StorageApi {
   getFilePreviewUrl(input: { bucketId: string; fileId: string; width?: number; height?: number }): string;
-  uploadFile(input: { bucketId: string; fileId: string; file: File | Blob }): Promise<AppwriteFile>;
+  uploadFile(input: { bucketId: string; fileId: string; file: File }): Promise<AppwriteFile>;
   deleteFile(input: { bucketId: string; fileId: string }): Promise<void>;
   listFiles(input: { bucketId: string; queries?: string[] }): Promise<AppwriteFile[]>;
   getFileDownloadUrl(input: { bucketId: string; fileId: string }): string;
