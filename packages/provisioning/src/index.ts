@@ -7,7 +7,7 @@ export type { TableDef, AttributeDef, SeedDef } from "./config.js";
 import { createDatabase, type DatabaseConfig } from "./database.js";
 import { seedData } from "./seeds.js";
 
-export interface ProvisioningConfig extends DatabaseConfig {}
+export type ProvisioningConfig = DatabaseConfig;
 
 export async function runProvisioning(config: ProvisioningConfig): Promise<void> {
   console.log("[provisioning] Starting provisioning...");
