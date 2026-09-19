@@ -46,3 +46,19 @@ export interface AppwriteExecution {
   status: string;
   responseBody: string;
 }
+
+export interface AppwriteFile {
+  $id: string;
+  $createdAt: string;
+  $updatedAt: string;
+  bucketId: string;
+  name: string;
+  mimeType: string;
+  sizeOriginal: number;
+}
+
+export interface AppwriteMessage {
+  $id: string;
+  status: string;
+  deliveredAt?: string;
+}
