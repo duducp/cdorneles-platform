@@ -30,6 +30,7 @@ catalog:
   "@types/react-dom": 19.3.0
 
   # Tooling
+  "esbuild": 0.23.1
   "typescript": 5.9.3
   "eslint": 10.11.0
   "@eslint/js": 10.0.1

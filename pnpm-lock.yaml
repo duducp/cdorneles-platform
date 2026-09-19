@@ -48,6 +48,9 @@ catalogs:
     appwrite:
       specifier: 27.0.0
       version: 27.0.0
+    esbuild:
+      specifier: 0.23.1
+      version: 0.23.1
     eslint:
       specifier: 10.11.0
       version: 10.11.0
@@ -69,6 +72,9 @@ catalogs:
     next:
       specifier: 16.3.5
       version: 16.3.5
+    node-appwrite:
+      specifier: ^27.0.0
+      version: 27.1.0
     postcss:
       specifier: 8.5.28
       version: 8.5.28
@@ -166,7 +172,7 @@ importers:
         version: 8.70.0(eslint@10.11.0)(typescript@5.9.3)
       vite:
         specifier: 'catalog:'
-        version: 8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0)
+        version: 8.3.0(@types/node@26.6.1)(esbuild@0.23.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0)
       vitest:
         specifier: 'catalog:'
         version: 5.0.1(@types/node@26.6.1)(jsdom@30.1.0)(vite@8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0))
@@ -486,6 +492,22 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+
+  functions/update-organization-profile:
+    dependencies:
+      node-appwrite:
+        specifier: 'catalog:'
+        version: 27.1.0
+    devDependencies:
+      esbuild:
+        specifier: 'catalog:'
+        version: 0.23.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.1(@types/node@26.6.1)(jsdom@30.1.0)(vite@8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0))
 
   packages/api-client:
     dependencies:
@@ -3355,7 +3377,7 @@ snapshots:
   '@vitejs/plugin-react@6.1.1(vite@8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0)
+      vite: 8.3.0(@types/node@26.6.1)(esbuild@0.23.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0)
 
   '@vitest/mocker@5.0.1(vite@8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0))':
     dependencies:
@@ -3364,7 +3386,7 @@ snapshots:
       estree-walker: 3.0.3
       magic-string: 1.4.1
     optionalDependencies:
-      vite: 8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0)
+      vite: 8.3.0(@types/node@26.6.1)(esbuild@0.23.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0)
 
   '@vitest/spy@5.0.1': {}
 
@@ -4225,7 +4247,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  vite@8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0):
+  vite@8.3.0(@types/node@26.6.1)(esbuild@0.23.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -4234,6 +4256,7 @@ snapshots:
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 26.6.1
+      esbuild: 0.23.1
       fsevents: 2.3.3
       sugarss: 5.0.1(postcss@8.5.28)
       tsx: 4.19.0
@@ -4252,7 +4275,7 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      vite: 8.3.0(@types/node@26.6.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0)
+      vite: 8.3.0(@types/node@26.6.1)(esbuild@0.23.1)(sugarss@5.0.1(postcss@8.5.28))(tsx@4.19.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.6.1
