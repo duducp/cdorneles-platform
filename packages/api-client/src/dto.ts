@@ -32,7 +32,7 @@ export interface AppwriteMembership {
   roles: string[];
 }
 
-export interface AppwriteDocument {
+export interface AppwriteRow {
   $id: string;
   $createdAt: string;
   $updatedAt: string;

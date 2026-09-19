@@ -3,9 +3,9 @@ import { createApiClient } from "../client";
 import type { ApiClientConfig } from "../config";
 import { createAccountApi } from "./account";
 import { createAppwriteClient } from "./client";
-import { createDatabasesApi } from "./databases";
 import { createFunctionsApi } from "./functions";
 import { createStorageApi } from "./storage";
+import { createTablesApi } from "./tables";
 import { createTeamsApi } from "./teams";
 
 /** Builds the concrete Appwrite-backed services behind the api-client contracts. */
@@ -15,7 +15,7 @@ export function createAppwriteServices(config: ApiClientConfig): AppwriteService
   return {
     account: createAccountApi(client),
     teams: createTeamsApi(client),
-    databases: createDatabasesApi(client),
+    tables: createTablesApi(client),
     functions: createFunctionsApi(client),
     storage: createStorageApi(client),
   };

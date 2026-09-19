@@ -45,7 +45,7 @@ export function createAccountApi(client: Client): AccountApi {
 
     async deleteSession(sessionId): Promise<void> {
       try {
-        await account.deleteSession({ sessionId: sessionId ?? "current" });
+        await account.deleteSession({ sessionId: sessionId || "current" });
       } catch (error) {
         throw mapAppwriteError(error);
       }

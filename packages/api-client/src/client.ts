@@ -1,9 +1,9 @@
 import type { ApiClientConfig } from "./config";
 import type {
   AppwriteAccount,
-  AppwriteDocument,
   AppwriteExecution,
   AppwriteMembership,
+  AppwriteRow,
   AppwriteSession,
   AppwriteTeam,
 } from "./dto";
@@ -20,17 +20,13 @@ export interface TeamsApi {
   listMemberships(teamId: string): Promise<AppwriteMembership[]>;
 }
 
-export interface DatabasesApi {
-  listDocuments(input: {
+export interface TablesApi {
+  listRows(input: {
     databaseId: string;
-    collectionId: string;
+    tableId: string;
     queries?: string[];
-  }): Promise<AppwriteDocument[]>;
-  getDocument(input: {
-    databaseId: string;
-    collectionId: string;
-    documentId: string;
-  }): Promise<AppwriteDocument>;
+  }): Promise<AppwriteRow[]>;
+  getRow(input: { databaseId: string; tableId: string; rowId: string }): Promise<AppwriteRow>;
 }
 
 export interface FunctionsApi {
@@ -55,7 +51,7 @@ export interface StorageApi {
 export interface AppwriteServices {
   account: AccountApi;
   teams: TeamsApi;
-  databases: DatabasesApi;
+  tables: TablesApi;
   functions: FunctionsApi;
   storage: StorageApi;
 }

@@ -10,7 +10,7 @@ describe("createAppwriteServices", () => {
 
     expect(typeof services.account.getCurrentUser).toBe("function");
     expect(typeof services.teams.listTeams).toBe("function");
-    expect(typeof services.databases.listDocuments).toBe("function");
+    expect(typeof services.tables.listRows).toBe("function");
     expect(typeof services.functions.createExecution).toBe("function");
     expect(typeof services.storage.getFilePreviewUrl).toBe("function");
   });

@@ -13,7 +13,7 @@ const services: AppwriteServices = {
     deleteSession: vi.fn(),
   },
   teams: { listTeams: vi.fn(), listMemberships: vi.fn() },
-  databases: { listDocuments: vi.fn(), getDocument: vi.fn() },
+  tables: { listRows: vi.fn(), getRow: vi.fn() },
   functions: { createExecution: vi.fn() },
   storage: { getFilePreviewUrl: vi.fn(() => "https://example.com/preview") },
 };
