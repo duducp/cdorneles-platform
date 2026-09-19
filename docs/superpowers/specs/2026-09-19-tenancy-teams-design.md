@@ -68,7 +68,7 @@ This is the security-critical part: an organization id coming from the domain or
 `packages/tenant/scripts/verify-tenant.ts`, following `packages/auth/scripts/verify-auth.ts`:
 
 1. Load the root `.env` when present; shim `window.localStorage` (and `console`) so the Appwrite Web SDK works in Node.
-2. Sign in as the test account (`E2E_EMAIL` / `E2E_PASSWORD`).
+2. Sign in as the test account (`E2E_EMAIL` / `E2E_PASSWORD`) through `services.account.createEmailPasswordSession` directly — the probe does not import `@cdorneles/auth`, so tenancy keeps no dependency on the auth package.
 3. `listOrganizations()` and print them; assert at least one.
 4. `listMemberships(userId)` and print the roles; assert one membership per organization with non-empty roles.
 5. `resolveActiveOrganization` with the real organization id → returns it; with a non-member id → falls back rather than trusting it.
