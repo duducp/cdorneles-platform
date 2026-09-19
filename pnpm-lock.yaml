@@ -499,6 +499,9 @@ importers:
 
   packages/auth:
     dependencies:
+      '@cdorneles/api-client':
+        specifier: workspace:*
+        version: link:../api-client
       '@cdorneles/types':
         specifier: workspace:*
         version: link:../types
