@@ -1,5 +1,6 @@
 export * from "./auth/auth-card";
 export * from "./auth/auth-visual";
+export * from "./auth/google-icon";
 export * from "./auth/login-form";
 export * from "./auth/social-login";
 export * from "./components/badge";

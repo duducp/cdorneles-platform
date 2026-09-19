@@ -1,8 +1,7 @@
 "use client";
 
-import { Globe } from "lucide-react";
-
 import { Button } from "../components/button";
+import { GoogleIcon } from "./google-icon";
 
 export interface SocialLoginProps {
   onGoogleClick?: () => void;
@@ -18,7 +17,7 @@ export function SocialLogin({ onGoogleClick, disabled }: SocialLoginProps) {
       fullWidth
       disabled={disabled}
       onClick={onGoogleClick}
-      leftSection={<Globe size={18} aria-hidden />}
+      leftSection={<GoogleIcon size={18} />}
     >
       Entrar com Google
     </Button>
