@@ -39,8 +39,10 @@ capabilities. No business modules yet.
       (`E2E_EMAIL=… E2E_PASSWORD=… pnpm exec tsx packages/auth/scripts/verify-auth.ts`).
       Runs login → getCurrentUser → getSession → logout → confirm signed out.
       Test account: `e2e-auth-probe` / `e2e@cdorneles.test`.
-- [ ] Add a real login UI in `apps/design-system` (the probe covers the service
-      chain; no app has a login screen yet).
+- [x] Add a real login UI in `apps/design-system` (the probe covers the service
+      chain; no app has a login screen yet). Shipped as reusable components in
+      `@cdorneles/ui` (`AuthCard`, `AuthVisual`, `LoginForm`, `SocialLogin`,
+      `ThemeToggle`) with the `/login` route in `apps/design-system`.
 
 ### 3. Provision the Appwrite backend
 
