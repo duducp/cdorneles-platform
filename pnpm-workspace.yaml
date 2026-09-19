@@ -2,6 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
 
+allowBuilds:
+  esbuild: true
+
 # Single source of truth for dependency versions across the monorepo.
 # Workspace packages reference these with "catalog:".
 catalog:
@@ -18,7 +21,7 @@ catalog:
   "@tanstack/react-table": 9.2.4
   "zustand": 5.0.15
   "appwrite": 27.0.0
-  "node-appwrite": ^17.0.0
+  "node-appwrite": ^27.0.0
 
   # Types
   "@types/node": 26.6.1

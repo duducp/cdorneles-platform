@@ -10,7 +10,7 @@
     "provision": "tsx src/cli.ts"
   },
   "dependencies": {
-    "node-appwrite": "^17.0.0"
+    "node-appwrite": "^27.0.0"
   },
   "devDependencies": {
     "tsx": "catalog:",
