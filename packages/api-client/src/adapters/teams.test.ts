@@ -1,4 +1,5 @@
 import { AppwriteException, type Client } from "appwrite";
+import type * as Appwrite from "appwrite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "../errors";
@@ -12,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("appwrite", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("appwrite")>();
+  const actual = await importOriginal<typeof Appwrite>();
   return {
     ...actual,
     Teams: vi.fn(function Teams() {
