@@ -17,6 +17,7 @@ catalog:
   "@tanstack/react-query": 5.103.1
   "@tanstack/react-table": 9.2.4
   "zustand": 5.0.15
+  "appwrite": 27.0.0
 
   # Types
   "@types/node": 26.6.1

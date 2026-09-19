@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tanstack/react-query": "catalog:"
+    "@tanstack/react-query": "catalog:",
+    "appwrite": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:"
