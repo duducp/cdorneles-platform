@@ -1,0 +1,77 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const mockCreateDocument = vi.fn().mockResolvedValue({ $id: "test" });
+
+vi.mock("node-appwrite", () => {
+  return {
+    Client: vi.fn().mockImplementation(function () {
+      return {
+        setEndpoint: vi.fn().mockReturnThis(),
+        setProject: vi.fn().mockReturnThis(),
+        setKey: vi.fn().mockReturnThis(),
+      };
+    }),
+    Databases: vi.fn().mockImplementation(function () {
+      return {
+        createDocument: mockCreateDocument,
+      };
+    }),
+  };
+});
+
+import { seedData } from "../seeds.js";
+
+describe("seedData", () => {
+  const config = {
+    endpoint: "https://test.appwrite.io/v1",
+    projectId: "test-project",
+    apiKey: "test-api-key",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("is a function", () => {
+    expect(typeof seedData).toBe("function");
+  });
+
+  it("inserts 3 applications", async () => {
+    await seedData(config);
+
+    const appCalls = mockCreateDocument.mock.calls.filter(
+      (call: any[]) => call[1] === "applications",
+    );
+    expect(appCalls).toHaveLength(3);
+  });
+
+  it("inserts 24 permissions", async () => {
+    await seedData(config);
+
+    const permCalls = mockCreateDocument.mock.calls.filter(
+      (call: any[]) => call[1] === "permissions",
+    );
+    expect(permCalls).toHaveLength(24);
+  });
+
+  it("inserts 7 features", async () => {
+    await seedData(config);
+
+    const featCalls = mockCreateDocument.mock.calls.filter(
+      (call: any[]) => call[1] === "features",
+    );
+    expect(featCalls).toHaveLength(7);
+  });
+
+  it("handles 409 conflict (document already exists)", async () => {
+    mockCreateDocument.mockRejectedValueOnce({ code: 409 });
+
+    await expect(seedData(config)).resolves.not.toThrow();
+  });
+
+  it("propagates non-409 errors", async () => {
+    mockCreateDocument.mockRejectedValueOnce({ code: 500, message: "Server error" });
+
+    await expect(seedData(config)).rejects.toThrow();
+  });
+});

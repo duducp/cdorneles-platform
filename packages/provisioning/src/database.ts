@@ -20,23 +20,21 @@ async function createAttribute(
   tableId: string,
   attr: TableDef["attributes"][number],
 ): Promise<void> {
-  const common = { databaseId: DATABASE_ID, collectionId: tableId, key: attr.key, required: attr.required };
-
   switch (attr.type) {
     case "string":
-      await databases.createStringAttribute({ ...common, size: attr.size ?? 255 });
+      await databases.createStringAttribute(DATABASE_ID, tableId, attr.key, attr.size ?? 255, attr.required);
       break;
     case "integer":
-      await databases.createIntegerAttribute(common);
+      await databases.createIntegerAttribute(DATABASE_ID, tableId, attr.key, attr.required);
       break;
     case "boolean":
-      await databases.createBooleanAttribute(common);
+      await databases.createBooleanAttribute(DATABASE_ID, tableId, attr.key, attr.required);
       break;
     case "datetime":
-      await databases.createDatetimeAttribute(common);
+      await databases.createDatetimeAttribute(DATABASE_ID, tableId, attr.key, attr.required);
       break;
     case "enum":
-      await databases.createEnumAttribute({ ...common, elements: attr.elements ?? [] });
+      await databases.createEnumAttribute(DATABASE_ID, tableId, attr.key, attr.elements ?? [], attr.required);
       break;
   }
 }
@@ -47,7 +45,7 @@ export async function createDatabase(config: DatabaseConfig): Promise<void> {
   console.log("[provisioning] Creating database...");
 
   try {
-    await databases.create({ databaseId: DATABASE_ID, name: DATABASE_NAME });
+    await databases.create(DATABASE_ID, DATABASE_NAME);
     console.log("[provisioning] Database created.");
   } catch (error: unknown) {
     const code = (error as { code?: number }).code;
@@ -62,11 +60,11 @@ export async function createDatabase(config: DatabaseConfig): Promise<void> {
     console.log(`[provisioning] Creating table: ${table.id}`);
 
     try {
-      await databases.createCollection({
-        databaseId: DATABASE_ID,
-        collectionId: table.id,
-        name: table.name,
-      });
+      await databases.createCollection(
+        DATABASE_ID,
+        table.id,
+        table.name,
+      );
       console.log(`[provisioning] Table ${table.id} created.`);
     } catch (error: unknown) {
       const code = (error as { code?: number }).code;

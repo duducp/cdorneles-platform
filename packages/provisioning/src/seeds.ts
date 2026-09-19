@@ -28,12 +28,12 @@ async function seedTable(
 ): Promise<void> {
   for (const seed of seeds) {
     try {
-      await databases.createDocument({
-        databaseId: DATABASE_ID,
+      await databases.createDocument(
+        DATABASE_ID,
         collectionId,
-        documentId: seed.id,
-        data: seed.data,
-      });
+        seed.id,
+        seed.data,
+      );
       console.log(`[provisioning]   Seeded ${collectionId}/${seed.id}`);
     } catch (error: unknown) {
       const code = (error as { code?: number }).code;
