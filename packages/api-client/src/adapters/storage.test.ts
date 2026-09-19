@@ -80,7 +80,15 @@ describe("createStorageApi", () => {
 
     const api = createStorageApi(client);
 
-    expect(() => api.getFilePreviewUrl({ bucketId: "b1", fileId: "f1" })).toThrow(ApiError);
+    let caught: unknown;
+    try {
+      api.getFilePreviewUrl({ bucketId: "b1", fileId: "f1" });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(ApiError);
+    expect(caught).toMatchObject({ code: "file_not_found", status: 404 });
   });
 
   it("uploads a file and maps the SDK result", async () => {
@@ -119,7 +127,7 @@ describe("createStorageApi", () => {
         fileId: "f1",
         file: new File(["x"], "logo.png", { type: "image/png" }),
       }),
-    ).rejects.toThrow(ApiError);
+    ).rejects.toMatchObject({ code: "file_invalid", status: 400 });
   });
 
   it("deletes a file", async () => {
@@ -129,6 +137,19 @@ describe("createStorageApi", () => {
     await api.deleteFile({ bucketId: "b1", fileId: "f1" });
 
     expect(mocks.storage.deleteFile).toHaveBeenCalledWith({ bucketId: "b1", fileId: "f1" });
+  });
+
+  it("wraps delete failures in ApiError", async () => {
+    mocks.storage.deleteFile.mockRejectedValue(
+      new AppwriteException("nope", 403, "file_forbidden"),
+    );
+
+    const api = createStorageApi(client);
+
+    await expect(api.deleteFile({ bucketId: "b1", fileId: "f1" })).rejects.toMatchObject({
+      code: "file_forbidden",
+      status: 403,
+    });
   });
 
   it("lists files and maps the SDK result", async () => {
@@ -159,7 +180,10 @@ describe("createStorageApi", () => {
 
     const api = createStorageApi(client);
 
-    await expect(api.listFiles({ bucketId: "b1" })).rejects.toThrow(ApiError);
+    await expect(api.listFiles({ bucketId: "b1" })).rejects.toMatchObject({
+      code: "general_error",
+      status: 500,
+    });
   });
 
   it("returns the file download url", () => {
@@ -172,6 +196,24 @@ describe("createStorageApi", () => {
     expect(url).toBe("https://appwrite.example/download");
   });
 
+  it("wraps download url failures in ApiError", () => {
+    mocks.storage.getFileDownload.mockImplementation(() => {
+      throw new AppwriteException("nope", 404, "file_not_found");
+    });
+
+    const api = createStorageApi(client);
+
+    let caught: unknown;
+    try {
+      api.getFileDownloadUrl({ bucketId: "b1", fileId: "f1" });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(ApiError);
+    expect(caught).toMatchObject({ code: "file_not_found", status: 404 });
+  });
+
   it("returns the file view url", () => {
     mocks.storage.getFileView.mockReturnValue("https://appwrite.example/view");
 
@@ -180,5 +222,23 @@ describe("createStorageApi", () => {
 
     expect(mocks.storage.getFileView).toHaveBeenCalledWith({ bucketId: "b1", fileId: "f1" });
     expect(url).toBe("https://appwrite.example/view");
+  });
+
+  it("wraps view url failures in ApiError", () => {
+    mocks.storage.getFileView.mockImplementation(() => {
+      throw new AppwriteException("nope", 403, "file_forbidden");
+    });
+
+    const api = createStorageApi(client);
+
+    let caught: unknown;
+    try {
+      api.getFileViewUrl({ bucketId: "b1", fileId: "f1" });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(ApiError);
+    expect(caught).toMatchObject({ code: "file_forbidden", status: 403 });
   });
 });
