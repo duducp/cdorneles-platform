@@ -2,6 +2,10 @@ import { isMemberOf, type Organization, type OrganizationMembership } from "./ty
 
 export interface ResolveActiveOrganizationInput {
   organizations: readonly Organization[];
+  /**
+   * The **authenticated user's** memberships. The gate below is only as strong
+   * as this input: passing unfiltered team memberships would defeat it.
+   */
   memberships: readonly OrganizationMembership[];
   /** Organization implied by the trusted hostname (ADR-007). */
   domainOrganizationId?: string | null;

@@ -61,6 +61,36 @@ describe("resolveActiveOrganization", () => {
     ).toEqual(orgB);
   });
 
+  it("falls through to the preferred organization when the domain one is not a membership", () => {
+    expect(
+      resolveActiveOrganization({
+        organizations: [orgA, orgB],
+        memberships: [membershipA],
+        domainOrganizationId: "org-b",
+        preferredOrganizationId: "org-a",
+      }),
+    ).toEqual(orgA);
+  });
+
+  it("skips a leading organization the user is not a member of", () => {
+    expect(
+      resolveActiveOrganization({
+        organizations: [orgB, orgA],
+        memberships: [membershipA],
+      }),
+    ).toEqual(orgA);
+  });
+
+  it("ignores an empty-string organization id", () => {
+    expect(
+      resolveActiveOrganization({
+        organizations: [orgA],
+        memberships: [membershipA],
+        domainOrganizationId: "",
+      }),
+    ).toEqual(orgA);
+  });
+
   it("ignores an id that has a membership but is not in the organization list", () => {
     expect(
       resolveActiveOrganization({
