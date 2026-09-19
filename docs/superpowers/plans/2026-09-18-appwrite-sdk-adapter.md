@@ -589,7 +589,7 @@ export function createTeamsApi(client: Client): TeamsApi {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `pnpm vitest run packages/api-client/src/adapters/teams.test.ts`
-Expected: PASS (3 tests).
+Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -755,7 +755,7 @@ export function createDatabasesApi(client: Client): DatabasesApi {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `pnpm vitest run packages/api-client/src/adapters/databases.test.ts`
-Expected: PASS (3 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -996,7 +996,7 @@ export function createStorageApi(client: Client): StorageApi {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `pnpm vitest run packages/api-client/src/adapters/storage.test.ts`
-Expected: PASS (2 tests).
+Expected: PASS (3 tests).
 
 - [ ] **Step 5: Commit**
 
