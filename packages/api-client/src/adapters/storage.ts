@@ -2,9 +2,10 @@ import { Storage } from "appwrite";
 import type { Client, Models } from "appwrite";
 
 import type { StorageApi } from "../client";
+import type { AppwriteFile } from "../dto";
 import { mapAppwriteError } from "./map-error";
 
-function toAppwriteFile(file: Models.File) {
+function toAppwriteFile(file: Models.File): AppwriteFile {
   return {
     $id: file.$id,
     $createdAt: file.$createdAt,
@@ -33,7 +34,7 @@ export function createStorageApi(client: Client): StorageApi {
       }
     },
 
-    async uploadFile(input) {
+    async uploadFile(input): Promise<AppwriteFile> {
       try {
         const file = await storage.createFile({
           bucketId: input.bucketId,
@@ -46,7 +47,7 @@ export function createStorageApi(client: Client): StorageApi {
       }
     },
 
-    async deleteFile(input) {
+    async deleteFile(input): Promise<void> {
       try {
         await storage.deleteFile({
           bucketId: input.bucketId,
@@ -57,7 +58,7 @@ export function createStorageApi(client: Client): StorageApi {
       }
     },
 
-    async listFiles(input) {
+    async listFiles(input): Promise<AppwriteFile[]> {
       try {
         const result = await storage.listFiles({
           bucketId: input.bucketId,
