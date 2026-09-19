@@ -8,6 +8,7 @@ export * from "./components/responsive-grid";
 export * from "./components/section";
 export * from "./components/stack";
 export * from "./components/status-badge";
+export * from "./components/theme-toggle";
 export * from "./provider/app-provider";
 export * from "./states/empty-state";
 export * from "./states/error-state";
