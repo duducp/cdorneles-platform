@@ -37,19 +37,24 @@ capabilities. No business modules yet.
 
 ### 3. Provision the Appwrite backend
 
-The live project is still empty (0 databases, 0 teams, 0 functions, 0 users).
-`pnpm provision` is implemented but has **not** been run against it yet.
+`pnpm provision` has been run against the live project. It now holds the
+`cdorneles_platform` database with 10 tables, 3 applications, 24 permissions,
+7 features and 3 storage buckets. Still 0 teams, 0 functions, 0 users.
 
-- [x] Scaffold `@cdorneles/provisioning` with the database and the 10
-      collections from `ARCHITECTURE.md` §7 and their attributes.
+- [x] Scaffold `@cdorneles/provisioning` with the database and the 10 tables
+      from `ARCHITECTURE.md` §7 and their columns.
 - [x] Seed the global `applications` registry (`admin`, `client`, `customer`)
       and the `permissions`/`features` definitions.
 - [x] Idempotent provisioning (409-safe) behind a CLI (`pnpm provision`).
 - [x] Provision the Storage buckets (`branding-logos`, `documents`, `avatars`).
-- [ ] Run `pnpm provision` against the live Appwrite project.
-- [ ] Define collection permissions and indexes (attributes exist; permissions
-      and indexes do not).
+- [x] Run `pnpm provision` against the live Appwrite project.
+- [x] Migrate provisioning to the Appwrite 2.x `TablesDB` API
+      (`createTable` / `create*Column` / `createRow`).
+- [ ] Define table permissions and indexes (columns exist; permissions and
+      indexes do not). Tables currently have `rowSecurity: false`.
 - [ ] Record the schema in `docs/` and, if it changes architecture, an ADR.
+- [ ] Rotate the API key: `project_list_keys` exposed its secret in a session
+      transcript.
 
 ### 4. Tenancy and domain resolution
 
