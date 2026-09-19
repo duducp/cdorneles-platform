@@ -162,3 +162,31 @@ export const SEED_FEATURES: SeedDef[] = [
   { id: "feat_financial", data: { key: "financial", name: "Financial module" } },
   { id: "feat_sales", data: { key: "sales", name: "Sales module" } },
 ];
+
+export interface BucketDef {
+  id: string;
+  name: string;
+  maxSize: number;
+  allowedExtensions: string[];
+}
+
+export const STORAGE_BUCKETS: BucketDef[] = [
+  {
+    id: "branding-logos",
+    name: "Branding Logos",
+    maxSize: 5 * 1024 * 1024,
+    allowedExtensions: ["image/png", "image/jpeg", "image/svg+xml", "image/webp"],
+  },
+  {
+    id: "documents",
+    name: "Documents",
+    maxSize: 50 * 1024 * 1024,
+    allowedExtensions: ["application/pdf", "text/*", "image/*"],
+  },
+  {
+    id: "avatars",
+    name: "Avatars",
+    maxSize: 2 * 1024 * 1024,
+    allowedExtensions: ["image/png", "image/jpeg", "image/webp"],
+  },
+];
