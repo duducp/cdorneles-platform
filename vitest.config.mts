@@ -6,7 +6,10 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["packages/*/src/**/*.{test,spec}.{ts,tsx}"],
+    include: [
+      "packages/*/src/**/*.{test,spec}.{ts,tsx}",
+      "functions/*/src/**/*.{test,spec}.{ts,tsx}",
+    ],
     exclude: ["**/node_modules/**", "**/.next/**", "**/dist/**"],
   },
 });
