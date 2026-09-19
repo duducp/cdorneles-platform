@@ -1,0 +1,20 @@
+{
+  "name": "@cdorneles/provisioning",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "provision": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "node-appwrite": "^17.0.0"
+  },
+  "devDependencies": {
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
