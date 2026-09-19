@@ -78,10 +78,12 @@ capabilities. No business modules yet.
 
 ### 5. First Appwrite Function (security boundary)
 
-- [ ] Implement one sensitive operation end-to-end as a Function that validates
+- [x] Implement one sensitive operation end-to-end as a Function that validates
       auth, membership, active organization, application access, permission and
-      feature flags (deny-by-default).
-- [ ] Emit an audit-log record for the administrative action.
+      feature flags (deny-by-default). Shipped as `update-organization-profile`;
+      live probe `packages/api-client/scripts/verify-function.ts` covers the happy
+      path and two deny paths.
+- [x] Emit an audit-log record for the administrative action.
 
 ## Next
 

@@ -1,6 +1,6 @@
 # First Appwrite Function — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Ship the first security-boundary Function — update an organization profile after validating the full effective-access chain and writing an audit record.
 
@@ -32,7 +32,7 @@
 **Files:**
 - Modify: `pnpm-workspace.yaml`
 
-- [ ] **Step 1: Add the workspace entry**
+- [x] **Step 1: Add the workspace entry**
 
 In `pnpm-workspace.yaml`, change the `packages` list:
 
@@ -43,13 +43,13 @@ packages:
   - "functions/*"
 ```
 
-- [ ] **Step 2: Install**
+- [x] **Step 2: Install**
 
 ```bash
 pnpm install
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add pnpm-workspace.yaml
@@ -65,7 +65,7 @@ git commit -m "chore: add functions to the pnpm workspace"
 - Create: `functions/update-organization-profile/tsconfig.json`
 - Create: `functions/update-organization-profile/.gitignore`
 
-- [ ] **Step 1: package.json**
+- [x] **Step 1: package.json**
 
 ```json
 {
@@ -89,7 +89,7 @@ git commit -m "chore: add functions to the pnpm workspace"
 }
 ```
 
-- [ ] **Step 2: tsconfig.json**
+- [x] **Step 2: tsconfig.json**
 
 ```json
 {
@@ -101,14 +101,14 @@ git commit -m "chore: add functions to the pnpm workspace"
 }
 ```
 
-- [ ] **Step 3: .gitignore**
+- [x] **Step 3: .gitignore**
 
 ```
 dist/
 node_modules/
 ```
 
-- [ ] **Step 4: Install and verify the build tooling resolves**
+- [x] **Step 4: Install and verify the build tooling resolves**
 
 ```bash
 pnpm install
@@ -117,7 +117,7 @@ pnpm --filter @cdorneles/function-update-organization-profile typecheck
 
 Expected: `tsc --noEmit` with no errors (no source yet — it may report no inputs; that is fine).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add functions/update-organization-profile/package.json functions/update-organization-profile/tsconfig.json functions/update-organization-profile/.gitignore
@@ -132,7 +132,7 @@ git commit -m "chore(function): scaffold update-organization-profile package"
 - Create: `functions/update-organization-profile/src/authorize.ts`
 - Test: `functions/update-organization-profile/src/__tests__/authorize.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `functions/update-organization-profile/src/__tests__/authorize.test.ts`:
 
@@ -289,7 +289,7 @@ describe("authorize", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 pnpm vitest run functions/update-organization-profile/src/__tests__/authorize.test.ts
@@ -297,7 +297,7 @@ pnpm vitest run functions/update-organization-profile/src/__tests__/authorize.te
 
 Expected: FAIL — cannot resolve `../authorize`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `functions/update-organization-profile/src/authorize.ts`:
 
@@ -372,7 +372,7 @@ export async function authorize(input: AuthorizeInput, repo: GrantRepo): Promise
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 pnpm vitest run functions/update-organization-profile/src/__tests__/authorize.test.ts
@@ -380,7 +380,7 @@ pnpm vitest run functions/update-organization-profile/src/__tests__/authorize.te
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add functions/update-organization-profile/src/authorize.ts functions/update-organization-profile/src/__tests__/authorize.test.ts
@@ -394,7 +394,7 @@ git commit -m "feat(function): add the effective-access authorize decision"
 **Files:**
 - Create: `functions/update-organization-profile/src/index.ts`
 
-- [ ] **Step 1: Write the entrypoint**
+- [x] **Step 1: Write the entrypoint**
 
 Create `functions/update-organization-profile/src/index.ts`:
 
@@ -594,7 +594,7 @@ export default async function ({ req, res, log }: Context) {
 }
 ```
 
-- [ ] **Step 2: Typecheck**
+- [x] **Step 2: Typecheck**
 
 ```bash
 pnpm --filter @cdorneles/function-update-organization-profile typecheck
@@ -602,7 +602,7 @@ pnpm --filter @cdorneles/function-update-organization-profile typecheck
 
 Expected: exit 0. If `TablesDB`'s method names or `Query` usage differ in node-appwrite@27, adjust and report. If `getRow` does not exist, use `listRows` with `Query.equal("$id", ...)`.
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 ```bash
 pnpm --filter @cdorneles/function-update-organization-profile build
@@ -610,7 +610,7 @@ pnpm --filter @cdorneles/function-update-organization-profile build
 
 Expected: `dist/index.js` produced. If esbuild cannot bundle node-appwrite/undici cleanly, switch the build to `--packages=external` and set the deploy `commands` to `"npm install"` (see Task 8).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add functions/update-organization-profile/src/index.ts
@@ -625,7 +625,7 @@ git commit -m "feat(function): add the update-organization-profile entrypoint"
 - Modify: `packages/provisioning/src/config.ts`
 - Test: `packages/provisioning/src/__tests__/database.test.ts`, `seeds.test.ts`
 
-- [ ] **Step 1: Add the column**
+- [x] **Step 1: Add the column**
 
 In `packages/provisioning/src/config.ts`, in the `organization_profiles` table's `attributes`, add `active`:
 
@@ -635,7 +635,7 @@ In `packages/provisioning/src/config.ts`, in the `organization_profiles` table's
 
 Add it after `defaultTheme`.
 
-- [ ] **Step 2: Add the feature seed**
+- [x] **Step 2: Add the feature seed**
 
 In `SEED_FEATURES`, add:
 
@@ -643,11 +643,11 @@ In `SEED_FEATURES`, add:
 { id: "feat_white_label", data: { key: "white-label", name: "White-label branding" } },
 ```
 
-- [ ] **Step 3: Update the seed count test**
+- [x] **Step 3: Update the seed count test**
 
 In `packages/provisioning/src/__tests__/seeds.test.ts`, the "inserts 7 features" test asserts 7; change to 8.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```bash
 pnpm vitest run packages/provisioning/src/__tests__/seeds.test.ts packages/provisioning/src/__tests__/database.test.ts
@@ -655,7 +655,7 @@ pnpm vitest run packages/provisioning/src/__tests__/seeds.test.ts packages/provi
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/provisioning/src/config.ts packages/provisioning/src/__tests__/seeds.test.ts
@@ -666,7 +666,7 @@ git commit -m "feat(provisioning): add organization_profiles.active and the whit
 
 ### Task 6: Re-run provisioning
 
-- [ ] **Step 1: Run provision**
+- [x] **Step 1: Run provision**
 
 ```bash
 pnpm provision
@@ -678,7 +678,7 @@ Expected: adds the `active` column to `organization_profiles` and seeds `white-l
 
 ### Task 7: Deploy the Function
 
-- [ ] **Step 1: Create the function**
+- [x] **Step 1: Create the function**
 
 Via `functions_create` (Appwrite MCP) with:
 - `function_id: "update-organization-profile"`
@@ -688,11 +688,11 @@ Via `functions_create` (Appwrite MCP) with:
 - `scopes: ["teams.read", "tables.read", "columns.read", "rows.read", "rows.write"]`
 - `entrypoint: "dist/index.js"`
 
-- [ ] **Step 2: Deploy the bundle**
+- [x] **Step 2: Deploy the bundle**
 
 Via `functions_create_deployment` with the gzipped `dist/index.js` (entrypoint `dist/index.js`), `activate: true`.
 
-- [ ] **Step 3: Confirm the deployment is ready**
+- [x] **Step 3: Confirm the deployment is ready**
 
 Via `functions_list_deployments` (function_id `update-organization-profile`), confirm a deployment is `ready`/`active`.
 
@@ -700,24 +700,24 @@ Via `functions_list_deployments` (function_id `update-organization-profile`), co
 
 ### Task 8: Seed the test data
 
-- [ ] **Step 1: Insert the role**
+- [x] **Step 1: Insert the role**
 
 Via `tables_db` (Appwrite MCP), create a `roles` row:
 - `id: "role_e2e_owner"`, `organizationId: "e2e-org-probe"`, `name: "owner"`
 
-- [ ] **Step 2: Link role → permission**
+- [x] **Step 2: Link role → permission**
 
 Create a `role_permissions` row: `roleId: "role_e2e_owner"`, `permissionId: "perm_organizations_update"`.
 
-- [ ] **Step 3: Link role → application**
+- [x] **Step 3: Link role → application**
 
 Create a `role_applications` row: `roleId: "role_e2e_owner"`, `applicationId: "app_admin"`.
 
-- [ ] **Step 4: Create the organization profile**
+- [x] **Step 4: Create the organization profile**
 
 Create an `organization_profiles` row: `organizationId: "e2e-org-probe"`, `displayName: "E2E Org Probe"`, `active: true`.
 
-- [ ] **Step 5: Enable the feature**
+- [x] **Step 5: Enable the feature**
 
 Create an `organization_features` row linking `e2e-org-probe` to the `white-label` feature with `enabled: true`.
 
@@ -728,7 +728,7 @@ Create an `organization_features` row linking `e2e-org-probe` to the `white-labe
 **Files:**
 - Create: `packages/api-client/scripts/verify-function.ts`
 
-- [ ] **Step 1: Write the probe**
+- [x] **Step 1: Write the probe**
 
 Create `packages/api-client/scripts/verify-function.ts`, modelled on the auth/tenant probes (shim `localStorage`, load `.env`, sign in, then):
 
@@ -736,7 +736,7 @@ Create `packages/api-client/scripts/verify-function.ts`, modelled on the auth/te
 2. Non-member: pass `organizationId: "not-a-member-org"` — assert status 401 / response contains `unauthorized`.
 3. Missing permission: temporarily assert via a second user, or skip if a second user isn't available — assert 403 by calling with `applicationId: "customer"` (a member whose role has no `customer` app access) — assert `forbidden`.
 
-- [ ] **Step 2: Run the probe**
+- [x] **Step 2: Run the probe**
 
 ```bash
 E2E_EMAIL='e2e@cdorneles.test' E2E_PASSWORD='E2e!Probe-2026-x7Qm' pnpm exec tsx packages/api-client/scripts/verify-function.ts
@@ -744,7 +744,7 @@ E2E_EMAIL='e2e@cdorneles.test' E2E_PASSWORD='E2e!Probe-2026-x7Qm' pnpm exec tsx 
 
 Expected: all three paths print and `PASS`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add packages/api-client/scripts/verify-function.ts
@@ -755,11 +755,11 @@ git commit -m "test(api-client): add the update-organization-profile probe"
 
 ### Task 10: Verification gates
 
-- [ ] **Step 1: Lint** — `pnpm lint`
-- [ ] **Step 2: Typecheck** — `pnpm typecheck`
-- [ ] **Step 3: Tests** — `pnpm test`
-- [ ] **Step 4: Build** — `pnpm build`
-- [ ] **Step 5: Commit any fixes** — only if there are changes
+- [x] **Step 1: Lint** — `pnpm lint`
+- [x] **Step 2: Typecheck** — `pnpm typecheck`
+- [x] **Step 3: Tests** — `pnpm test`
+- [x] **Step 4: Build** — `pnpm build`
+- [x] **Step 5: Commit any fixes** — only if there are changes
 
 ---
 
@@ -767,13 +767,13 @@ git commit -m "test(api-client): add the update-organization-profile probe"
 
 | Task | Description | Status |
 |---|---|---|
-| 1 | Add functions to the workspace | TODO |
-| 2 | Scaffold the Function package | TODO |
-| 3 | `authorize.ts` (TDD) | TODO |
-| 4 | `index.ts` entrypoint | TODO |
-| 5 | Provisioning: `active` + `white-label` | TODO |
-| 6 | Re-run provision | TODO |
-| 7 | Deploy the Function | TODO |
-| 8 | Seed test data | TODO |
-| 9 | Live probe | TODO |
-| 10 | Verification gates | TODO |
+| 1 | Add functions to the workspace | DONE |
+| 2 | Scaffold the Function package | DONE |
+| 3 | `authorize.ts` (TDD) | DONE |
+| 4 | `index.ts` entrypoint | DONE |
+| 5 | Provisioning: `active` + `white-label` | DONE |
+| 6 | Re-run provision | DONE |
+| 7 | Deploy the Function | DONE |
+| 8 | Seed test data | DONE |
+| 9 | Live probe | DONE |
+| 10 | Verification gates | DONE |
