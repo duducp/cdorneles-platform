@@ -39,15 +39,7 @@ export default function LoginPage() {
         <ThemeToggle />
       </Group>
 
-      <Box
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "var(--mantine-spacing-md)",
-        }}
-      >
+      <Stack style={{ flex: 1 }} align="center" justify="center" gap="xl" p="md">
         <AuthCard
           form={
             <LoginForm
@@ -59,14 +51,14 @@ export default function LoginPage() {
           }
           visual={<AuthVisual />}
         />
-      </Box>
 
-      <Stack align="center" gap="sm" p="lg">
-        <Text ta="center" fz="xs" c="dimmed">
-          Ao continuar, você concorda com os <Anchor href="#">Termos de Uso</Anchor> e a{" "}
-          <Anchor href="#">Política de Privacidade</Anchor>.
-        </Text>
-        <Logo alt="Cdorneles" height={48} />
+        <Stack align="center" gap="sm">
+          <Text ta="center" fz="xs" c="dimmed">
+            Ao continuar, você concorda com os <Anchor href="#">Termos de Uso</Anchor> e a{" "}
+            <Anchor href="#">Política de Privacidade</Anchor>.
+          </Text>
+          <Logo alt="Cdorneles" height={48} />
+        </Stack>
       </Stack>
     </Box>
   );
