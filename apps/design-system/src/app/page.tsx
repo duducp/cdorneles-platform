@@ -24,6 +24,7 @@ import {
   Stack,
   StatusBadge,
   STATUS_VALUES,
+  ThemeToggle,
 } from "@cdorneles/ui";
 import {
   Box,
@@ -39,8 +40,6 @@ import {
 import { Plus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-import { ColorSchemeToggle } from "@/components/color-scheme-toggle";
-
 export default function DesignSystemPage() {
   const [name, setName] = useState("");
   const [role, setRole] = useState<string | null>(null);
@@ -53,7 +52,7 @@ export default function DesignSystemPage() {
         <PageHeader
           title="Cdorneles Design System"
           description="Playground for tokens, components and states. Toggle Light/Dark to verify both themes."
-          actions={<ColorSchemeToggle />}
+          actions={<ThemeToggle />}
         />
 
         <Section title="Colors" description="Token palettes (index 0 lightest → 9 darkest).">
