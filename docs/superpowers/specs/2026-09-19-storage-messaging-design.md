@@ -29,11 +29,13 @@ Sending email is a business operation, and `AGENTS.md` states Appwrite Functions
 
 ### Buckets (3)
 
+Appwrite's `allowedFileExtensions` matches on file **extensions**, not MIME types (Appwrite docs: "Limit the file extensions allowed in the bucket… A maximum of 100 file extensions can be added"). Wildcards such as `image/*` are not supported.
+
 | Bucket ID | Purpose | Max Size | Allowed Extensions | Permissions |
 |---|---|---|---|---|
-| `branding-logos` | Org logos (light/dark) + favicon | 5MB | image/png, image/jpeg, image/svg+xml, image/webp | org members read, admin write |
-| `documents` | General documents (PDFs, sheets) | 50MB | application/pdf, text/*, image/* | org members read/write |
-| `avatars` | User avatars | 2MB | image/png, image/jpeg, image/webp | any authenticated read, owner write |
+| `branding-logos` | Org logos (light/dark) + favicon | 5MB | png, jpg, jpeg, svg, webp | org members read, admin write |
+| `documents` | General documents (PDFs, sheets) | 50MB | pdf, txt, csv, doc, docx, xls, xlsx, png, jpg, jpeg, webp | org members read/write |
+| `avatars` | User avatars | 2MB | png, jpg, jpeg, webp | any authenticated read, owner write |
 
 ### StorageApi Expansion
 

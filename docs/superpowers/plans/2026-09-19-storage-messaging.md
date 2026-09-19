@@ -384,7 +384,7 @@ export interface BucketDef {
   id: string;
   name: string;
   maxSize: number;
-  allowedExtensions: string[];
+  allowedFileExtensions: string[];
 }
 
 export const STORAGE_BUCKETS: BucketDef[] = [
@@ -392,24 +392,31 @@ export const STORAGE_BUCKETS: BucketDef[] = [
     id: "branding-logos",
     name: "Branding Logos",
     maxSize: 5 * 1024 * 1024,
-    allowedExtensions: [
-      "image/png",
-      "image/jpeg",
-      "image/svg+xml",
-      "image/webp",
-    ],
+    allowedFileExtensions: ["png", "jpg", "jpeg", "svg", "webp"],
   },
   {
     id: "documents",
     name: "Documents",
     maxSize: 50 * 1024 * 1024,
-    allowedExtensions: ["application/pdf", "text/*", "image/*"],
+    allowedFileExtensions: [
+      "pdf",
+      "txt",
+      "csv",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+      "png",
+      "jpg",
+      "jpeg",
+      "webp",
+    ],
   },
   {
     id: "avatars",
     name: "Avatars",
     maxSize: 2 * 1024 * 1024,
-    allowedExtensions: ["image/png", "image/jpeg", "image/webp"],
+    allowedFileExtensions: ["png", "jpg", "jpeg", "webp"],
   },
 ];
 ```
@@ -466,7 +473,7 @@ export async function createBuckets(
         true,
         true,
         bucket.maxSize,
-        bucket.allowedExtensions,
+        bucket.allowedFileExtensions,
       );
       console.log(`[provisioning] Bucket ${bucket.id} created.`);
     } catch (error: unknown) {
