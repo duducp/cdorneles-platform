@@ -14,7 +14,7 @@ const tables = new TablesDB(client);
 
 const repo: GrantRepo = {
   async listMemberships(teamId) {
-    const result = await teams.listMemberships(teamId);
+    const result = await teams.listMemberships({ teamId });
     return result.memberships.map((membership) => ({
       userId: membership.userId,
       roles: membership.roles,
@@ -22,11 +22,11 @@ const repo: GrantRepo = {
   },
 
   async listOrganizationRoles(organizationId) {
-    const result = await tables.listRows(
-      DATABASE_ID,
-      "roles",
-      [Query.equal("organizationId", organizationId)],
-    );
+    const result = await tables.listRows({
+      databaseId: DATABASE_ID,
+      tableId: "roles",
+      queries: [Query.equal("organizationId", organizationId)],
+    });
     return result.rows.map((row) => ({
       id: row.$id,
       name: String(row.data.name ?? ""),
@@ -36,17 +36,17 @@ const repo: GrantRepo = {
   async listPermissionKeysForRoles(roleIds) {
     const keys = new Set<string>();
     for (const roleId of roleIds) {
-      const result = await tables.listRows(
-        DATABASE_ID,
-        "role_permissions",
-        [Query.equal("roleId", roleId)],
-      );
+      const result = await tables.listRows({
+        databaseId: DATABASE_ID,
+        tableId: "role_permissions",
+        queries: [Query.equal("roleId", roleId)],
+      });
       for (const row of result.rows) {
-        const permission = await tables.getRow(
-          DATABASE_ID,
-          "permissions",
-          String(row.data.permissionId),
-        );
+        const permission = await tables.getRow({
+          databaseId: DATABASE_ID,
+          tableId: "permissions",
+          rowId: String(row.data.permissionId),
+        });
         keys.add(String(permission.data.key ?? ""));
       }
     }
@@ -56,17 +56,17 @@ const repo: GrantRepo = {
   async listApplicationIdsForRoles(roleIds) {
     const ids = new Set<string>();
     for (const roleId of roleIds) {
-      const result = await tables.listRows(
-        DATABASE_ID,
-        "role_applications",
-        [Query.equal("roleId", roleId)],
-      );
+      const result = await tables.listRows({
+        databaseId: DATABASE_ID,
+        tableId: "role_applications",
+        queries: [Query.equal("roleId", roleId)],
+      });
       for (const row of result.rows) {
-        const application = await tables.getRow(
-          DATABASE_ID,
-          "applications",
-          String(row.data.applicationId),
-        );
+        const application = await tables.getRow({
+          databaseId: DATABASE_ID,
+          tableId: "applications",
+          rowId: String(row.data.applicationId),
+        });
         ids.add(String(application.data.appId ?? ""));
       }
     }
@@ -74,11 +74,11 @@ const repo: GrantRepo = {
   },
 
   async getOrganizationProfile(organizationId) {
-    const result = await tables.listRows(
-      DATABASE_ID,
-      "organization_profiles",
-      [Query.equal("organizationId", organizationId)],
-    );
+    const result = await tables.listRows({
+      databaseId: DATABASE_ID,
+      tableId: "organization_profiles",
+      queries: [Query.equal("organizationId", organizationId)],
+    });
     const profile = result.rows[0];
     if (!profile) {
       return null;
@@ -87,20 +87,20 @@ const repo: GrantRepo = {
   },
 
   async isFeatureEnabled(organizationId, featureKey) {
-    const features = await tables.listRows(
-      DATABASE_ID,
-      "features",
-      [Query.equal("key", featureKey)],
-    );
+    const features = await tables.listRows({
+      databaseId: DATABASE_ID,
+      tableId: "features",
+      queries: [Query.equal("key", featureKey)],
+    });
     const feature = features.rows[0];
     if (!feature) {
       return false;
     }
-    const rows = await tables.listRows(
-      DATABASE_ID,
-      "organization_features",
-      [Query.equal("organizationId", organizationId), Query.equal("featureId", feature.$id)],
-    );
+    const rows = await tables.listRows({
+      databaseId: DATABASE_ID,
+      tableId: "organization_features",
+      queries: [Query.equal("organizationId", organizationId), Query.equal("featureId", feature.$id)],
+    });
     const orgFeature = rows.rows[0];
     return orgFeature?.data.enabled === true;
   },
@@ -168,26 +168,36 @@ export default async function ({ req, res, log }: Context) {
     return res.json({ error: "bad_request", reason: "no profile fields to update" }, 400);
   }
 
-  const rows = await tables.listRows(
-    DATABASE_ID,
-    "organization_profiles",
-    [Query.equal("organizationId", organizationId)],
-  );
+  const rows = await tables.listRows({
+    databaseId: DATABASE_ID,
+    tableId: "organization_profiles",
+    queries: [Query.equal("organizationId", organizationId)],
+  });
   const profileRow = rows.rows[0];
   if (!profileRow) {
     return res.json({ error: "forbidden", reason: "organization is not active" }, 403);
   }
 
-  await tables.updateRow(DATABASE_ID, "organization_profiles", profileRow.$id, changes);
+  await tables.updateRow({
+    databaseId: DATABASE_ID,
+    tableId: "organization_profiles",
+    rowId: profileRow.$id,
+    data: changes,
+  });
 
-  await tables.createRow(DATABASE_ID, "audit_logs", ID.unique(), {
-    userId,
-    organizationId,
-    action: "organizations.update",
-    resourceType: "organization",
-    resourceId: organizationId,
-    metadata: JSON.stringify(changes),
-    timestamp: new Date().toISOString(),
+  await tables.createRow({
+    databaseId: DATABASE_ID,
+    tableId: "audit_logs",
+    rowId: ID.unique(),
+    data: {
+      userId,
+      organizationId,
+      action: "organizations.update",
+      resourceType: "organization",
+      resourceId: organizationId,
+      metadata: JSON.stringify(changes),
+      timestamp: new Date().toISOString(),
+    },
   });
 
   log({ action: "organizations.update", organizationId, userId, changed: Object.keys(changes) });
