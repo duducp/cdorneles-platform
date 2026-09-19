@@ -58,8 +58,9 @@ capabilities. No business modules yet.
 - [ ] Define table permissions and indexes (columns exist; permissions and
       indexes do not). Tables currently have `rowSecurity: false`.
 - [ ] Record the schema in `docs/` and, if it changes architecture, an ADR.
-- [ ] Rotate the API key: `project_list_keys` exposed its secret in a session
-      transcript.
+- [ ] Rotate leaked secrets: `project_list_keys` exposed its API key secret, and a
+      `compose.one` read exposed `_APP_OPENSSL_KEY_V1` and
+      `_APP_NOTIFICATIONS_TRACKING_SECRET`, in session transcripts.
 
 ### 4. Tenancy and domain resolution
 
