@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockCreateDocument = vi.fn().mockResolvedValue({ $id: "test" });
+const mockCreateRow = vi.fn().mockResolvedValue({ $id: "test" });
 
 vi.mock("node-appwrite", () => {
   return {
@@ -11,9 +11,9 @@ vi.mock("node-appwrite", () => {
         setKey: vi.fn().mockReturnThis(),
       };
     }),
-    Databases: vi.fn().mockImplementation(function () {
+    TablesDB: vi.fn().mockImplementation(function () {
       return {
-        createDocument: mockCreateDocument,
+        createRow: mockCreateRow,
       };
     }),
   };
@@ -39,7 +39,7 @@ describe("seedData", () => {
   it("inserts 3 applications", async () => {
     await seedData(config);
 
-    const appCalls = mockCreateDocument.mock.calls.filter(
+    const appCalls = mockCreateRow.mock.calls.filter(
       (call: any[]) => call[1] === "applications",
     );
     expect(appCalls).toHaveLength(3);
@@ -48,7 +48,7 @@ describe("seedData", () => {
   it("inserts 24 permissions", async () => {
     await seedData(config);
 
-    const permCalls = mockCreateDocument.mock.calls.filter(
+    const permCalls = mockCreateRow.mock.calls.filter(
       (call: any[]) => call[1] === "permissions",
     );
     expect(permCalls).toHaveLength(24);
@@ -57,20 +57,20 @@ describe("seedData", () => {
   it("inserts 7 features", async () => {
     await seedData(config);
 
-    const featCalls = mockCreateDocument.mock.calls.filter(
+    const featCalls = mockCreateRow.mock.calls.filter(
       (call: any[]) => call[1] === "features",
     );
     expect(featCalls).toHaveLength(7);
   });
 
   it("handles 409 conflict (document already exists)", async () => {
-    mockCreateDocument.mockRejectedValueOnce({ code: 409 });
+    mockCreateRow.mockRejectedValueOnce({ code: 409 });
 
     await expect(seedData(config)).resolves.not.toThrow();
   });
 
   it("propagates non-409 errors", async () => {
-    mockCreateDocument.mockRejectedValueOnce({ code: 500, message: "Server error" });
+    mockCreateRow.mockRejectedValueOnce({ code: 500, message: "Server error" });
 
     await expect(seedData(config)).rejects.toThrow();
   });

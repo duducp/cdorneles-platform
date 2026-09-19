@@ -1,13 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockCreate = vi.fn().mockResolvedValue({ $id: "test" });
-const mockList = vi.fn().mockResolvedValue({ databases: [] });
-const mockCreateCollection = vi.fn().mockResolvedValue({ $id: "test" });
-const mockCreateStringAttribute = vi.fn().mockResolvedValue({});
-const mockCreateIntegerAttribute = vi.fn().mockResolvedValue({});
-const mockCreateBooleanAttribute = vi.fn().mockResolvedValue({});
-const mockCreateDatetimeAttribute = vi.fn().mockResolvedValue({});
-const mockCreateEnumAttribute = vi.fn().mockResolvedValue({});
+const mockCreateTable = vi.fn().mockResolvedValue({ $id: "test" });
+const mockCreateStringColumn = vi.fn().mockResolvedValue({});
+const mockCreateIntegerColumn = vi.fn().mockResolvedValue({});
+const mockCreateBooleanColumn = vi.fn().mockResolvedValue({});
+const mockCreateDatetimeColumn = vi.fn().mockResolvedValue({});
+const mockCreateEnumColumn = vi.fn().mockResolvedValue({});
 
 vi.mock("node-appwrite", () => {
   return {
@@ -18,16 +17,15 @@ vi.mock("node-appwrite", () => {
         setKey: vi.fn().mockReturnThis(),
       };
     }),
-    Databases: vi.fn().mockImplementation(function () {
+    TablesDB: vi.fn().mockImplementation(function () {
       return {
         create: mockCreate,
-        list: mockList,
-        createCollection: mockCreateCollection,
-        createStringAttribute: mockCreateStringAttribute,
-        createIntegerAttribute: mockCreateIntegerAttribute,
-        createBooleanAttribute: mockCreateBooleanAttribute,
-        createDatetimeAttribute: mockCreateDatetimeAttribute,
-        createEnumAttribute: mockCreateEnumAttribute,
+        createTable: mockCreateTable,
+        createStringColumn: mockCreateStringColumn,
+        createIntegerColumn: mockCreateIntegerColumn,
+        createBooleanColumn: mockCreateBooleanColumn,
+        createDatetimeColumn: mockCreateDatetimeColumn,
+        createEnumColumn: mockCreateEnumColumn,
       };
     }),
   };
@@ -62,7 +60,7 @@ describe("createDatabase", () => {
   it("creates all 10 tables", async () => {
     await createDatabase(config);
 
-    expect(mockCreateCollection).toHaveBeenCalledTimes(10);
+    expect(mockCreateTable).toHaveBeenCalledTimes(10);
   });
 
   it("handles 409 conflict (database already exists)", async () => {

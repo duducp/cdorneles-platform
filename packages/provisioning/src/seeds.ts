@@ -1,4 +1,4 @@
-import { Databases } from "node-appwrite";
+import { TablesDB } from "node-appwrite";
 import {
   DATABASE_ID,
   SEED_APPLICATIONS,
@@ -8,28 +8,23 @@ import {
 } from "./config.js";
 import { createClient, type AppwriteConfig } from "./client.js";
 
-function createDatabasesApi(config: AppwriteConfig): Databases {
-  return new Databases(createClient(config));
+function createTablesDbApi(config: AppwriteConfig): TablesDB {
+  return new TablesDB(createClient(config));
 }
 
 async function seedTable(
-  databases: Databases,
-  collectionId: string,
+  tablesDb: TablesDB,
+  tableId: string,
   seeds: SeedDef[],
 ): Promise<void> {
   for (const seed of seeds) {
     try {
-      await databases.createDocument(
-        DATABASE_ID,
-        collectionId,
-        seed.id,
-        seed.data,
-      );
-      console.log(`[provisioning]   Seeded ${collectionId}/${seed.id}`);
+      await tablesDb.createRow(DATABASE_ID, tableId, seed.id, seed.data);
+      console.log(`[provisioning]   Seeded ${tableId}/${seed.id}`);
     } catch (error: unknown) {
       const code = (error as { code?: number }).code;
       if (code === 409) {
-        // Document already exists, skip
+        // Row already exists, skip
       } else {
         throw error;
       }
@@ -38,16 +33,16 @@ async function seedTable(
 }
 
 export async function seedData(config: AppwriteConfig): Promise<void> {
-  const databases = createDatabasesApi(config);
+  const tablesDb = createTablesDbApi(config);
 
   console.log("[provisioning] Seeding applications...");
-  await seedTable(databases, "applications", SEED_APPLICATIONS);
+  await seedTable(tablesDb, "applications", SEED_APPLICATIONS);
 
   console.log("[provisioning] Seeding permissions...");
-  await seedTable(databases, "permissions", SEED_PERMISSIONS);
+  await seedTable(tablesDb, "permissions", SEED_PERMISSIONS);
 
   console.log("[provisioning] Seeding features...");
-  await seedTable(databases, "features", SEED_FEATURES);
+  await seedTable(tablesDb, "features", SEED_FEATURES);
 
   console.log("[provisioning] Seeds complete.");
 }
