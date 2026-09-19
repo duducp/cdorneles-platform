@@ -52,7 +52,7 @@ Expanded interface:
 ```ts
 interface StorageApi {
   getFilePreviewUrl(input: { bucketId: string; fileId: string; width?: number; height?: number }): string;
-  uploadFile(input: { bucketId: string; fileId: string; file: File }): Promise<AppwriteFile>;
+  uploadFile(input: { bucketId: string; fileId: string; file: File; permissions?: string[] }): Promise<AppwriteFile>;
   deleteFile(input: { bucketId: string; fileId: string }): Promise<void>;
   listFiles(input: { bucketId: string; queries?: string[] }): Promise<AppwriteFile[]>;
   getFileDownloadUrl(input: { bucketId: string; fileId: string }): string;
@@ -77,8 +77,12 @@ interface AppwriteFile {
 ### Logo Upload Flow
 
 1. User selects image in org settings
-2. Frontend calls `storage.uploadFile({ bucketId: "branding-logos", fileId: `${orgId}-light`, file })`
-3. Returned URL saved to `organization_profiles.logoLight`
+2. Frontend calls `storage.uploadFile({ bucketId: "branding-logos", fileId: `${orgId}-light`, file, permissions: ['read("team:<orgId>")'] })`
+3. `uploadFile` returns the created `AppwriteFile` (`$id`, `bucketId`, etc.)
+4. The display URL is derived from the returned file via `storage.getFileViewUrl({ bucketId: "branding-logos", fileId: file.$id })`
+5. That URL is saved to `organization_profiles.logoLight`
+
+Per-file `permissions` must be supplied at upload time because the buckets are provisioned deny-by-default (`permissions: []`, `fileSecurity: true`). Org members get read access through `read("team:<orgId>")`; write access follows the same team-role convention.
 
 ## Email (Deferred to Appwrite Functions)
 

@@ -18,6 +18,7 @@
 | `packages/api-client/src/client.ts` | Expand `StorageApi` |
 | `packages/api-client/src/adapters/storage.ts` | Add upload, delete, list, download, view methods |
 | `packages/provisioning/src/config.ts` | Add `STORAGE_BUCKETS` constant |
+| `packages/provisioning/src/client.ts` | Shared `AppwriteConfig` + `createClient` |
 | `packages/provisioning/src/buckets.ts` | **New** — create buckets via node-appwrite |
 | `packages/api-client/src/adapters/storage.test.ts` | Add ~8 new tests |
 | `packages/provisioning/src/__tests__/buckets.test.ts` | **New** — ~5 tests |
@@ -91,6 +92,7 @@ export interface StorageApi {
     bucketId: string;
     fileId: string;
     file: File;
+    permissions?: string[];
   }): Promise<AppwriteFile>;
   deleteFile(input: {
     bucketId: string;
@@ -165,11 +167,12 @@ export function createStorageApi(client: Client): StorageApi {
 
     async uploadFile(input) {
       try {
-        const result = await storage.createFile(
-          input.bucketId,
-          input.fileId,
-          input.file,
-        );
+        const result = await storage.createFile({
+          bucketId: input.bucketId,
+          fileId: input.fileId,
+          file: input.file,
+          permissions: input.permissions,
+        });
         return {
           $id: result.$id,
           $createdAt: result.$createdAt,

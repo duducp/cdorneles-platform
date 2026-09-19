@@ -40,6 +40,7 @@ export function createStorageApi(client: Client): StorageApi {
           bucketId: input.bucketId,
           fileId: input.fileId,
           file: input.file,
+          permissions: input.permissions,
         });
         return toAppwriteFile(file);
       } catch (error) {

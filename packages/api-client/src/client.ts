@@ -50,6 +50,7 @@ export interface StorageApi {
     bucketId: string;
     fileId: string;
     file: File;
+    permissions?: string[];
   }): Promise<AppwriteFile>;
   deleteFile(input: {
     bucketId: string;

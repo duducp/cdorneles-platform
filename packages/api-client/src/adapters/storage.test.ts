@@ -114,6 +114,26 @@ describe("createStorageApi", () => {
     });
   });
 
+  it("forwards file permissions when uploading", async () => {
+    mocks.storage.createFile.mockResolvedValue(file);
+
+    const api = createStorageApi(client);
+    const upload = new File(["x"], "logo.png", { type: "image/png" });
+    await api.uploadFile({
+      bucketId: "b1",
+      fileId: "f1",
+      file: upload,
+      permissions: ['read("team:org1")'],
+    });
+
+    expect(mocks.storage.createFile).toHaveBeenCalledWith({
+      bucketId: "b1",
+      fileId: "f1",
+      file: upload,
+      permissions: ['read("team:org1")'],
+    });
+  });
+
   it("wraps upload failures in ApiError", async () => {
     mocks.storage.createFile.mockRejectedValue(
       new AppwriteException("nope", 400, "file_invalid"),
