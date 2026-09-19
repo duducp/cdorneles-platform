@@ -35,3 +35,6 @@ pnpm-debug.log*
 
 # Superpowers brainstorming visual companion
 .superpowers/
+
+# Superpowers specs/plans (kept local, not tracked)
+docs/superpowers/
