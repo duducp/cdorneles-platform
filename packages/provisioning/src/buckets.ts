@@ -1,16 +1,12 @@
-import { Client, Storage } from "node-appwrite";
+import { Storage } from "node-appwrite";
 import { STORAGE_BUCKETS } from "./config.js";
-import type { DatabaseConfig } from "./database.js";
+import { createClient, type AppwriteConfig } from "./client.js";
 
-function createStorageApi(config: DatabaseConfig): Storage {
-  const client = new Client()
-    .setEndpoint(config.endpoint)
-    .setProject(config.projectId)
-    .setKey(config.apiKey);
-  return new Storage(client);
+function createStorageApi(config: AppwriteConfig): Storage {
+  return new Storage(createClient(config));
 }
 
-export async function createBuckets(config: DatabaseConfig): Promise<void> {
+export async function createBuckets(config: AppwriteConfig): Promise<void> {
   const storage = createStorageApi(config);
 
   for (const bucket of STORAGE_BUCKETS) {

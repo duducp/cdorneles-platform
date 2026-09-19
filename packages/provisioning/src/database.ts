@@ -1,18 +1,9 @@
-import { Client, Databases } from "node-appwrite";
+import { Databases } from "node-appwrite";
 import { DATABASE_ID, DATABASE_NAME, TABLES, type TableDef } from "./config.js";
+import { createClient, type AppwriteConfig } from "./client.js";
 
-export interface DatabaseConfig {
-  endpoint: string;
-  projectId: string;
-  apiKey: string;
-}
-
-function createDatabasesApi(config: DatabaseConfig): Databases {
-  const client = new Client()
-    .setEndpoint(config.endpoint)
-    .setProject(config.projectId)
-    .setKey(config.apiKey);
-  return new Databases(client);
+function createDatabasesApi(config: AppwriteConfig): Databases {
+  return new Databases(createClient(config));
 }
 
 async function createAttribute(
@@ -39,7 +30,7 @@ async function createAttribute(
   }
 }
 
-export async function createDatabase(config: DatabaseConfig): Promise<void> {
+export async function createDatabase(config: AppwriteConfig): Promise<void> {
   const databases = createDatabasesApi(config);
 
   console.log("[provisioning] Creating database...");

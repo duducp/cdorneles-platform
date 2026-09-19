@@ -1,4 +1,4 @@
-import { Client, Databases } from "node-appwrite";
+import { Databases } from "node-appwrite";
 import {
   DATABASE_ID,
   SEED_APPLICATIONS,
@@ -6,19 +6,10 @@ import {
   SEED_FEATURES,
   type SeedDef,
 } from "./config.js";
+import { createClient, type AppwriteConfig } from "./client.js";
 
-interface SeedConfig {
-  endpoint: string;
-  projectId: string;
-  apiKey: string;
-}
-
-function createDatabasesApi(config: SeedConfig): Databases {
-  const client = new Client()
-    .setEndpoint(config.endpoint)
-    .setProject(config.projectId)
-    .setKey(config.apiKey);
-  return new Databases(client);
+function createDatabasesApi(config: AppwriteConfig): Databases {
+  return new Databases(createClient(config));
 }
 
 async function seedTable(
@@ -46,7 +37,7 @@ async function seedTable(
   }
 }
 
-export async function seedData(config: SeedConfig): Promise<void> {
+export async function seedData(config: AppwriteConfig): Promise<void> {
   const databases = createDatabasesApi(config);
 
   console.log("[provisioning] Seeding applications...");
