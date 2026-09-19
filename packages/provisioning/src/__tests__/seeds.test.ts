@@ -54,13 +54,13 @@ describe("seedData", () => {
     expect(permCalls).toHaveLength(24);
   });
 
-  it("inserts 7 features", async () => {
+  it("inserts 8 features", async () => {
     await seedData(config);
 
     const featCalls = mockCreateRow.mock.calls.filter(
       (call: any[]) => call[1] === "features",
     );
-    expect(featCalls).toHaveLength(7);
+    expect(featCalls).toHaveLength(8);
   });
 
   it("handles 409 conflict (document already exists)", async () => {

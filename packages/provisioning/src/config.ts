@@ -29,6 +29,7 @@ export const TABLES: TableDef[] = [
       { key: "primaryColor", type: "string", required: false, size: 7 },
       { key: "secondaryColor", type: "string", required: false, size: 7 },
       { key: "defaultTheme", type: "enum", required: false, elements: ["light", "dark"] },
+      { key: "active", type: "boolean", required: true, default: true },
     ],
   },
   {
@@ -161,6 +162,7 @@ export const SEED_FEATURES: SeedDef[] = [
   { id: "feat_inventory", data: { key: "inventory", name: "Inventory module" } },
   { id: "feat_financial", data: { key: "financial", name: "Financial module" } },
   { id: "feat_sales", data: { key: "sales", name: "Sales module" } },
+  { id: "feat_white_label", data: { key: "white-label", name: "White-label branding" } },
 ];
 
 export interface BucketDef {
