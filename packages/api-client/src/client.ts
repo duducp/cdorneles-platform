@@ -11,6 +11,7 @@ import type {
 
 export interface AccountApi {
   getCurrentUser(): Promise<AppwriteAccount>;
+  getCurrentSession(): Promise<AppwriteSession>;
   listSessions(): Promise<AppwriteSession[]>;
   createEmailPasswordSession(input: { email: string; password: string }): Promise<AppwriteSession>;
   deleteSession(sessionId?: string): Promise<void>;

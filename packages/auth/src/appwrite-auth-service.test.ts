@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAppwriteAuthService } from "./appwrite-auth-service";
-import type { AccountApi } from "@cdorneles/api-client";
+import { ApiError, type AccountApi } from "@cdorneles/api-client";
 
 function createMockAccountApi(): AccountApi {
   return {
     getCurrentUser: vi.fn(),
+    getCurrentSession: vi.fn(),
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     deleteSession: vi.fn(),
@@ -12,7 +13,6 @@ function createMockAccountApi(): AccountApi {
 }
 
 const futureDate = new Date(Date.now() + 86400000).toISOString();
-const pastDate = new Date(Date.now() - 86400000).toISOString();
 
 describe("createAppwriteAuthService", () => {
   it("is a function", () => {
@@ -78,44 +78,45 @@ describe("createAppwriteAuthService", () => {
   });
 
   describe("getSession", () => {
-    it("returns first non-expired session", async () => {
+    it("returns the current session", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.listSessions).mockResolvedValue([
-        { $id: "expired", userId: "u1", expire: pastDate },
-        { $id: "active", userId: "u1", expire: futureDate },
-      ]);
+      vi.mocked(api.getCurrentSession).mockResolvedValue({
+        $id: "s1",
+        userId: "u1",
+        expire: futureDate,
+      });
 
       const service = createAppwriteAuthService(api);
       const session = await service.getSession();
 
+      expect(api.getCurrentSession).toHaveBeenCalled();
       expect(session).toEqual({
-        id: "active",
+        id: "s1",
         userId: "u1",
         expiresAt: futureDate,
       });
     });
 
-    it("returns null when no sessions", async () => {
+    it("returns null when unauthenticated (401)", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.listSessions).mockResolvedValue([]);
+      vi.mocked(api.getCurrentSession).mockRejectedValue(
+        new ApiError("Unauthorized", { code: "user_unauthorized", status: 401 }),
+      );
 
       const service = createAppwriteAuthService(api);
-      const session = await service.getSession();
 
-      expect(session).toBeNull();
+      await expect(service.getSession()).resolves.toBeNull();
     });
 
-    it("returns null when all sessions expired", async () => {
+    it("propagates non-401 errors", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.listSessions).mockResolvedValue([
-        { $id: "s1", userId: "u1", expire: pastDate },
-        { $id: "s2", userId: "u1", expire: pastDate },
-      ]);
+      vi.mocked(api.getCurrentSession).mockRejectedValue(
+        new ApiError("Server error", { code: "general_error", status: 500 }),
+      );
 
       const service = createAppwriteAuthService(api);
-      const session = await service.getSession();
 
-      expect(session).toBeNull();
+      await expect(service.getSession()).rejects.toThrow("Server error");
     });
   });
 

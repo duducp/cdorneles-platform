@@ -1,4 +1,4 @@
-import type { AccountApi } from "@cdorneles/api-client";
+import { isApiError, type AccountApi } from "@cdorneles/api-client";
 import type { AuthService, AuthSession, AuthUser } from "./types";
 
 function mapSession(raw: { $id: string; userId: string; expire: string }): AuthSession {
@@ -37,10 +37,15 @@ export function createAppwriteAuthService(accountApi: AccountApi): AuthService {
     },
 
     async getSession() {
-      const sessions = await accountApi.listSessions();
-      const current = sessions.find((s) => new Date(s.expire) > new Date());
-      if (!current) return null;
-      return mapSession(current);
+      try {
+        const session = await accountApi.getCurrentSession();
+        return mapSession(session);
+      } catch (error) {
+        if (isApiError(error) && error.status === 401) {
+          return null;
+        }
+        throw error;
+      }
     },
 
     async getCurrentUser() {

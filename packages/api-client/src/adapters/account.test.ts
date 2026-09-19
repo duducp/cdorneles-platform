@@ -8,6 +8,7 @@ import { createAccountApi } from "./account";
 const mocks = vi.hoisted(() => ({
   account: {
     get: vi.fn(),
+    getSession: vi.fn(),
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     deleteSession: vi.fn(),
@@ -47,6 +48,23 @@ describe("createAccountApi", () => {
       name: "Ada",
       status: true,
     });
+  });
+
+  it("maps the current session", async () => {
+    mocks.account.getSession.mockResolvedValue({
+      $id: "s1",
+      userId: "u1",
+      expire: "2026-01-01T00:00:00.000Z",
+    });
+
+    const api = createAccountApi(client);
+
+    await expect(api.getCurrentSession()).resolves.toEqual({
+      $id: "s1",
+      userId: "u1",
+      expire: "2026-01-01T00:00:00.000Z",
+    });
+    expect(mocks.account.getSession).toHaveBeenCalledWith({ sessionId: "current" });
   });
 
   it("maps sessions", async () => {

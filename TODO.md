@@ -32,8 +32,13 @@ capabilities. No business modules yet.
 - [x] Session bootstrap/refresh in the app `Providers` (all four apps), with a
       graceful `createUnconfiguredAuthService()` fallback when env vars are
       absent.
-- [ ] Prove it end-to-end in `apps/admin` (or `apps/design-system`) against a
-      running Appwrite instance.
+- [x] Prove it end-to-end against the live Appwrite instance via
+      `packages/auth/scripts/verify-auth.ts`
+      (`E2E_EMAIL=… E2E_PASSWORD=… pnpm exec tsx packages/auth/scripts/verify-auth.ts`).
+      Runs login → getCurrentUser → getSession → logout → confirm signed out.
+      Test account: `e2e-auth-probe` / `e2e@cdorneles.test`.
+- [ ] Add a real login UI in `apps/design-system` (the probe covers the service
+      chain; no app has a login screen yet).
 
 ### 3. Provision the Appwrite backend
 
