@@ -1,3 +1,4 @@
+export * from "./auth/auth-visual";
 export * from "./components/badge";
 export * from "./components/button";
 export * from "./components/card";
