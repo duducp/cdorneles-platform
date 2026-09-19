@@ -15,7 +15,14 @@ const services: AppwriteServices = {
   teams: { listTeams: vi.fn(), listMemberships: vi.fn() },
   tables: { listRows: vi.fn(), getRow: vi.fn() },
   functions: { createExecution: vi.fn() },
-  storage: { getFilePreviewUrl: vi.fn(() => "https://example.com/preview") },
+  storage: {
+    getFilePreviewUrl: vi.fn(() => "https://example.com/preview"),
+    uploadFile: vi.fn(),
+    deleteFile: vi.fn(),
+    listFiles: vi.fn(),
+    getFileDownloadUrl: vi.fn(() => "https://example.com/download"),
+    getFileViewUrl: vi.fn(() => "https://example.com/view"),
+  },
 };
 
 describe("api client config", () => {
