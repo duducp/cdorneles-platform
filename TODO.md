@@ -11,13 +11,13 @@ capabilities. No business modules yet.
 
 ### 1. Appwrite SDK adapter (`@cdorneles/api-client`)
 
-- [ ] Authorize and add the `appwrite` SDK to the pnpm `catalog`
+- [x] Authorize and add the `appwrite` SDK to the pnpm `catalog`
       (`pnpm-workspace.yaml`) and to `@cdorneles/api-client` dependencies.
-- [ ] Implement the concrete adapter behind the existing interfaces
+- [x] Implement the concrete adapter behind the existing interfaces
       (`AccountApi`, `TeamsApi`, `DatabasesApi`, `FunctionsApi`, `StorageApi`).
-- [ ] Map Appwrite errors to `ApiError` (`toApiError`) with stable `code`s.
-- [ ] Keep the SDK out of app code: applications only ever use `createApiClient`.
-- [ ] Unit tests with a mocked SDK; no live network in tests.
+- [x] Map Appwrite errors to `ApiError` (`toApiError`) with stable `code`s.
+- [x] Keep the SDK out of app code: applications only ever use `createApiClient`.
+- [x] Unit tests with a mocked SDK; no live network in tests.
 
 ### 2. Wire `@cdorneles/auth` to the adapter
 

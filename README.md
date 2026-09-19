@@ -147,7 +147,6 @@ CI (`.github/workflows/ci.yml`) runs, in order: `install` → `lint` →
 
 ## Deferred (pending approval)
 
-- Appwrite SDK adapter in `@cdorneles/api-client`
 - Sentry provider in `@cdorneles/observability`
 - Production Appwrite roles, permissions, features and domains
 - Business modules (customers, orders, invoices, …)

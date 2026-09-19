@@ -51,7 +51,6 @@ root via `pnpm test`.
 
 The Foundation deliberately stops short of these, pending explicit approval:
 
-- the concrete Appwrite SDK adapter for `@cdorneles/api-client`;
 - the Sentry provider for `@cdorneles/observability`;
 - Appwrite project ids, endpoints, domains and production roles/permissions;
 - all business modules.
