@@ -12,7 +12,14 @@ export function createAccountApi(client: Client): AccountApi {
     async getCurrentUser(): Promise<AppwriteAccount> {
       try {
         const user = await account.get();
-        return { $id: user.$id, email: user.email, name: user.name, status: user.status, emailVerification: user.emailVerification, mfa: user.mfa };
+        return {
+          $id: user.$id,
+          email: user.email,
+          name: user.name,
+          status: user.status,
+          emailVerification: user.emailVerification,
+          mfa: user.mfa,
+        };
       } catch (error) {
         throw mapAppwriteError(error);
       }
