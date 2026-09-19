@@ -18,7 +18,7 @@
   overloads are `@deprecated`; the adapter passes a single params object.
 - `Account.get()` → `User` (`$id`, `email`, `name`, `status`); `listSessions()` → `{ sessions }`; `createEmailPasswordSession({ email, password })`; `deleteSession({ sessionId })`.
 - `Teams.list()` (object overload, `params?`) → `{ teams }`; `listMemberships({ teamId })` → `{ memberships }`.
-- `Databases.listDocuments({ databaseId, collectionId, queries? })` → `{ documents }`; `getDocument({ databaseId, collectionId, documentId })`.
+- `TablesDB.listRows({ databaseId, tableId, queries? })` → `{ rows }`; `getRow({ databaseId, tableId, rowId })`. (The `Databases` service is deprecated since Appwrite 1.8 — see the tables/rows migration note under Task 6.)
 - `Functions.createExecution({ functionId, body?, async?, xpath?, method?, headers?, scheduledAt? })` → `Execution` (`$id`, `status`, `responseBody`); the object key is `xpath` (the contract field is `path`); `method` is the `ExecutionMethod` enum.
 - `Storage.getFilePreview({ bucketId, fileId, width?, height?, … })` returns a `string` synchronously.
 
@@ -40,7 +40,7 @@ packages/api-client/src/
     client.ts           # createAppwriteClient(config) -> SDK Client
     account.ts          # createAccountApi(client) -> AccountApi
     teams.ts            # createTeamsApi(client) -> TeamsApi
-    databases.ts        # createDatabasesApi(client) -> DatabasesApi
+    tables.ts           # createTablesApi(client) -> TablesApi
     functions.ts        # createFunctionsApi(client) -> FunctionsApi
     storage.ts          # createStorageApi(client) -> StorageApi
     appwrite.ts         # createAppwriteServices / createAppwriteApiClient
@@ -600,9 +600,19 @@ git commit -m "feat(api-client): add teams adapter"
 
 ---
 
-## Task 6: Databases adapter
+## Task 6: Tables adapter (superseded — read this note)
 
-**Files:**
+> **Superseded by the tables/rows migration.** The `Databases` service is
+> deprecated since Appwrite 1.8, so the contract was migrated to
+> `TablesApi` (`listRows`/`getRow`, `tableId`/`rowId`) over `TablesDB`, with the
+> DTO renamed to `AppwriteRow` and `AppwriteServices.tables`. The authoritative
+> design is the Mapping section of
+> `docs/superpowers/specs/2026-09-18-appwrite-sdk-adapter-design.md`. The code
+> blocks below are the original (now historical) databases-oriented plan and
+> must not be followed literally; the shipped files are
+> `adapters/tables.ts` and `adapters/tables.test.ts`.
+
+**Files (original):**
 - Create: `packages/api-client/src/adapters/databases.ts`
 - Test: `packages/api-client/src/adapters/databases.test.ts`
 
@@ -1031,7 +1041,7 @@ describe("createAppwriteServices", () => {
 
     expect(typeof services.account.getCurrentUser).toBe("function");
     expect(typeof services.teams.listTeams).toBe("function");
-    expect(typeof services.databases.listDocuments).toBe("function");
+    expect(typeof services.tables.listRows).toBe("function");
     expect(typeof services.functions.createExecution).toBe("function");
     expect(typeof services.storage.getFilePreviewUrl).toBe("function");
   });
@@ -1062,9 +1072,9 @@ import { createApiClient } from "../client";
 import type { ApiClientConfig } from "../config";
 import { createAccountApi } from "./account";
 import { createAppwriteClient } from "./client";
-import { createDatabasesApi } from "./databases";
 import { createFunctionsApi } from "./functions";
 import { createStorageApi } from "./storage";
+import { createTablesApi } from "./tables";
 import { createTeamsApi } from "./teams";
 
 /** Builds the concrete Appwrite-backed services behind the api-client contracts. */
@@ -1074,7 +1084,7 @@ export function createAppwriteServices(config: ApiClientConfig): AppwriteService
   return {
     account: createAccountApi(client),
     teams: createTeamsApi(client),
-    databases: createDatabasesApi(client),
+    tables: createTablesApi(client),
     functions: createFunctionsApi(client),
     storage: createStorageApi(client),
   };
@@ -1156,7 +1166,7 @@ In `TODO.md`, under `### 1. Appwrite SDK adapter (@cdorneles/api-client)`, mark 
 - [x] Authorize and add the `appwrite` SDK to the pnpm `catalog`
       (`pnpm-workspace.yaml`) and to `@cdorneles/api-client` dependencies.
 - [x] Implement the concrete adapter behind the existing interfaces
-      (`AccountApi`, `TeamsApi`, `DatabasesApi`, `FunctionsApi`, `StorageApi`).
+      (`AccountApi`, `TeamsApi`, `TablesApi`, `FunctionsApi`, `StorageApi`).
 - [x] Map Appwrite errors to `ApiError` (`toApiError`) with stable `code`s.
 - [x] Keep the SDK out of app code: applications only ever use `createApiClient`.
 - [x] Unit tests with a mocked SDK; no live network in tests.
@@ -1173,7 +1183,7 @@ pnpm test
 pnpm build
 ```
 
-Expected: all four exit 0. `pnpm test` includes the 22 new tests.
+Expected: all four exit 0. `pnpm test` includes the 26 adapter tests.
 
 - [ ] **Step 5: Commit**
 
@@ -1197,8 +1207,8 @@ git commit -m "docs: record appwrite adapter as implemented"
 - **Object-parameter SDK API (deprecation):** in `appwrite@27` the positional
   overloads are `@deprecated`. Every adapter passes a single params object —
   `createEmailPasswordSession({ email, password })`, `deleteSession({ sessionId })`,
-  `listMemberships({ teamId })`, `listDocuments({ databaseId, collectionId, queries })`,
-  `getDocument({ databaseId, collectionId, documentId })`,
+  `listMemberships({ teamId })`, `listRows({ databaseId, tableId, queries })`,
+  `getRow({ databaseId, tableId, rowId })`,
   `createExecution({ functionId, body, async, xpath, method })` (note `xpath`),
   and `getFilePreview({ bucketId, fileId, width, height })`. Tasks 4–6 were
   migrated in `refactor(api-client): use appwrite object-parameter api`.

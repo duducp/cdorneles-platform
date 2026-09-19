@@ -45,7 +45,8 @@ createAppwriteApiClient(config: ApiClientConfig): ApiClient;
 
 - `createAppwriteServices` builds one SDK `Client` and returns the five services.
 - `createAppwriteApiClient` wraps `createApiClient({ config, services })`.
-- Existing `createApiClient`, interfaces, DTOs and `ApiError` are unchanged.
+- `createApiClient` and `ApiError` are unchanged. The database contract is
+  `TablesApi`/`AppwriteRow` (see Mapping) and `AppwriteServices.tables`.
 - The per-service factories stay internal (not exported); tests import them by
   relative path.
 
@@ -57,7 +58,7 @@ packages/api-client/src/
     client.ts        # createAppwriteClient(config) -> SDK Client
     account.ts       # createAccountApi(client) -> AccountApi
     teams.ts         # createTeamsApi(client) -> TeamsApi
-    databases.ts     # createDatabasesApi(client) -> DatabasesApi
+    tables.ts        # createTablesApi(client) -> TablesApi
     functions.ts     # createFunctionsApi(client) -> FunctionsApi
     storage.ts       # createStorageApi(client) -> StorageApi
     map-error.ts     # mapAppwriteError(error) -> ApiError
@@ -101,15 +102,18 @@ signature.
 `teams.list()` resolves to the object-parameter overload (`params?`), which is
 not deprecated.
 
-### databases → `DatabasesApi`
+### tables → `TablesApi`
 
-| Adapter method  | SDK call                                                                        | DTO                  |
-| --------------- | ------------------------------------------------------------------------------- | -------------------- |
-| `listDocuments` | `databases.listDocuments({ databaseId, collectionId, queries })` → `.documents` | `AppwriteDocument[]` |
-| `getDocument`   | `databases.getDocument({ databaseId, collectionId, documentId })`               | `AppwriteDocument`   |
+| Adapter method | SDK call                                                            | DTO            |
+| -------------- | ------------------------------------------------------------------- | -------------- |
+| `listRows`     | `tables.listRows({ databaseId, tableId, queries })` → `.rows`       | `AppwriteRow[]` |
+| `getRow`       | `tables.getRow({ databaseId, tableId, rowId })`                     | `AppwriteRow`  |
 
-`queries` is already `string[]` in the contract, matching the SDK's `Query`
-string type.
+Appwrite deprecated the entire `Databases` service in 1.8 ("Please use
+`TablesDB.listRows`/`getRow` instead"), not just its positional overloads. The
+adapter therefore uses `TablesDB` and the tables/rows vocabulary: the contract
+is `TablesApi` with `tableId`/`rowId`, and the DTO is `AppwriteRow`. `queries` is
+already `string[]` in the contract, matching the SDK's `Query` string type.
 
 ### functions → `FunctionsApi`
 
