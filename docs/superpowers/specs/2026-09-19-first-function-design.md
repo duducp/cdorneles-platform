@@ -39,13 +39,13 @@ Only `organizationId` and `applicationId` are required; the other fields are the
 
 Responses:
 - `200 { ok: true }` on success.
-- `401 { error: "unauthorized", reason: "<which condition failed>" }` when authentication or membership fails.
-- `403 { error: "forbidden", reason: "<which condition failed>" }` when the organization is inactive, or application/permission/feature access fails.
+- `401 { error: "unauthorized", reason: "not authenticated" }` when there is no authenticated user.
+- `403 { error: "forbidden", reason: "<which condition failed>" }` when membership fails, the organization is inactive, or application/permission/feature access fails.
 - `400 { error: "bad_request", reason: "..." }` on malformed input.
 
 ## Authorization chain (server-side, deny-by-default)
 
-The Function reads the authenticated user from `x-appwrite-user-id` (injected by Appwrite from the client's session) and validates, in order, returning `401`/`403` on the first failure:
+The Function reads the authenticated user from `x-appwrite-user-id` (injected by Appwrite from the client's session) and validates, in order, returning `401` only for a missing user and `403` for any other failure:
 
 1. **authenticated** — `x-appwrite-user-id` is present.
 2. **membership** — the user is a member of the Team whose id equals `organizationId` (server `Teams` API).

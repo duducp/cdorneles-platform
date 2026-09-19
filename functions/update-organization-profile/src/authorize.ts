@@ -2,7 +2,9 @@ export interface AuthorizeInput {
   userId: string;
   organizationId: string;
   applicationId: string;
+  /** Server-side constant (e.g. `organizations.update`), never client input. */
   requiredPermission: string;
+  /** Server-side constant (e.g. `white-label`), never client input. */
   requiredFeature: string;
 }
 
@@ -33,15 +35,16 @@ export async function authorize(input: AuthorizeInput, repo: GrantRepo): Promise
   const memberships = await repo.listMemberships(input.organizationId);
   const membership = memberships.find((member) => member.userId === input.userId);
   if (!membership) {
-    return { ok: false, status: 401, reason: "not a member of the organization" };
+    return { ok: false, status: 403, reason: "not a member of the organization" };
   }
 
   const profile = await repo.getOrganizationProfile(input.organizationId);
-  if (!profile || profile.active === false) {
+  if (!profile || profile.active !== true) {
     return { ok: false, status: 403, reason: "organization is not active" };
   }
 
   const roleRows = await repo.listOrganizationRoles(input.organizationId);
+  // Appwrite Team membership role names are the platform role keys (`roles.name`).
   const roleIds = roleRows
     .filter((role) => membership.roles.includes(role.name))
     .map((role) => role.id);

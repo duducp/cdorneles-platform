@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { authorize, type GrantRepo } from "../authorize";
 
@@ -48,6 +48,10 @@ function seedAllGranted(repo: GrantRepo): void {
 }
 
 describe("authorize", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("returns ok when every condition passes", async () => {
     const repo = createRepo();
     seedAllGranted(repo);
@@ -65,7 +69,7 @@ describe("authorize", () => {
     });
   });
 
-  it("denies a non-member (401)", async () => {
+  it("denies a non-member (403)", async () => {
     const repo = createRepo();
     vi.mocked(repo.listMemberships).mockResolvedValue([
       { userId: "someone-else", roles: ["owner"] },
@@ -73,15 +77,27 @@ describe("authorize", () => {
 
     await expect(authorize(input, repo)).resolves.toEqual({
       ok: false,
-      status: 401,
+      status: 403,
       reason: "not a member of the organization",
     });
   });
 
-  it("denies an inactive organization (403)", async () => {
+  it("denies an organization with no profile (403)", async () => {
     const repo = createRepo();
     vi.mocked(repo.listMemberships).mockResolvedValue(fullGrant.memberships);
     vi.mocked(repo.getOrganizationProfile).mockResolvedValue(null);
+
+    await expect(authorize(input, repo)).resolves.toEqual({
+      ok: false,
+      status: 403,
+      reason: "organization is not active",
+    });
+  });
+
+  it("denies an explicitly inactive organization (403)", async () => {
+    const repo = createRepo();
+    vi.mocked(repo.listMemberships).mockResolvedValue(fullGrant.memberships);
+    vi.mocked(repo.getOrganizationProfile).mockResolvedValue({ active: false });
 
     await expect(authorize(input, repo)).resolves.toEqual({
       ok: false,
