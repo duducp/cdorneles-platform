@@ -14,10 +14,12 @@
   },
   "dependencies": {
     "@cdorneles/permissions": "workspace:*",
+    "@cdorneles/schemas": "workspace:*",
     "@cdorneles/theme": "workspace:*",
     "@cdorneles/tokens": "workspace:*",
     "@cdorneles/types": "workspace:*",
     "@mantine/core": "catalog:",
+    "@mantine/form": "catalog:",
     "@tanstack/react-query": "catalog:",
     "lucide-react": "catalog:"
   },
