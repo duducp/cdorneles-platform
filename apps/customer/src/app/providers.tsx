@@ -1,7 +1,11 @@
 "use client";
 
-import { createQueryClient } from "@cdorneles/api-client";
-import { AuthProvider, createUnconfiguredAuthService } from "@cdorneles/auth";
+import {
+  createAppwriteServices,
+  createQueryClient,
+  resolveApiClientConfig,
+} from "@cdorneles/api-client";
+import { AuthProvider, createAppwriteAuthService } from "@cdorneles/auth";
 import { TenantProvider } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
@@ -11,7 +15,14 @@ import { initObservability } from "@/lib/observability";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => createQueryClient());
-  const [authService] = useState(() => createUnconfiguredAuthService());
+  const [authService] = useState(() => {
+    const config = resolveApiClientConfig({
+      endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT,
+      projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID,
+    });
+    const services = createAppwriteServices(config);
+    return createAppwriteAuthService(services.account);
+  });
 
   initObservability();
 
