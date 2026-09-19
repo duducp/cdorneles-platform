@@ -42,10 +42,11 @@ describe("createBuckets", () => {
     expect(mockCreateBucket).toHaveBeenCalledTimes(3);
   });
 
-  it("creates the branding-logos bucket with the configured size and extensions", async () => {
+  it("creates each bucket with its configured size and extensions", async () => {
     await createBuckets(config);
 
-    expect(mockCreateBucket).toHaveBeenCalledWith(
+    expect(mockCreateBucket).toHaveBeenNthCalledWith(
+      1,
       "branding-logos",
       "Branding Logos",
       [],
@@ -54,10 +55,40 @@ describe("createBuckets", () => {
       5 * 1024 * 1024,
       ["png", "jpg", "jpeg", "svg", "webp"],
     );
+    expect(mockCreateBucket).toHaveBeenNthCalledWith(
+      2,
+      "documents",
+      "Documents",
+      [],
+      true,
+      true,
+      50 * 1024 * 1024,
+      ["pdf", "txt", "csv", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "webp"],
+    );
+    expect(mockCreateBucket).toHaveBeenNthCalledWith(
+      3,
+      "avatars",
+      "Avatars",
+      [],
+      true,
+      true,
+      2 * 1024 * 1024,
+      ["png", "jpg", "jpeg", "webp"],
+    );
+  });
+
+  it("creates the expected bucket ids in order", async () => {
+    await createBuckets(config);
+
+    expect(mockCreateBucket.mock.calls.map((call) => call[0])).toEqual([
+      "branding-logos",
+      "documents",
+      "avatars",
+    ]);
   });
 
   it("handles 409 conflict (bucket already exists)", async () => {
-    mockCreateBucket.mockRejectedValue({ code: 409 });
+    mockCreateBucket.mockRejectedValueOnce({ code: 409 });
 
     await expect(createBuckets(config)).resolves.not.toThrow();
   });
