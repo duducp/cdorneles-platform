@@ -12,6 +12,8 @@ export interface AppwriteAccount {
   email: string;
   name: string;
   status: boolean;
+  emailVerification: boolean;
+  mfa: boolean;
 }
 
 export interface AppwriteSession {
