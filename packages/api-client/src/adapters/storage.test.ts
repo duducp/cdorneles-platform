@@ -34,7 +34,12 @@ describe("createStorageApi", () => {
     const api = createStorageApi(client);
     const url = api.getFilePreviewUrl({ bucketId: "b1", fileId: "f1", width: 64, height: 64 });
 
-    expect(mocks.storage.getFilePreview).toHaveBeenCalledWith("b1", "f1", 64, 64);
+    expect(mocks.storage.getFilePreview).toHaveBeenCalledWith({
+      bucketId: "b1",
+      fileId: "f1",
+      width: 64,
+      height: 64,
+    });
     expect(url).toBe("https://appwrite.example/preview.png");
   });
 
@@ -44,7 +49,12 @@ describe("createStorageApi", () => {
     const api = createStorageApi(client);
     const url = api.getFilePreviewUrl({ bucketId: "b1", fileId: "f1" });
 
-    expect(mocks.storage.getFilePreview).toHaveBeenCalledWith("b1", "f1", 0, 0);
+    expect(mocks.storage.getFilePreview).toHaveBeenCalledWith({
+      bucketId: "b1",
+      fileId: "f1",
+      width: undefined,
+      height: undefined,
+    });
     expect(url).toBe("https://appwrite.example/preview.png");
   });
 

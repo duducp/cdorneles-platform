@@ -25,12 +25,12 @@ export function createStorageApi(client: Client): StorageApi {
     getFilePreviewUrl(input) {
       try {
         return resolveUrl(
-          storage.getFilePreview(
-            input.bucketId,
-            input.fileId,
-            input.width ?? 0,
-            input.height ?? 0,
-          ),
+          storage.getFilePreview({
+            bucketId: input.bucketId,
+            fileId: input.fileId,
+            width: input.width,
+            height: input.height,
+          }),
         );
       } catch (error) {
         throw handleError(error);
@@ -39,7 +39,11 @@ export function createStorageApi(client: Client): StorageApi {
 
     async uploadFile(input) {
       try {
-        const result = await storage.createFile(input.bucketId, input.fileId, input.file);
+        const result = await storage.createFile({
+          bucketId: input.bucketId,
+          fileId: input.fileId,
+          file: input.file,
+        });
         return {
           $id: result.$id,
           $createdAt: result.$createdAt,
@@ -56,7 +60,7 @@ export function createStorageApi(client: Client): StorageApi {
 
     async deleteFile(input) {
       try {
-        await storage.deleteFile(input.bucketId, input.fileId);
+        await storage.deleteFile({ bucketId: input.bucketId, fileId: input.fileId });
       } catch (error) {
         throw handleError(error);
       }
@@ -64,7 +68,10 @@ export function createStorageApi(client: Client): StorageApi {
 
     async listFiles(input) {
       try {
-        const result = await storage.listFiles(input.bucketId, input.queries);
+        const result = await storage.listFiles({
+          bucketId: input.bucketId,
+          queries: input.queries,
+        });
         return result.files.map((file) => ({
           $id: file.$id,
           $createdAt: file.$createdAt,
@@ -81,7 +88,9 @@ export function createStorageApi(client: Client): StorageApi {
 
     getFileDownloadUrl(input) {
       try {
-        return resolveUrl(storage.getFileDownload(input.bucketId, input.fileId));
+        return resolveUrl(
+          storage.getFileDownload({ bucketId: input.bucketId, fileId: input.fileId }),
+        );
       } catch (error) {
         throw handleError(error);
       }
@@ -89,7 +98,7 @@ export function createStorageApi(client: Client): StorageApi {
 
     getFileViewUrl(input) {
       try {
-        return resolveUrl(storage.getFileView(input.bucketId, input.fileId));
+        return resolveUrl(storage.getFileView({ bucketId: input.bucketId, fileId: input.fileId }));
       } catch (error) {
         throw handleError(error);
       }
