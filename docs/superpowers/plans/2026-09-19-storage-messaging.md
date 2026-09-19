@@ -442,14 +442,14 @@ Read `packages/provisioning/src/database.ts`, `packages/provisioning/src/config.
 
 - [ ] **Step 2: Create buckets.ts**
 
-Create `packages/provisioning/src/buckets.ts`. Reuse the package's existing config type and client factory if present (prefer that over redefining). If the package exposes a shared `ProvisioningConfig`/client helper, import it; otherwise:
+Create `packages/provisioning/src/buckets.ts`. Reuse `DatabaseConfig` from `./database.js` (the package's canonical config shape; `index.ts` aliases it as `ProvisioningConfig`). Match the client-construction and logging style of `database.ts`:
 
 ```ts
 import { Client, Storage } from "node-appwrite";
 import { STORAGE_BUCKETS } from "./config.js";
-import type { ProvisioningConfig } from "./config.js";
+import type { DatabaseConfig } from "./database.js";
 
-function createStorageApi(config: ProvisioningConfig): Storage {
+function createStorageApi(config: DatabaseConfig): Storage {
   const client = new Client()
     .setEndpoint(config.endpoint)
     .setProject(config.projectId)
@@ -457,9 +457,7 @@ function createStorageApi(config: ProvisioningConfig): Storage {
   return new Storage(client);
 }
 
-export async function createBuckets(
-  config: ProvisioningConfig,
-): Promise<void> {
+export async function createBuckets(config: DatabaseConfig): Promise<void> {
   const storage = createStorageApi(config);
 
   for (const bucket of STORAGE_BUCKETS) {
@@ -469,7 +467,7 @@ export async function createBuckets(
       await storage.createBucket(
         bucket.id,
         bucket.name,
-        "bucket",
+        [],
         true,
         true,
         bucket.maxSize,
@@ -489,6 +487,8 @@ export async function createBuckets(
   }
 }
 ```
+
+`permissions: []` is deliberate (deny by default) and `fileSecurity: true` enables per-file permissions. Per-file read/write permissions are set at upload time by the application/Function, not statically provisioned. `createBucket` in `node-appwrite@17` is positional-only.
 
 - [ ] **Step 3: Wire into index.ts**
 
