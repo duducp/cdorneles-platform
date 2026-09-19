@@ -16,6 +16,7 @@ describe("AuthVisual", () => {
 
     const visual = container.querySelector<HTMLElement>('[aria-hidden="true"]');
 
+    expect(visual).not.toBeNull();
     expect(visual).toHaveAttribute("aria-hidden", "true");
   });
 });
