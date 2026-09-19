@@ -4,20 +4,24 @@ import type { ThemeMode } from "@cdorneles/types";
 import {
   localStorageColorSchemeManager,
   MantineProvider,
+  useComputedColorScheme,
   useMantineColorScheme,
   type MantineColorSchemeManager,
 } from "@mantine/core";
 import { useMemo, type ReactNode } from "react";
-
 import { createAppTheme, type CreateAppThemeOptions } from "./create-theme";
 
 export interface ThemeProviderProps {
   children: ReactNode;
-  /** Organization default theme. A user override (persisted) wins over it. */
   organizationDefault?: ThemeMode;
   branding?: CreateAppThemeOptions["branding"];
-  /** Injectable for tests or alternative persistence. */
   colorSchemeManager?: MantineColorSchemeManager;
+  /**
+   * Follow the OS/browser preference (`prefers-color-scheme`) on a first visit,
+   * when no explicit choice is stored. Default `true`. Set `false` to force the
+   * organization default instead.
+   */
+  respectSystemPreference?: boolean;
 }
 
 const COLOR_SCHEME_STORAGE_KEY = "cdorneles-color-scheme";
@@ -27,6 +31,7 @@ export function ThemeProvider({
   organizationDefault = "light",
   branding,
   colorSchemeManager,
+  respectSystemPreference = true,
 }: ThemeProviderProps) {
   const theme = useMemo(() => createAppTheme({ branding }), [branding]);
   const manager = useMemo(
@@ -37,7 +42,7 @@ export function ThemeProvider({
   return (
     <MantineProvider
       theme={theme}
-      defaultColorScheme={organizationDefault}
+      defaultColorScheme={respectSystemPreference ? "auto" : organizationDefault}
       colorSchemeManager={manager}
     >
       {children}
@@ -45,14 +50,12 @@ export function ThemeProvider({
   );
 }
 
-/** Theme-aware hook exposing the resolved Light/Dark mode and its controls. */
+/**
+ * Theme-aware hook exposing the resolved Light/Dark mode and its controls.
+ * `colorScheme` is always the resolved `"light" | "dark"` (never `"auto"`).
+ */
 export function useAppColorScheme() {
-  const { colorScheme, setColorScheme, toggleColorScheme, clearColorScheme } =
-    useMantineColorScheme();
-  return {
-    colorScheme: colorScheme as ThemeMode,
-    setColorScheme,
-    toggleColorScheme,
-    clearColorScheme,
-  };
+  const { setColorScheme, toggleColorScheme, clearColorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme("light", { getInitialValueInEffect: true });
+  return { colorScheme, setColorScheme, toggleColorScheme, clearColorScheme };
 }
