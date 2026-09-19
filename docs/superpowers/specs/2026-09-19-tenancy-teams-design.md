@@ -35,6 +35,24 @@ export function createAppwriteTenantService(teamsApi: TeamsApi): TenantService;
 
 `userId` is a parameter rather than resolved internally, so the service stays pure and testable; callers already hold the user from the auth layer.
 
+### Project configuration dependency
+
+Appwrite's **membership privacy policy** controls whether `listMemberships` returns member identity. On the live project every identity field came back empty (`userId`, `userName`, `userEmail`, `userPhone`), which made `listMemberships` match nothing. The fix was to expose **`user_id` only** — an opaque identifier — leaving `userName`, `userEmail` and `userPhone` hidden:
+
+```text
+project_update_membership_privacy_policy { user_id: true }
+```
+
+This must be part of project provisioning. If user ids are later hidden again, membership resolution has to move server-side (a Function using the API key), because the client cannot map memberships to the signed-in user.
+
+### Configuration dependency: membership privacy
+
+`listMemberships` only returns `userId` when the project's **membership privacy policy** exposes it. The live project hid every member attribute (`userId`, `userName`, `userEmail`, `userPhone` all came back empty), which made the `userId` filter match nothing and the probe fail with an empty membership list.
+
+The fix applied to the live project: `project_update_membership_privacy_policy` with `user_id: true` **only**. The opaque user id is now visible to team members; name, email, phone, MFA status and last-access stay hidden.
+
+This is a project-level setting, so it must be part of environment provisioning: any project running this tenancy resolution needs `user_id` visibility enabled. A project that keeps it hidden can only resolve memberships server-side, with an API key, inside a Function.
+
 ## Active organization resolution
 
 ```ts
@@ -62,6 +80,16 @@ Precedence:
 4. `null`.
 
 This is the security-critical part: an organization id coming from the domain or the client never grants access on its own. A non-member id is ignored, and resolution falls through rather than trusting it.
+
+## Appwrite project configuration
+
+Appwrite's **membership privacy policy** hides `userId`, `userName`, `userEmail` and `userPhone` on `listMemberships`. With `userId` hidden the client cannot map a membership to the signed-in user, so `listMemberships(userId)` would always return nothing.
+
+Verified against the live project: every identity field came back as `""`.
+
+Resolution: the project's privacy policy is set to expose **`user_id` only** (an opaque identifier), leaving `userName`, `userEmail`, `userPhone`, `userMfa` and `userAccessedAt` hidden. This is the minimum needed for client-side tenancy resolution; the remaining PII stays private.
+
+If the platform later decides user ids must stay hidden too, tenancy resolution has to move server-side (an Appwrite Function using the API key, which bypasses the policy) — the `TenantService` contract would then be backed by `FunctionsApi` rather than `TeamsApi`.
 
 ## Probe
 

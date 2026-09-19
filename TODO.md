@@ -63,9 +63,17 @@ capabilities. No business modules yet.
 
 ### 4. Tenancy and domain resolution
 
-- [ ] Wire `@cdorneles/tenant` to real Team memberships via the adapter.
-- [ ] Resolve organization context from authenticated user + membership +
-      trusted hostname (`resolveDomain`) — never from client input.
+- [x] Wire `@cdorneles/tenant` to real Team memberships
+      (`createAppwriteTenantService`: `listOrganizations`, `listMemberships`).
+- [x] Resolve the active organization from authenticated user + membership +
+      trusted hostname — never from client input (`resolveActiveOrganization`,
+      which honors an id only when a membership exists).
+- [x] Prove it against the live project (`packages/tenant/scripts/verify-tenant.ts`).
+      Test organization: `e2e-org-probe`.
+- [x] Appwrite project privacy policy exposes `user_id` on memberships (needed
+      for client-side resolution; name/email/phone stay hidden).
+- [ ] Feed `TenantProvider` in the apps (TanStack Query over the service) — needs
+      a login UI to be meaningful.
 - [ ] Document standard vs. custom domain behaviour (ADR-007).
 
 ### 5. First Appwrite Function (security boundary)
