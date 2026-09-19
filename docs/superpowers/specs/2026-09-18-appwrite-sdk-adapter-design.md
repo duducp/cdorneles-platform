@@ -124,8 +124,10 @@ Every adapter call is wrapped so callers only ever see `ApiError`.
 function mapAppwriteError(error: unknown): ApiError;
 ```
 
-- `AppwriteException` → `new ApiError(message, { code: type ?? "appwrite",
-  status: code, cause: error })`.
+- `AppwriteException` → `new ApiError(message, { code: type || "appwrite",
+  status: code || undefined, cause: error })`. The SDK defaults `type` to `""`
+  and `code` to `0`, so `||` (not `??`) is required: an empty type becomes the
+  stable `"appwrite"` code and a non-HTTP `0` becomes `undefined`.
 - Anything else → `toApiError(error)`.
 
 No credentials, tokens or session secrets are logged at any point.
