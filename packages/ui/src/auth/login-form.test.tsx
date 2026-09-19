@@ -79,10 +79,4 @@ describe("LoginForm", () => {
 
     expect(screen.getByText("Criar conta")).toBeInTheDocument();
   });
-
-  it("renders the logo slot when provided", () => {
-    renderForm({ onSubmit: vi.fn(), logo: <span>logo-slot</span> });
-
-    expect(screen.getByText("logo-slot")).toBeInTheDocument();
-  });
 });

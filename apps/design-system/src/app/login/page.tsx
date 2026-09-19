@@ -3,7 +3,7 @@
 import { isApiError } from "@cdorneles/api-client";
 import { AuthNotConfiguredError, useAuth } from "@cdorneles/auth";
 import { AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
-import { Anchor, Box, Group, Text } from "@mantine/core";
+import { Anchor, Box, Group, Stack, Text } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -54,7 +54,6 @@ export default function LoginPage() {
               onSubmit={handleSubmit}
               loading={loading}
               error={error}
-              logo={<Logo alt="Cdorneles" height={36} />}
               showSignUp={enableSignUp}
             />
           }
@@ -62,10 +61,13 @@ export default function LoginPage() {
         />
       </Box>
 
-      <Text ta="center" fz="xs" c="dimmed" p="lg">
-        Ao continuar, você concorda com os <Anchor href="#">Termos de Uso</Anchor> e a{" "}
-        <Anchor href="#">Política de Privacidade</Anchor>.
-      </Text>
+      <Stack align="center" gap="sm" p="lg">
+        <Text ta="center" fz="xs" c="dimmed">
+          Ao continuar, você concorda com os <Anchor href="#">Termos de Uso</Anchor> e a{" "}
+          <Anchor href="#">Política de Privacidade</Anchor>.
+        </Text>
+        <Logo alt="Cdorneles" height={48} />
+      </Stack>
     </Box>
   );
 }
