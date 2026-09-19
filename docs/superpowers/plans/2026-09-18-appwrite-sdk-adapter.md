@@ -14,11 +14,13 @@
 
 - `import { Client, Account, Teams, Databases, Functions, Storage, AppwriteException } from "appwrite"`.
 - `AppwriteException` constructor: `(message: string, code?: number, type?: string, response?: string)`; fields `code: number`, `type: string`.
-- `Account.get()` → `User` (`$id`, `email`, `name`, `status`); `listSessions()` → `{ sessions }`; `createEmailPasswordSession(email, password)`; `deleteSession(sessionId)`.
-- `Teams.list()` → `{ teams }`; `listMemberships(teamId)` → `{ memberships }`.
-- `Databases.listDocuments(databaseId, collectionId, queries?)` → `{ documents }`; `getDocument(databaseId, collectionId, documentId, queries?)`.
-- `Functions.createExecution(functionId, body?, async?, xpath?, method?, headers?, scheduledAt?)` → `Execution` (`$id`, `status`, `responseBody`); `method` is the `ExecutionMethod` enum.
-- `Storage.getFilePreview(bucketId, fileId, width?, height?, …)` returns a `string` synchronously.
+- **Always use the object-parameter form.** In `appwrite@27` the positional
+  overloads are `@deprecated`; the adapter passes a single params object.
+- `Account.get()` → `User` (`$id`, `email`, `name`, `status`); `listSessions()` → `{ sessions }`; `createEmailPasswordSession({ email, password })`; `deleteSession({ sessionId })`.
+- `Teams.list()` (object overload, `params?`) → `{ teams }`; `listMemberships({ teamId })` → `{ memberships }`.
+- `Databases.listDocuments({ databaseId, collectionId, queries? })` → `{ documents }`; `getDocument({ databaseId, collectionId, documentId })`.
+- `Functions.createExecution({ functionId, body?, async?, xpath?, method?, headers?, scheduledAt? })` → `Execution` (`$id`, `status`, `responseBody`); the object key is `xpath` (the contract field is `path`); `method` is the `ExecutionMethod` enum.
+- `Storage.getFilePreview({ bucketId, fileId, width?, height?, … })` returns a `string` synchronously.
 
 **Repository conventions:**
 
@@ -338,7 +340,10 @@ describe("createAccountApi", () => {
       password: "secret",
     });
 
-    expect(mocks.account.createEmailPasswordSession).toHaveBeenCalledWith("a@b.c", "secret");
+    expect(mocks.account.createEmailPasswordSession).toHaveBeenCalledWith({
+      email: "a@b.c",
+      password: "secret",
+    });
     expect(session).toEqual({
       $id: "s1",
       userId: "u1",
@@ -352,7 +357,7 @@ describe("createAccountApi", () => {
     const api = createAccountApi(client);
     await api.deleteSession();
 
-    expect(mocks.account.deleteSession).toHaveBeenCalledWith("current");
+    expect(mocks.account.deleteSession).toHaveBeenCalledWith({ sessionId: "current" });
   });
 
   it("deletes an explicit session", async () => {
@@ -361,7 +366,7 @@ describe("createAccountApi", () => {
     const api = createAccountApi(client);
     await api.deleteSession("s9");
 
-    expect(mocks.account.deleteSession).toHaveBeenCalledWith("s9");
+    expect(mocks.account.deleteSession).toHaveBeenCalledWith({ sessionId: "s9" });
   });
 
   it("wraps failures in ApiError", async () => {
@@ -421,7 +426,10 @@ export function createAccountApi(client: Client): AccountApi {
 
     async createEmailPasswordSession(input): Promise<AppwriteSession> {
       try {
-        const session = await account.createEmailPasswordSession(input.email, input.password);
+        const session = await account.createEmailPasswordSession({
+          email: input.email,
+          password: input.password,
+        });
         return { $id: session.$id, userId: session.userId, expire: session.expire };
       } catch (error) {
         throw mapAppwriteError(error);
@@ -430,7 +438,7 @@ export function createAccountApi(client: Client): AccountApi {
 
     async deleteSession(sessionId): Promise<void> {
       try {
-        await account.deleteSession(sessionId ?? "current");
+        await account.deleteSession({ sessionId: sessionId ?? "current" });
       } catch (error) {
         throw mapAppwriteError(error);
       }
@@ -513,7 +521,7 @@ describe("createTeamsApi", () => {
     const api = createTeamsApi(client);
     const memberships = await api.listMemberships("t1");
 
-    expect(mocks.teams.listMemberships).toHaveBeenCalledWith("t1");
+    expect(mocks.teams.listMemberships).toHaveBeenCalledWith({ teamId: "t1" });
     expect(memberships).toEqual([
       { $id: "m1", teamId: "t1", userId: "u1", roles: ["owner"] },
     ]);
@@ -563,7 +571,7 @@ export function createTeamsApi(client: Client): TeamsApi {
 
     async listMemberships(teamId): Promise<AppwriteMembership[]> {
       try {
-        const result = await teams.listMemberships(teamId);
+        const result = await teams.listMemberships({ teamId });
         return result.memberships.map((membership) => ({
           $id: membership.$id,
           teamId: membership.teamId,
@@ -642,7 +650,11 @@ describe("createDatabasesApi", () => {
       queries: ["limit(10)"],
     });
 
-    expect(mocks.databases.listDocuments).toHaveBeenCalledWith("db", "col", ["limit(10)"]);
+    expect(mocks.databases.listDocuments).toHaveBeenCalledWith({
+      databaseId: "db",
+      collectionId: "col",
+      queries: ["limit(10)"],
+    });
     expect(documents).toEqual([
       { $id: "d1", $createdAt: "2026-01-01T00:00:00.000Z", $updatedAt: "2026-01-01T00:00:00.000Z", name: "Acme" },
     ]);
@@ -663,7 +675,11 @@ describe("createDatabasesApi", () => {
       documentId: "d1",
     });
 
-    expect(mocks.databases.getDocument).toHaveBeenCalledWith("db", "col", "d1");
+    expect(mocks.databases.getDocument).toHaveBeenCalledWith({
+      databaseId: "db",
+      collectionId: "col",
+      documentId: "d1",
+    });
     expect(document).toEqual({
       $id: "d1",
       $createdAt: "2026-01-01T00:00:00.000Z",
@@ -709,11 +725,11 @@ export function createDatabasesApi(client: Client): DatabasesApi {
   return {
     async listDocuments(input): Promise<AppwriteDocument[]> {
       try {
-        const result = await databases.listDocuments(
-          input.databaseId,
-          input.collectionId,
-          input.queries,
-        );
+        const result = await databases.listDocuments({
+          databaseId: input.databaseId,
+          collectionId: input.collectionId,
+          queries: input.queries,
+        });
         return result.documents.map((document) => ({ ...document }));
       } catch (error) {
         throw mapAppwriteError(error);
@@ -722,11 +738,11 @@ export function createDatabasesApi(client: Client): DatabasesApi {
 
     async getDocument(input): Promise<AppwriteDocument> {
       try {
-        const document = await databases.getDocument(
-          input.databaseId,
-          input.collectionId,
-          input.documentId,
-        );
+        const document = await databases.getDocument({
+          databaseId: input.databaseId,
+          collectionId: input.collectionId,
+          documentId: input.documentId,
+        });
         return { ...document };
       } catch (error) {
         throw mapAppwriteError(error);
@@ -800,13 +816,13 @@ describe("createFunctionsApi", () => {
       method: "POST",
     });
 
-    expect(mocks.functions.createExecution).toHaveBeenCalledWith(
-      "fn1",
-      '{"x":1}',
-      false,
-      "/run",
-      "POST",
-    );
+    expect(mocks.functions.createExecution).toHaveBeenCalledWith({
+      functionId: "fn1",
+      body: '{"x":1}',
+      async: false,
+      xpath: "/run",
+      method: "POST",
+    });
     expect(execution).toEqual({ $id: "e1", status: "completed", responseBody: '{"ok":true}' });
   });
 
@@ -845,13 +861,13 @@ export function createFunctionsApi(client: Client): FunctionsApi {
   return {
     async createExecution(input): Promise<AppwriteExecution> {
       try {
-        const execution = await functions.createExecution(
-          input.functionId,
-          input.body,
-          false,
-          input.path,
-          input.method as ExecutionMethod | undefined,
-        );
+        const execution = await functions.createExecution({
+          functionId: input.functionId,
+          body: input.body,
+          async: false,
+          xpath: input.path,
+          method: input.method as ExecutionMethod | undefined,
+        });
         return {
           $id: execution.$id,
           status: execution.status,
@@ -920,7 +936,12 @@ describe("createStorageApi", () => {
     const api = createStorageApi(client);
     const url = api.getFilePreviewUrl({ bucketId: "b1", fileId: "f1", width: 64, height: 64 });
 
-    expect(mocks.storage.getFilePreview).toHaveBeenCalledWith("b1", "f1", 64, 64);
+    expect(mocks.storage.getFilePreview).toHaveBeenCalledWith({
+      bucketId: "b1",
+      fileId: "f1",
+      width: 64,
+      height: 64,
+    });
     expect(url).toBe("https://appwrite.example/preview.png");
   });
 
@@ -958,12 +979,12 @@ export function createStorageApi(client: Client): StorageApi {
   return {
     getFilePreviewUrl(input): string {
       try {
-        return storage.getFilePreview(
-          input.bucketId,
-          input.fileId,
-          input.width,
-          input.height,
-        );
+        return storage.getFilePreview({
+          bucketId: input.bucketId,
+          fileId: input.fileId,
+          width: input.width,
+          height: input.height,
+        });
       } catch (error) {
         throw mapAppwriteError(error);
       }
@@ -1173,3 +1194,11 @@ git commit -m "docs: record appwrite adapter as implemented"
   not an arrow function. The adapters call `new Account(client)` and Vitest 5
   invokes the implementation with `new`, which throws `TypeError: ... is not a
   constructor` for an arrow. Tasks 4–8 use the regular-function form.
+- **Object-parameter SDK API (deprecation):** in `appwrite@27` the positional
+  overloads are `@deprecated`. Every adapter passes a single params object —
+  `createEmailPasswordSession({ email, password })`, `deleteSession({ sessionId })`,
+  `listMemberships({ teamId })`, `listDocuments({ databaseId, collectionId, queries })`,
+  `getDocument({ databaseId, collectionId, documentId })`,
+  `createExecution({ functionId, body, async, xpath, method })` (note `xpath`),
+  and `getFilePreview({ bucketId, fileId, width, height })`. Tasks 4–6 were
+  migrated in `refactor(api-client): use appwrite object-parameter api`.

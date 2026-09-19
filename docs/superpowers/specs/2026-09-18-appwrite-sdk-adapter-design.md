@@ -75,46 +75,60 @@ call — never at module top level — so importing the package has no side effe
 
 ## Mapping
 
+All SDK calls use the **object-parameter form**. In `appwrite@27` the positional
+overloads are marked `@deprecated` ("Use the object parameter style method for a
+better developer experience"), so the adapter must pass a single params object.
+
 ### account → `AccountApi`
 
-| Adapter method             | SDK call                                        | DTO                    |
-| -------------------------- | ----------------------------------------------- | ---------------------- |
-| `getCurrentUser`           | `account.get()`                                 | `AppwriteAccount`      |
-| `listSessions`             | `account.listSessions()`                        | `AppwriteSession[]`    |
-| `createEmailPasswordSession` | `account.createEmailPasswordSession(email, password)` | `AppwriteSession` |
-| `deleteSession(sessionId?)` | `account.deleteSession(sessionId ?? "current")` | —                      |
+| Adapter method               | SDK call                                                    | DTO                 |
+| ---------------------------- | ----------------------------------------------------------- | ------------------- |
+| `getCurrentUser`             | `account.get()`                                             | `AppwriteAccount`   |
+| `listSessions`               | `account.listSessions()`                                    | `AppwriteSession[]` |
+| `createEmailPasswordSession` | `account.createEmailPasswordSession({ email, password })`   | `AppwriteSession`   |
+| `deleteSession(sessionId?)`  | `account.deleteSession({ sessionId: sessionId ?? "current" })` | —                |
+
+`get`/`listSessions` take no parameters and have a single (non-deprecated)
+signature.
 
 ### teams → `TeamsApi`
 
-| Adapter method     | SDK call                          | DTO                     |
-| ------------------ | --------------------------------- | ----------------------- |
-| `listTeams`        | `teams.list()`                    | `AppwriteTeam[]`        |
-| `listMemberships`  | `teams.listMemberships(teamId)`   | `AppwriteMembership[]`  |
+| Adapter method    | SDK call                              | DTO                    |
+| ----------------- | ------------------------------------- | ---------------------- |
+| `listTeams`       | `teams.list()`                        | `AppwriteTeam[]`       |
+| `listMemberships` | `teams.listMemberships({ teamId })`   | `AppwriteMembership[]` |
+
+`teams.list()` resolves to the object-parameter overload (`params?`), which is
+not deprecated.
 
 ### databases → `DatabasesApi`
 
-| Adapter method   | SDK call                                                            | DTO                  |
-| ---------------- | ------------------------------------------------------------------- | -------------------- |
-| `listDocuments`  | `databases.listDocuments(databaseId, collectionId, queries)` → `.documents` | `AppwriteDocument[]` |
-| `getDocument`    | `databases.getDocument(databaseId, collectionId, documentId)`       | `AppwriteDocument`   |
+| Adapter method  | SDK call                                                                        | DTO                  |
+| --------------- | ------------------------------------------------------------------------------- | -------------------- |
+| `listDocuments` | `databases.listDocuments({ databaseId, collectionId, queries })` → `.documents` | `AppwriteDocument[]` |
+| `getDocument`   | `databases.getDocument({ databaseId, collectionId, documentId })`               | `AppwriteDocument`   |
 
 `queries` is already `string[]` in the contract, matching the SDK's `Query`
 string type.
 
 ### functions → `FunctionsApi`
 
-| Adapter method    | SDK call                                                                    | DTO                 |
-| ----------------- | --------------------------------------------------------------------------- | ------------------- |
-| `createExecution` | `functions.createExecution(functionId, body, false, path, method)`          | `AppwriteExecution` |
+| Adapter method    | SDK call                                                                     | DTO                 |
+| ----------------- | ---------------------------------------------------------------------------- | ------------------- |
+| `createExecution` | `functions.createExecution({ functionId, body, async: false, xpath, method })` | `AppwriteExecution` |
+
+The object parameter is named `xpath` (the contract field is `path`), so the
+adapter maps `path` → `xpath`. `method` is cast to the SDK's `ExecutionMethod`
+enum.
 
 ### storage → `StorageApi`
 
-| Adapter method      | SDK call                                                     | Returns |
-| ------------------- | ------------------------------------------------------------ | ------- |
-| `getFilePreviewUrl` | `storage.getFilePreview(bucketId, fileId, width, height)` → `.toString()` | `string` |
+| Adapter method      | SDK call                                                          | Returns  |
+| ------------------- | ----------------------------------------------------------------- | -------- |
+| `getFilePreviewUrl` | `storage.getFilePreview({ bucketId, fileId, width, height })`     | `string` |
 
-`getFilePreview` is synchronous and returns a URL object; the adapter converts it
-to a string. Width/height are optional.
+`getFilePreview` is synchronous and already returns a `string` in `appwrite@27`.
+Width/height are optional.
 
 ## Error Handling
 
