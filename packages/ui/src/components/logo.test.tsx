@@ -6,24 +6,26 @@ import { describe, expect, it } from "vitest";
 
 import { Logo } from "./logo";
 
-describe("Logo", () => {
-  it("renders the light source with the given alt", () => {
-    render(
-      <ThemeProvider>
-        <Logo alt="Cdorneles" lightSrc="/l.png" darkSrc="/d.png" />
-      </ThemeProvider>,
-    );
+const renderLogo = (props: Parameters<typeof Logo>[0]) =>
+  render(
+    <ThemeProvider>
+      <Logo {...props} />
+    </ThemeProvider>,
+  );
 
-    expect(screen.getByAltText("Cdorneles")).toHaveAttribute("src", "/l.png");
+const sources = () =>
+  screen.getAllByAltText("Cdorneles").map((img) => img.getAttribute("src"));
+
+describe("Logo", () => {
+  it("renders both light and dark sources so CSS can pick one", () => {
+    renderLogo({ alt: "Cdorneles", lightSrc: "/l.png", darkSrc: "/d.png" });
+
+    expect(sources()).toEqual(["/l.png", "/d.png"]);
   });
 
   it("defaults to the platform brand paths", () => {
-    render(
-      <ThemeProvider>
-        <Logo alt="Cdorneles" />
-      </ThemeProvider>,
-    );
+    renderLogo({ alt: "Cdorneles" });
 
-    expect(screen.getByAltText("Cdorneles")).toHaveAttribute("src", "/brand/logo-light.png");
+    expect(sources()).toEqual(["/brand/logo-light.png", "/brand/logo-dark.png"]);
   });
 });

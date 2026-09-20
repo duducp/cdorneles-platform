@@ -8,19 +8,28 @@ import { describe, expect, it } from "vitest";
 import { ThemeToggle } from "./theme-toggle";
 
 describe("ThemeToggle", () => {
-  it("exposes an accessible name and toggles the label", async () => {
+  it("exposes a static accessible name and renders both scheme icons", () => {
     render(
       <ThemeProvider>
         <ThemeToggle />
       </ThemeProvider>,
     );
 
-    const button = screen.getByRole("button", { name: /Ativar tema/ });
-    const initial = button.getAttribute("aria-label");
+    const button = screen.getByRole("button", { name: "Alternar tema claro/escuro" });
 
-    await userEvent.click(button);
+    // Both icons are rendered; CSS picks the visible one from the color scheme.
+    expect(button.querySelectorAll("svg")).toHaveLength(2);
+  });
 
-    const next = screen.getByRole("button", { name: /Ativar tema/ }).getAttribute("aria-label");
-    expect(next).not.toBe(initial);
+  it("switches the color scheme on click", async () => {
+    render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Alternar tema claro/escuro" }));
+
+    expect(document.documentElement).toHaveAttribute("data-mantine-color-scheme", "dark");
   });
 });
