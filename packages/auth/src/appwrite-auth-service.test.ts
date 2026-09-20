@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAppwriteAuthService } from "./appwrite-auth-service";
 import { ApiError, type AccountApi } from "@cdorneles/api-client";
+import { MfaRequiredError } from "./errors";
 
 function createMockAccountApi(): AccountApi {
   return {
@@ -56,6 +57,18 @@ describe("createAppwriteAuthService", () => {
       const service = createAppwriteAuthService(api);
       await expect(service.login({ email: "a@b.com", password: "wrong" })).rejects.toThrow(
         "user_invalid_credentials",
+      );
+    });
+
+    it("throws MfaRequiredError on user_more_factors_required", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.createEmailPasswordSession).mockRejectedValue(
+        new ApiError("MFA required", { code: "user_more_factors_required", status: 401 }),
+      );
+
+      const service = createAppwriteAuthService(api);
+      await expect(service.login({ email: "a@b.com", password: "pass" })).rejects.toBeInstanceOf(
+        MfaRequiredError,
       );
     });
   });
@@ -218,12 +231,36 @@ describe("createAppwriteAuthService", () => {
   });
 
   describe("completeMfa", () => {
-    it("throws not implemented", async () => {
+    it("completes the challenge and returns a mapped session", async () => {
       const api = createMockAccountApi();
+      vi.mocked(api.updateMfaChallenge).mockResolvedValue({
+        $id: "s1",
+        userId: "u1",
+        expire: futureDate,
+      });
+
       const service = createAppwriteAuthService(api);
-      await expect(service.completeMfa({ challengeId: "c1", code: "123" })).rejects.toThrow(
-        "MFA not implemented yet",
-      );
+      const session = await service.completeMfa({ challengeId: "c1", code: "123456" });
+
+      expect(api.updateMfaChallenge).toHaveBeenCalledWith({
+        challengeId: "c1",
+        otp: "123456",
+      });
+      expect(session).toEqual({
+        id: "s1",
+        userId: "u1",
+        expiresAt: futureDate,
+      });
+    });
+
+    it("propagates SDK errors", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.updateMfaChallenge).mockRejectedValue(new Error("invalid_otp"));
+
+      const service = createAppwriteAuthService(api);
+      await expect(
+        service.completeMfa({ challengeId: "c1", code: "000000" }),
+      ).rejects.toThrow("invalid_otp");
     });
   });
 });

@@ -1,4 +1,5 @@
 import { isApiError, type AccountApi } from "@cdorneles/api-client";
+import { MfaRequiredError } from "./errors";
 import type { AuthService, AuthSession, AuthUser } from "./types";
 
 function mapSession(raw: { $id: string; userId: string; expire: string }): AuthSession {
@@ -24,12 +25,23 @@ function mapUser(raw: {
 export function createAppwriteAuthService(accountApi: AccountApi): AuthService {
   return {
     async login(input) {
-      const session = await accountApi.createEmailPasswordSession(input);
-      return mapSession(session);
+      try {
+        const session = await accountApi.createEmailPasswordSession(input);
+        return mapSession(session);
+      } catch (error) {
+        if (isApiError(error) && error.code === "user_more_factors_required") {
+          throw new MfaRequiredError();
+        }
+        throw error;
+      }
     },
 
-    async completeMfa() {
-      throw new Error("MFA not implemented yet");
+    async completeMfa(input) {
+      const session = await accountApi.updateMfaChallenge({
+        challengeId: input.challengeId,
+        otp: input.code,
+      });
+      return mapSession(session);
     },
 
     async logout(sessionId) {
