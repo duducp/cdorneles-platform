@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
-import type { AuthService, AuthSession, AuthUser, LoginInput } from "./types";
+import type { AuthService, AuthSession, AuthUser, CompleteMfaInput, LoginInput } from "./types";
 
 export type AuthStatus = "loading" | "authenticated" | "anonymous";
 
@@ -12,6 +12,7 @@ export interface AuthContextValue {
   session: AuthSession | null;
   status: AuthStatus;
   login: (input: LoginInput) => Promise<AuthSession>;
+  completeMfa: (input: CompleteMfaInput) => Promise<AuthSession>;
   logout: (sessionId?: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -63,6 +64,18 @@ export function AuthProvider({
     [service],
   );
 
+  const completeMfa = useCallback(
+    async (input: CompleteMfaInput) => {
+      const nextSession = await service.completeMfa(input);
+      const nextUser = await service.getCurrentUser();
+      setSession(nextSession);
+      setUser(nextUser);
+      setStatus(nextUser ? "authenticated" : "anonymous");
+      return nextSession;
+    },
+    [service],
+  );
+
   const logout = useCallback(
     async (sessionId?: string) => {
       await service.logout(sessionId);
@@ -74,8 +87,8 @@ export function AuthProvider({
   );
 
   const value = useMemo<AuthContextValue>(
-    () => ({ service, user, session, status, login, logout, refresh }),
-    [service, user, session, status, login, logout, refresh],
+    () => ({ service, user, session, status, login, completeMfa, logout, refresh }),
+    [service, user, session, status, login, completeMfa, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
