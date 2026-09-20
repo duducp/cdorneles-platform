@@ -1,5 +1,11 @@
 import { TablesDB } from "node-appwrite";
-import { DATABASE_ID, DATABASE_NAME, TABLES, type TableDef } from "./config.js";
+import {
+  DATABASE_ID,
+  DATABASE_NAME,
+  TABLES,
+  getTablePermissions,
+  type TableDef,
+} from "./config.js";
 import { createClient, type AppwriteConfig } from "./client.js";
 
 function createTablesDbApi(config: AppwriteConfig): TablesDB {
@@ -30,6 +36,21 @@ async function createColumn(
   }
 }
 
+async function createIndex(
+  tablesDb: TablesDB,
+  tableId: string,
+  index: TableDef["indexes"][number],
+): Promise<void> {
+  await tablesDb.createIndex(
+    DATABASE_ID,
+    tableId,
+    index.key,
+    index.type,
+    index.columns,
+    index.orders,
+  );
+}
+
 export async function createDatabase(config: AppwriteConfig): Promise<void> {
   const tablesDb = createTablesDbApi(config);
 
@@ -50,9 +71,11 @@ export async function createDatabase(config: AppwriteConfig): Promise<void> {
   for (const table of TABLES) {
     console.log(`[provisioning] Creating table: ${table.id}`);
 
+    const permissions = getTablePermissions(table);
+
     try {
-      await tablesDb.createTable(DATABASE_ID, table.id, table.name);
-      console.log(`[provisioning] Table ${table.id} created.`);
+      await tablesDb.createTable(DATABASE_ID, table.id, table.name, permissions, table.rowSecurity);
+      console.log(`[provisioning] Table ${table.id} created (rowSecurity: ${table.rowSecurity}).`);
     } catch (error: unknown) {
       const code = (error as { code?: number }).code;
       if (code === 409) {
@@ -70,6 +93,20 @@ export async function createDatabase(config: AppwriteConfig): Promise<void> {
         const code = (error as { code?: number }).code;
         if (code === 409) {
           // Column already exists, skip
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    for (const index of table.indexes) {
+      try {
+        await createIndex(tablesDb, table.id, index);
+        console.log(`[provisioning]   + index ${index.key} (${index.type} on ${index.columns.join(", ")})`);
+      } catch (error: unknown) {
+        const code = (error as { code?: number }).code;
+        if (code === 409) {
+          // Index already exists, skip
         } else {
           throw error;
         }

@@ -10,7 +10,8 @@ import {
   createAppwriteAuthService,
   createUnconfiguredAuthService,
 } from "@cdorneles/auth";
-import { TenantProvider } from "@cdorneles/tenant";
+import { TenantBridge, TenantProvider, createAppwriteTenantService } from "@cdorneles/tenant";
+import type { TenantService } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
 import { useState, type ReactNode } from "react";
@@ -27,15 +28,29 @@ export function Providers({ children }: { children: ReactNode }) {
     const services = createAppwriteServices(config);
     return createAppwriteAuthService(services.account);
   });
+  const [tenantService] = useState<TenantService | null>(() => {
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+    if (!endpoint || !projectId) return null;
+    const config = resolveApiClientConfig({ endpoint, projectId });
+    const services = createAppwriteServices(config);
+    return createAppwriteTenantService(services.teams);
+  });
 
   initObservability();
+
+  const tenantContent = (
+    <AccessProvider granted={{ permissions: [], features: [] }}>{children}</AccessProvider>
+  );
 
   return (
     <AppProvider queryClient={queryClient} organizationDefault="light">
       <AuthProvider service={authService}>
-        <TenantProvider>
-          <AccessProvider granted={{ permissions: [], features: [] }}>{children}</AccessProvider>
-        </TenantProvider>
+        {tenantService ? (
+          <TenantBridge tenantService={tenantService}>{tenantContent}</TenantBridge>
+        ) : (
+          <TenantProvider>{tenantContent}</TenantProvider>
+        )}
       </AuthProvider>
     </AppProvider>
   );

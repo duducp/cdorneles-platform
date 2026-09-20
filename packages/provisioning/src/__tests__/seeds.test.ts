@@ -16,6 +16,26 @@ vi.mock("node-appwrite", () => {
         createRow: mockCreateRow,
       };
     }),
+    Permission: {
+      read: vi.fn((role: string) => `read(${role})`),
+      create: vi.fn((role: string) => `create(${role})`),
+      update: vi.fn((role: string) => `update(${role})`),
+      delete: vi.fn((role: string) => `delete(${role})`),
+    },
+    Role: {
+      users: vi.fn(() => "users"),
+      team: vi.fn((id: string, role?: string) => `team(${id},${role ?? ""})`),
+    },
+    TablesDBIndexType: {
+      Key: "key",
+      Unique: "unique",
+      Fulltext: "fulltext",
+      Spatial: "spatial",
+    },
+    OrderBy: {
+      Asc: "asc",
+      Desc: "desc",
+    },
   };
 });
 

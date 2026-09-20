@@ -6,7 +6,8 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./permissions": "./src/permissions/index.ts"
+    "./permissions": "./src/permissions/index.ts",
+    "./tenant": "./src/tenant/index.ts"
   },
   "types": "./src/index.ts",
   "scripts": {

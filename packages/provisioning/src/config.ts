@@ -1,3 +1,5 @@
+import { OrderBy, Permission, Role, TablesDBIndexType } from "node-appwrite";
+
 export const DATABASE_ID = "cdorneles_platform";
 export const DATABASE_NAME = "Cdorneles Platform";
 
@@ -10,16 +12,41 @@ export interface AttributeDef {
   default?: unknown;
 }
 
+export interface IndexDef {
+  key: string;
+  type: TablesDBIndexType;
+  columns: string[];
+  orders?: OrderBy[];
+}
+
 export interface TableDef {
   id: string;
   name: string;
+  rowSecurity: boolean;
   attributes: AttributeDef[];
+  indexes: IndexDef[];
+}
+
+const USER_PERMISSIONS = [
+  Permission.read(Role.users()),
+  Permission.create(Role.users()),
+  Permission.update(Role.users()),
+  Permission.delete(Role.users()),
+];
+
+const READ_ONLY_PERMISSIONS = [
+  Permission.read(Role.users()),
+];
+
+export function getTablePermissions(table: TableDef): string[] {
+  return table.rowSecurity ? USER_PERMISSIONS : READ_ONLY_PERMISSIONS;
 }
 
 export const TABLES: TableDef[] = [
   {
     id: "organization_profiles",
     name: "Organization Profiles",
+    rowSecurity: true,
     attributes: [
       { key: "organizationId", type: "string", required: true, size: 36 },
       { key: "displayName", type: "string", required: true, size: 255 },
@@ -31,79 +58,118 @@ export const TABLES: TableDef[] = [
       { key: "defaultTheme", type: "enum", required: false, elements: ["light", "dark"] },
       { key: "active", type: "boolean", required: true, default: true },
     ],
+    indexes: [
+      { key: "org_unique", type: TablesDBIndexType.Unique, columns: ["organizationId"] },
+    ],
   },
   {
     id: "roles",
     name: "Roles",
+    rowSecurity: true,
     attributes: [
       { key: "organizationId", type: "string", required: true, size: 36 },
       { key: "name", type: "string", required: true, size: 255 },
       { key: "description", type: "string", required: false, size: 1024 },
+    ],
+    indexes: [
+      { key: "org_idx", type: TablesDBIndexType.Key, columns: ["organizationId"] },
     ],
   },
   {
     id: "permissions",
     name: "Permissions",
+    rowSecurity: false,
     attributes: [
       { key: "key", type: "string", required: true, size: 255 },
       { key: "description", type: "string", required: true, size: 1024 },
+    ],
+    indexes: [
+      { key: "key_unique", type: TablesDBIndexType.Unique, columns: ["key"] },
     ],
   },
   {
     id: "role_permissions",
     name: "Role Permissions",
+    rowSecurity: true,
     attributes: [
       { key: "roleId", type: "string", required: true, size: 36 },
       { key: "permissionId", type: "string", required: true, size: 36 },
+    ],
+    indexes: [
+      { key: "role_idx", type: TablesDBIndexType.Key, columns: ["roleId"] },
+      { key: "permission_idx", type: TablesDBIndexType.Key, columns: ["permissionId"] },
     ],
   },
   {
     id: "applications",
     name: "Applications",
+    rowSecurity: false,
     attributes: [
       { key: "appId", type: "string", required: true, size: 255 },
       { key: "name", type: "string", required: true, size: 255 },
       { key: "description", type: "string", required: true, size: 1024 },
     ],
+    indexes: [
+      { key: "appId_unique", type: TablesDBIndexType.Unique, columns: ["appId"] },
+    ],
   },
   {
     id: "role_applications",
     name: "Role Applications",
+    rowSecurity: true,
     attributes: [
       { key: "roleId", type: "string", required: true, size: 36 },
       { key: "applicationId", type: "string", required: true, size: 36 },
+    ],
+    indexes: [
+      { key: "role_idx", type: TablesDBIndexType.Key, columns: ["roleId"] },
+      { key: "application_idx", type: TablesDBIndexType.Key, columns: ["applicationId"] },
     ],
   },
   {
     id: "features",
     name: "Features",
+    rowSecurity: false,
     attributes: [
       { key: "key", type: "string", required: true, size: 255 },
       { key: "name", type: "string", required: true, size: 255 },
       { key: "description", type: "string", required: false, size: 1024 },
     ],
+    indexes: [
+      { key: "key_unique", type: TablesDBIndexType.Unique, columns: ["key"] },
+    ],
   },
   {
     id: "organization_features",
     name: "Organization Features",
+    rowSecurity: true,
     attributes: [
       { key: "organizationId", type: "string", required: true, size: 36 },
       { key: "featureId", type: "string", required: true, size: 36 },
       { key: "enabled", type: "boolean", required: true, default: false },
     ],
+    indexes: [
+      { key: "org_feature_unique", type: TablesDBIndexType.Unique, columns: ["organizationId", "featureId"] },
+    ],
   },
   {
     id: "domains",
     name: "Domains",
+    rowSecurity: true,
     attributes: [
       { key: "organizationId", type: "string", required: true, size: 36 },
       { key: "hostname", type: "string", required: true, size: 255 },
       { key: "applicationId", type: "string", required: false, size: 36 },
     ],
+    indexes: [
+      { key: "org_idx", type: TablesDBIndexType.Key, columns: ["organizationId"] },
+      { key: "hostname_unique", type: TablesDBIndexType.Unique, columns: ["hostname"] },
+    ],
   },
   {
     id: "audit_logs",
     name: "Audit Logs",
+    rowSecurity: true,
     attributes: [
       { key: "userId", type: "string", required: true, size: 36 },
       { key: "organizationId", type: "string", required: false, size: 36 },
@@ -112,6 +178,11 @@ export const TABLES: TableDef[] = [
       { key: "resourceId", type: "string", required: false, size: 36 },
       { key: "metadata", type: "string", required: false, size: 65535 },
       { key: "timestamp", type: "datetime", required: true },
+    ],
+    indexes: [
+      { key: "org_idx", type: TablesDBIndexType.Key, columns: ["organizationId"] },
+      { key: "user_idx", type: TablesDBIndexType.Key, columns: ["userId"] },
+      { key: "timestamp_idx", type: TablesDBIndexType.Key, columns: ["timestamp"], orders: [OrderBy.Desc] },
     ],
   },
 ];

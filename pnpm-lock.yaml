@@ -600,6 +600,9 @@ importers:
         specifier: workspace:*
         version: link:../types
     devDependencies:
+      '@cdorneles/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@types/react':
         specifier: 'catalog:'
         version: 19.3.0
