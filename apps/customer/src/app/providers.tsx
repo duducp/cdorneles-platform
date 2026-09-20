@@ -9,8 +9,9 @@ import {
   AuthProvider,
   createAppwriteAuthService,
   createUnconfiguredAuthService,
+  usePermissions,
 } from "@cdorneles/auth";
-import { OrgGuard, TenantBridge, TenantProvider, createAppwriteTenantService } from "@cdorneles/tenant";
+import { OrgGuard, TenantBridge, TenantProvider, createAppwriteTenantService, useTenant } from "@cdorneles/tenant";
 import type { TenantService } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
@@ -18,6 +19,19 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState, type ReactNode } from "react";
 
 import { initObservability } from "@/lib/observability";
+
+const APPLICATION_ID = "customer";
+
+function InnerProviders({ children }: { children: ReactNode }) {
+  const { currentOrganization } = useTenant();
+  const { granted, status } = usePermissions(APPLICATION_ID, currentOrganization?.id);
+
+  return (
+    <AccessProvider granted={granted ?? { permissions: [], features: [] }}>
+      {status === "loading" ? null : children}
+    </AccessProvider>
+  );
+}
 
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -47,7 +61,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
   const tenantContent = (
     <OrgGuard onRedirectToSelectOrg={handleRedirectToSelectOrg}>
-      <AccessProvider granted={{ permissions: [], features: [] }}>{children}</AccessProvider>
+      <InnerProviders>{children}</InnerProviders>
     </OrgGuard>
   );
 
