@@ -13,17 +13,23 @@
   },
   "dependencies": {
     "@cdorneles/api-client": "workspace:*",
-    "@cdorneles/types": "workspace:*"
+    "@cdorneles/permissions": "workspace:*",
+    "@cdorneles/types": "workspace:*",
+    "@tanstack/react-query": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:",
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@testing-library/react": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -6,6 +6,18 @@ import type { AuthService, AuthSession, AuthUser, CompleteMfaInput, LoginInput }
 
 export type AuthStatus = "loading" | "authenticated" | "anonymous";
 
+const SESSION_COOKIE = "cdorneles-session";
+
+function setSessionCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SESSION_COOKIE}=1; path=/; SameSite=Lax; max-age=86400`;
+}
+
+function clearSessionCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SESSION_COOKIE}=; path=/; SameSite=Lax; max-age=0`;
+}
+
 export interface AuthContextValue {
   service: AuthService;
   user: AuthUser | null;
@@ -49,7 +61,13 @@ export function AuthProvider({
     ]);
     setSession(nextSession);
     setUser(nextUser);
-    setStatus(nextUser ? "authenticated" : "anonymous");
+    const isAuth = !!nextUser;
+    setStatus(isAuth ? "authenticated" : "anonymous");
+    if (isAuth) {
+      setSessionCookie();
+    } else {
+      clearSessionCookie();
+    }
   }, [service]);
 
   const login = useCallback(
@@ -59,6 +77,7 @@ export function AuthProvider({
       setSession(nextSession);
       setUser(nextUser);
       setStatus(nextUser ? "authenticated" : "anonymous");
+      if (nextUser) setSessionCookie();
       return nextSession;
     },
     [service],
@@ -71,6 +90,7 @@ export function AuthProvider({
       setSession(nextSession);
       setUser(nextUser);
       setStatus(nextUser ? "authenticated" : "anonymous");
+      if (nextUser) setSessionCookie();
       return nextSession;
     },
     [service],
@@ -82,6 +102,7 @@ export function AuthProvider({
       setSession(null);
       setUser(null);
       setStatus("anonymous");
+      clearSessionCookie();
     },
     [service],
   );
