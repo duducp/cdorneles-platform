@@ -57,6 +57,33 @@ packages/
 - Prefer accessible native/semantic behavior and keyboard navigation.
 - Motion must be subtle and purposeful.
 
+## Page / UI checklist
+
+Every new page or component must satisfy this checklist.
+
+**Composition**
+- Build UI in `@cdorneles/ui` as thin Mantine wrappers; apps only compose them.
+- Reuse Mantine primitives (`Paper`, `Flex`, `Stack`, `Image`, `TextInput`, …) instead of recreating them or hand-rolling markup.
+- Do layout with Mantine style props (`Flex`/`Stack`/`Paper`; `w`/`maw`/`mih`/`flex`; responsive objects), not inline `style`. Inline `style` is a last resort.
+
+**Accessibility**
+- Exactly one `<h1>` per page; use `<main>` and `<footer>` landmarks.
+- Form-level errors: `role="alert"` with an icon and text (never color alone), and focus the first invalid field on submit (`form.onSubmit(values, onErrors)` + `form.getInputNode`).
+- Inputs: visible labels, `aria-invalid` on error, `type="email"`/`inputMode="email"` for e-mail; password show/hide stays keyboard-reachable (`visibilityToggleFocusable`) with a pt-BR `aria-label`.
+- Links are never distinguished by color alone (`underline="always"`).
+- Decorative elements are `aria-hidden` and `pointer-events: none`; brand SVGs are `aria-hidden`/`focusable="false"`.
+
+**Forms**
+- Mantine Form owns form state; Zod owns validation.
+- Keep the submit enabled and validate on submit — do not disable it until the fields are filled (a disabled button hides why it is disabled).
+
+**Responsive**
+- Hide/reflow with `visibleFrom`/`hiddenFrom`; keep a fixed `minHeight` only at `sm` and up; no fixed height on mobile; no horizontal overflow.
+
+**Theme**
+- Light and Dark are mandatory; no "System" option. On a first visit with no stored choice, follow `prefers-color-scheme`.
+- Never hardcode colors; the dark `dimmed` color is tuned in `@cdorneles/theme` for AA contrast.
+
 ## Security
 
 - Frontend authorization is UX only; never treat it as a security boundary.
