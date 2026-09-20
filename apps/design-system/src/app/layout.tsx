@@ -1,6 +1,7 @@
 import "@mantine/core/styles.css";
 import "./globals.css";
 
+import { COLOR_SCHEME_STORAGE_KEY } from "@cdorneles/theme";
 import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -17,7 +18,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" {...mantineHtmlProps}>
       <head>
-        <ColorSchemeScript defaultColorScheme="auto" />
+        <ColorSchemeScript
+          defaultColorScheme="auto"
+          localStorageKey={COLOR_SCHEME_STORAGE_KEY}
+        />
       </head>
       <body>
         <Providers>{children}</Providers>
