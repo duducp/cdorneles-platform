@@ -53,12 +53,17 @@ export function createAppwriteAuthService(accountApi: AccountApi): AuthService {
       return mapUser(user);
     },
 
-    async requestPasswordRecovery() {
-      throw new Error("Password recovery not implemented yet");
+    async requestPasswordRecovery(input) {
+      await accountApi.createRecovery({ email: input.email, url: input.redirectUrl });
     },
 
-    async confirmPasswordRecovery() {
-      throw new Error("Password recovery not implemented yet");
+    async confirmPasswordRecovery(input) {
+      await accountApi.updateRecovery({
+        userId: input.userId,
+        secret: input.secret,
+        password: input.password,
+        passwordAgain: input.password,
+      });
     },
   };
 }

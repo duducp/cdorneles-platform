@@ -158,29 +158,72 @@ describe("createAppwriteAuthService", () => {
     });
   });
 
-  describe("stubs", () => {
-    it("completeMfa throws not implemented", async () => {
+  describe("requestPasswordRecovery", () => {
+    it("delegates to accountApi.createRecovery", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.createRecovery).mockResolvedValue(undefined);
+
+      const service = createAppwriteAuthService(api);
+      await service.requestPasswordRecovery({
+        email: "a@b.com",
+        redirectUrl: "https://app.test/reset-password",
+      });
+
+      expect(api.createRecovery).toHaveBeenCalledWith({
+        email: "a@b.com",
+        url: "https://app.test/reset-password",
+      });
+    });
+
+    it("propagates SDK errors", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.createRecovery).mockRejectedValue(new Error("user_invalid_credentials"));
+
+      const service = createAppwriteAuthService(api);
+      await expect(
+        service.requestPasswordRecovery({ email: "a@b.com", redirectUrl: "https://app.test/reset" }),
+      ).rejects.toThrow("user_invalid_credentials");
+    });
+  });
+
+  describe("confirmPasswordRecovery", () => {
+    it("delegates to accountApi.updateRecovery", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.updateRecovery).mockResolvedValue(undefined);
+
+      const service = createAppwriteAuthService(api);
+      await service.confirmPasswordRecovery({
+        userId: "u1",
+        secret: "s1",
+        password: "new-pass",
+      });
+
+      expect(api.updateRecovery).toHaveBeenCalledWith({
+        userId: "u1",
+        secret: "s1",
+        password: "new-pass",
+        passwordAgain: "new-pass",
+      });
+    });
+
+    it("propagates SDK errors", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.updateRecovery).mockRejectedValue(new Error("invalid_secret"));
+
+      const service = createAppwriteAuthService(api);
+      await expect(
+        service.confirmPasswordRecovery({ userId: "u1", secret: "bad", password: "p" }),
+      ).rejects.toThrow("invalid_secret");
+    });
+  });
+
+  describe("completeMfa", () => {
+    it("throws not implemented", async () => {
       const api = createMockAccountApi();
       const service = createAppwriteAuthService(api);
       await expect(service.completeMfa({ challengeId: "c1", code: "123" })).rejects.toThrow(
         "MFA not implemented yet",
       );
-    });
-
-    it("requestPasswordRecovery throws not implemented", async () => {
-      const api = createMockAccountApi();
-      const service = createAppwriteAuthService(api);
-      await expect(service.requestPasswordRecovery({ email: "a@b.com" })).rejects.toThrow(
-        "Password recovery not implemented yet",
-      );
-    });
-
-    it("confirmPasswordRecovery throws not implemented", async () => {
-      const api = createMockAccountApi();
-      const service = createAppwriteAuthService(api);
-      await expect(
-        service.confirmPasswordRecovery({ userId: "u1", secret: "s", password: "p" }),
-      ).rejects.toThrow("Password recovery not implemented yet");
     });
   });
 });

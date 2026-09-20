@@ -39,6 +39,7 @@ export interface CompleteMfaInput {
 
 export interface PasswordRecoveryRequestInput {
   email: string;
+  redirectUrl: string;
 }
 
 export interface PasswordRecoveryConfirmInput {
