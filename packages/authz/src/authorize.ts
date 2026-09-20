@@ -1,3 +1,5 @@
+import type { GrantRepo } from "./grant-repo";
+
 export interface AuthorizeInput {
   userId: string;
   organizationId: string;
@@ -6,16 +8,6 @@ export interface AuthorizeInput {
   requiredPermission: string;
   /** Server-side constant (e.g. `white-label`), never client input. */
   requiredFeature: string;
-}
-
-/** Data the authorization decision needs, satisfied by node-appwrite in the entrypoint. */
-export interface GrantRepo {
-  listMemberships(teamId: string): Promise<Array<{ userId: string; roles: string[] }>>;
-  listOrganizationRoles(organizationId: string): Promise<Array<{ id: string; name: string }>>;
-  listPermissionKeysForRoles(roleIds: readonly string[]): Promise<string[]>;
-  listApplicationIdsForRoles(roleIds: readonly string[]): Promise<string[]>;
-  getOrganizationProfile(organizationId: string): Promise<{ active: boolean } | null>;
-  isFeatureEnabled(organizationId: string, featureKey: string): Promise<boolean>;
 }
 
 export type AuthorizeResult =
@@ -44,7 +36,6 @@ export async function authorize(input: AuthorizeInput, repo: GrantRepo): Promise
   }
 
   const roleRows = await repo.listOrganizationRoles(input.organizationId);
-  // Appwrite Team membership role names are the platform role keys (`roles.name`).
   const roleIds = roleRows
     .filter((role) => membership.roles.includes(role.name))
     .map((role) => role.id);

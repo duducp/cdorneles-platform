@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@cdorneles/authz": "workspace:*",
     "node-appwrite": "catalog:"
   },
   "devDependencies": {

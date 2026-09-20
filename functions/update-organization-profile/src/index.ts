@@ -1,6 +1,6 @@
 import { Client, ID, Query, TablesDB, Teams } from "node-appwrite";
 
-import { authorize, type GrantRepo } from "./authorize";
+import { authorize, type GrantRepo } from "@cdorneles/authz";
 
 const DATABASE_ID = "cdorneles_platform";
 

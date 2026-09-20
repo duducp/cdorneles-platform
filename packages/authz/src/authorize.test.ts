@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { authorize, type GrantRepo } from "../authorize";
+import { authorize } from "./authorize";
+import type { GrantRepo } from "./grant-repo";
 
 const memberships = vi.fn();
 const listOrganizationRoles = vi.fn();
