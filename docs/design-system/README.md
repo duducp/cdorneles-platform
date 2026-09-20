@@ -53,6 +53,7 @@ page.
 - **Platform brand** (default logo + favicon) lives in the repo at `apps/<app>/public/brand/` (`logo-light.png`, `logo-dark.png`, `favicon.png`) and is served by Next. Keep it optimized (small PNG/SVG); it is versioned with the app. It is **not** stored in Appwrite Storage.
 - **Organization brand** (white-label) is per tenant: the files go in the Appwrite Storage `branding-logos` bucket and the URLs are stored on `organization_profiles.logoLight` / `logoDark` / `favicon` (see `brandingSchema`). The login page is pre-auth, so it shows the platform brand.
 - The shared `Logo` component (`@cdorneles/ui`) picks light/dark from the theme and accepts `lightSrc`/`darkSrc` overrides for the organization case.
+- **Variants:** `default` (square lockup, 2:1) and `horizontal` (wide lockup). The horizontal variant expects `logo-light-h.png` / `logo-dark-h.png` in the consuming app's `public/brand/` and uses a wider aspect ratio (≈5.6:1) as its default width. If an app has not shipped the `-h` assets yet, keep using the default variant.
 
 ## Icons
 

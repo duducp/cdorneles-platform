@@ -28,4 +28,34 @@ describe("Logo", () => {
 
     expect(sources()).toEqual(["/brand/logo-light.png", "/brand/logo-dark.png"]);
   });
+
+  it("defaults to the horizontal brand paths for the horizontal variant", () => {
+    renderLogo({ alt: "Cdorneles", variant: "horizontal" });
+
+    expect(sources()).toEqual(["/brand/logo-light-h.png", "/brand/logo-dark-h.png"]);
+  });
+
+  it("uses a wider default aspect ratio for the horizontal variant", () => {
+    const { unmount: unmountDefault } = renderLogo({ alt: "Cdorneles", height: 48 });
+    const defaultWidth = screen.getAllByAltText("Cdorneles")[0].style.width;
+    unmountDefault();
+
+    renderLogo({ alt: "Cdorneles", variant: "horizontal", height: 48 });
+    const horizontalWidth = screen.getAllByAltText("Cdorneles")[0].style.width;
+
+    // Mantine emits widths as `calc(<n>rem * var(--mantine-scale))`.
+    const rem = (value: string) => parseFloat(value.match(/[\d.]+rem/)?.[0] ?? "0");
+    expect(rem(horizontalWidth)).toBeGreaterThan(rem(defaultWidth));
+  });
+
+  it("lets explicit sources override the variant defaults", () => {
+    renderLogo({
+      alt: "Cdorneles",
+      variant: "horizontal",
+      lightSrc: "/custom/light.png",
+      darkSrc: "/custom/dark.png",
+    });
+
+    expect(sources()).toEqual(["/custom/light.png", "/custom/dark.png"]);
+  });
 });

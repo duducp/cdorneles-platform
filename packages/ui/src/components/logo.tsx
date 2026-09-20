@@ -3,6 +3,8 @@
 import { Box, Image } from "@mantine/core";
 
 export interface LogoProps {
+  /** `default` (2:1 lockup) or `horizontal` (wide lockup, `-h` assets). */
+  variant?: "default" | "horizontal";
   lightSrc?: string;
   darkSrc?: string;
   alt: string;
@@ -11,29 +13,45 @@ export interface LogoProps {
   className?: string;
 }
 
-const DEFAULT_LIGHT_SRC = "/brand/logo-light.png";
-const DEFAULT_DARK_SRC = "/brand/logo-dark.png";
+const BRAND_SRC = {
+  default: { light: "/brand/logo-light.png", dark: "/brand/logo-dark.png" },
+  horizontal: { light: "/brand/logo-light-h.png", dark: "/brand/logo-dark-h.png" },
+} as const;
+
+/** Default width as a multiple of `height`, per variant aspect ratio. */
+const DEFAULT_ASPECT = {
+  default: 2,
+  horizontal: 5.6,
+} as const;
 
 /**
  * Platform logo that follows the active Light/Dark scheme. Both sources are
  * always rendered; CSS (`lightHidden`/`darkHidden`) picks the active one from
  * the pre-hydration `data-mantine-color-scheme` attribute, so server and client
  * HTML stay identical during hydration.
+ *
+ * Each app ships its own brand assets under `/public/brand/`; the `horizontal`
+ * variant requires the `-h` files to exist in the consuming app.
  */
 export function Logo({
-  lightSrc = DEFAULT_LIGHT_SRC,
-  darkSrc = DEFAULT_DARK_SRC,
+  variant = "default",
+  lightSrc,
+  darkSrc,
   alt,
   height = 40,
   width,
   className,
 }: LogoProps) {
-  const size = { h: height, w: width ?? height * 2, fit: "contain" } as const;
+  const size = {
+    h: height,
+    w: width ?? Math.round(height * DEFAULT_ASPECT[variant]),
+    fit: "contain",
+  } as const;
 
   return (
     <Box className={className}>
-      <Image darkHidden src={lightSrc} alt={alt} {...size} />
-      <Image lightHidden src={darkSrc} alt={alt} {...size} />
+      <Image darkHidden src={lightSrc ?? BRAND_SRC[variant].light} alt={alt} {...size} />
+      <Image lightHidden src={darkSrc ?? BRAND_SRC[variant].dark} alt={alt} {...size} />
     </Box>
   );
 }

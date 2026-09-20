@@ -74,7 +74,7 @@ export default function LoginPage() {
               </Anchor>
               .
             </Text>
-            <Logo alt="Cdorneles" height={48} />
+            <Logo alt="Cdorneles" variant="horizontal" height={32} />
           </Stack>
         </Stack>
       </Flex>

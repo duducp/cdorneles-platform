@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
           />
 
           <Stack component="footer" align="center" gap="sm">
-            <Logo alt="Cdorneles" height={48} />
+            <Logo alt="Cdorneles" variant="horizontal" height={32} />
           </Stack>
         </Stack>
       </Flex>
