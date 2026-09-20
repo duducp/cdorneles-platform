@@ -1,6 +1,7 @@
 "use client";
 
-import { useAuth } from "@cdorneles/auth";
+import { isApiError } from "@cdorneles/api-client";
+import { AuthNotConfiguredError, useAuth } from "@cdorneles/auth";
 import { AuthCard, AuthVisual, MfaChallengeForm, Logo, ThemeToggle } from "@cdorneles/ui";
 import { Anchor, Flex, Skeleton, Stack, Text } from "@mantine/core";
 import Link from "next/link";
@@ -30,8 +31,20 @@ export default function MfaPage() {
         const challenge = await service.createMfaChallenge({ factor: preferred });
         if (cancelled) return;
         setChallengeId(challenge.challengeId);
-      } catch {
-        if (!cancelled) setError("Erro ao iniciar desafio MFA.");
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof AuthNotConfiguredError) {
+          setError("Autenticação não configurada neste ambiente.");
+        } else if (
+          isApiError(err) &&
+          (err.status === 401 || err.code === "general_unauthorized_scope")
+        ) {
+          setError(
+            "Sessão não encontrada. Faça login novamente para iniciar a verificação em duas etapas.",
+          );
+        } else {
+          setError("Erro ao iniciar desafio MFA.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
