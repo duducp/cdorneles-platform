@@ -12,6 +12,8 @@ function createMockService(overrides?: Partial<AuthService>): AuthService {
   return {
     login: vi.fn(),
     completeMfa: vi.fn(),
+    listMfaFactors: vi.fn(),
+    createMfaChallenge: vi.fn(),
     logout: vi.fn(),
     getSession: vi.fn(),
     getCurrentUser: vi.fn(),

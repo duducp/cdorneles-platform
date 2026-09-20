@@ -20,6 +20,8 @@ export function createUnconfiguredAuthService(): AuthService {
   return {
     login: fail("login"),
     completeMfa: fail("completeMfa"),
+    listMfaFactors: fail("listMfaFactors"),
+    createMfaChallenge: fail("createMfaChallenge"),
     logout: fail("logout"),
     getSession: fail("getSession"),
     getCurrentUser: fail("getCurrentUser"),

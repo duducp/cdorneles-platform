@@ -229,6 +229,41 @@ describe("createAppwriteAuthService", () => {
     });
   });
 
+  describe("listMfaFactors", () => {
+    it("delegates to accountApi.listMfaFactors", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.listMfaFactors).mockResolvedValue({
+        totp: true,
+        phone: false,
+        email: true,
+        recoveryCode: false,
+      });
+
+      const service = createAppwriteAuthService(api);
+      const factors = await service.listMfaFactors();
+
+      expect(factors).toEqual({
+        totp: true,
+        phone: false,
+        email: true,
+        recoveryCode: false,
+      });
+    });
+  });
+
+  describe("createMfaChallenge", () => {
+    it("delegates to accountApi.createMfaChallenge", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.createMfaChallenge).mockResolvedValue({ $id: "c1", factor: "email" });
+
+      const service = createAppwriteAuthService(api);
+      const challenge = await service.createMfaChallenge({ factor: "email" });
+
+      expect(api.createMfaChallenge).toHaveBeenCalledWith({ factor: "email" });
+      expect(challenge).toEqual({ challengeId: "c1", factor: "email" });
+    });
+  });
+
   describe("completeMfa", () => {
     it("completes the challenge and returns a mapped session", async () => {
       const api = createMockAccountApi();

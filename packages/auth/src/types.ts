@@ -48,6 +48,17 @@ export interface PasswordRecoveryConfirmInput {
   password: string;
 }
 
+export interface MfaFactors {
+  totp: boolean;
+  phone: boolean;
+  email: boolean;
+  recoveryCode: boolean;
+}
+
+export interface CreateMfaChallengeInput {
+  factor: "totp" | "email";
+}
+
 /**
  * Authentication service contract. MFA is part of the foundation because it is
  * a from-the-start requirement, not an optional extra.
@@ -55,6 +66,8 @@ export interface PasswordRecoveryConfirmInput {
 export interface AuthService {
   login(input: LoginInput): Promise<AuthSession>;
   completeMfa(input: CompleteMfaInput): Promise<AuthSession>;
+  listMfaFactors(): Promise<MfaFactors>;
+  createMfaChallenge(input: CreateMfaChallengeInput): Promise<MfaChallenge>;
   logout(sessionId?: string): Promise<void>;
   getSession(): Promise<AuthSession | null>;
   getCurrentUser(): Promise<AuthUser | null>;
