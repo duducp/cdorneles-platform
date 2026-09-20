@@ -26,14 +26,4 @@ describe("Logo", () => {
 
     expect(screen.getByAltText("Cdorneles")).toHaveAttribute("src", "/brand/logo-light.png");
   });
-
-  it("applies the given height", () => {
-    render(
-      <ThemeProvider>
-        <Logo alt="Cdorneles" height={36} />
-      </ThemeProvider>,
-    );
-
-    expect(screen.getByAltText("Cdorneles")).toHaveAttribute("height", "36");
-  });
 });

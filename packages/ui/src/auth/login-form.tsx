@@ -47,12 +47,22 @@ export function LoginForm({
     },
   });
 
-  const handleSubmit = form.onSubmit((values) => onSubmit(values));
+  const handleSubmit = form.onSubmit(
+    (values) => onSubmit(values),
+    (errors) => {
+      const firstInvalid = (["email", "password"] as const).find(
+        (field) => errors[field] !== undefined,
+      );
+      if (firstInvalid) {
+        form.getInputNode(firstInvalid)?.focus();
+      }
+    },
+  );
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate p="xl">
       <Stack gap={4}>
-        <Text fw={600} fz="xl">
+        <Text component="h1" fw={600} fz="xl">
           Bem-vindo de volta
         </Text>
         <Text c="dimmed" fz="sm">
@@ -68,6 +78,8 @@ export function LoginForm({
         <TextInput
           label="E-mail"
           placeholder="seu@email.com"
+          type="email"
+          inputMode="email"
           autoComplete="email"
           disabled={loading}
           {...form.getInputProps("email")}
@@ -77,7 +89,10 @@ export function LoginForm({
           placeholder="Sua senha"
           autoComplete="current-password"
           disabled={loading}
+          visibilityToggleFocusable
+          visibilityToggleButtonProps={{ "aria-label": "Alternar visibilidade da senha" }}
           {...form.getInputProps("password")}
+          aria-invalid={form.errors.password ? true : undefined}
         />
 
         <Anchor component="button" type="button" size="sm" c="brand" onClick={onForgotPassword}>
@@ -85,7 +100,7 @@ export function LoginForm({
         </Anchor>
 
         {error ? (
-          <Group gap={6} wrap="nowrap" role="alert">
+          <Group gap={6} align="flex-start" role="alert">
             <AlertCircle size={16} aria-hidden />
             <Text c="danger" fz="sm">
               {error}

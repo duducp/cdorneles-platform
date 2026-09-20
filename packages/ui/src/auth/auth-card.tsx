@@ -1,6 +1,6 @@
 "use client";
 
-import { Box } from "@mantine/core";
+import { Box, Flex, Paper } from "@mantine/core";
 import type { ReactNode } from "react";
 
 export interface AuthCardProps {
@@ -10,40 +10,29 @@ export interface AuthCardProps {
 
 /**
  * The two-panel auth card: form on the left (slightly wider), visual on the
- * right. Centered by the page; the visual is hidden below the `sm` breakpoint.
+ * right. Centered by the page; the visual is hidden below the `md` breakpoint.
  */
 export function AuthCard({ form, visual }: AuthCardProps) {
   return (
-    <Box
-      style={{
-        width: "100%",
-        maxWidth: 920,
-        marginInline: "auto",
-        borderRadius: "var(--mantine-radius-lg)",
-        border: "1px solid var(--mantine-color-default-border)",
-        overflow: "hidden",
-        background: "var(--mantine-color-body)",
-        boxShadow: "var(--mantine-shadow-sm)",
-      }}
+    <Paper
+      w="100%"
+      maw={920}
+      mx="auto"
+      radius="lg"
+      shadow="sm"
+      withBorder
+      style={{ overflow: "hidden" }}
     >
-      <Box style={{ display: "flex", alignItems: "stretch", minHeight: 560 }}>
-        <Box
-          style={{
-            flex: "1.05 1 0",
-            minWidth: 0,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
+      <Flex align="stretch" mih={{ base: "auto", sm: 560 }}>
+        <Flex direction="column" justify="center" flex="1.05 1 0" miw={0}>
           {form}
-        </Box>
+        </Flex>
         {visual ? (
-          <Box visibleFrom="sm" style={{ flex: "1 1 0", minWidth: 0 }}>
+          <Box visibleFrom="md" flex="1 1 0" miw={0}>
             {visual}
           </Box>
         ) : null}
-      </Box>
-    </Box>
+      </Flex>
+    </Paper>
   );
 }

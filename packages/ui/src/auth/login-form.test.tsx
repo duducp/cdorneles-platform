@@ -47,6 +47,22 @@ describe("LoginForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("focuses the first invalid field on submit", async () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(screen.getByLabelText("E-mail")).toHaveFocus();
+  });
+
+  it("marks the password input invalid after a failed submit", async () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(screen.getByLabelText("Senha")).toHaveAttribute("aria-invalid", "true");
+  });
+
   it("shows a form-level error with role=alert", () => {
     renderForm({ onSubmit: vi.fn(), error: "E-mail ou senha inválidos." });
 

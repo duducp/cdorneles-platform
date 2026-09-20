@@ -1,5 +1,7 @@
 "use client";
 
+import { Image } from "@mantine/core";
+
 import { useAppColorScheme } from "@cdorneles/theme";
 
 export interface LogoProps {
@@ -7,6 +9,7 @@ export interface LogoProps {
   darkSrc?: string;
   alt: string;
   height?: number;
+  width?: number;
   className?: string;
 }
 
@@ -19,17 +22,19 @@ export function Logo({
   darkSrc = DEFAULT_DARK_SRC,
   alt,
   height = 40,
+  width,
   className,
 }: LogoProps) {
   const { colorScheme } = useAppColorScheme();
 
   return (
-    <img
+    <Image
+      className={className}
       src={colorScheme === "dark" ? darkSrc : lightSrc}
       alt={alt}
-      height={height}
-      className={className}
-      style={{ height, width: "auto", display: "block" }}
+      h={height}
+      w={width ?? height * 2}
+      fit="contain"
     />
   );
 }

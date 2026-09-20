@@ -39,27 +39,45 @@ export default function LoginPage() {
         <ThemeToggle />
       </Group>
 
-      <Stack style={{ flex: 1 }} align="center" justify="center" gap="xl" p="md">
-        <AuthCard
-          form={
-            <LoginForm
-              onSubmit={handleSubmit}
-              loading={loading}
-              error={error}
-              showSignUp={enableSignUp}
-            />
-          }
-          visual={<AuthVisual />}
-        />
+      <Box
+        component="main"
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "var(--mantine-spacing-md)",
+        }}
+      >
+        <Stack w="100%" maw={920} gap="xl">
+          <AuthCard
+            form={
+              <LoginForm
+                onSubmit={handleSubmit}
+                loading={loading}
+                error={error}
+                showSignUp={enableSignUp}
+              />
+            }
+            visual={<AuthVisual />}
+          />
 
-        <Stack align="center" gap="sm">
-          <Text ta="center" fz="xs" c="dimmed">
-            Ao continuar, você concorda com os <Anchor href="#">Termos de Uso</Anchor> e a{" "}
-            <Anchor href="#">Política de Privacidade</Anchor>.
-          </Text>
-          <Logo alt="Cdorneles" height={48} />
+          <Stack component="footer" align="center" gap="sm">
+            <Text ta="center" fz="xs" c="dimmed">
+              Ao continuar, você concorda com os{" "}
+              <Anchor href="#" underline="always">
+                Termos de Uso
+              </Anchor>{" "}
+              e a{" "}
+              <Anchor href="#" underline="always">
+                Política de Privacidade
+              </Anchor>
+              .
+            </Text>
+            <Logo alt="Cdorneles" height={48} />
+          </Stack>
         </Stack>
-      </Stack>
+      </Box>
     </Box>
   );
 }
