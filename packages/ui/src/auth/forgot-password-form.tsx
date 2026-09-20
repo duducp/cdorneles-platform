@@ -1,10 +1,12 @@
 "use client";
 
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@cdorneles/schemas";
-import { Button, Stack, Text, TextInput } from "@mantine/core";
+import { Box, Button, Stack, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { MailIcon } from "lucide-react";
 import { useCallback, useState } from "react";
+
+import { FormError } from "../components/form-error";
 
 export interface ForgotPasswordFormProps {
   onSubmit: (values: ForgotPasswordFormValues) => Promise<void>;
@@ -57,12 +59,8 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
   }
 
   return (
-    <form onSubmit={form.onSubmit(handleSubmit)} noValidate>
-      {error && (
-        <div role="alert" style={{ marginBottom: 16 }}>
-          <Text c="danger" fz="sm">{error}</Text>
-        </div>
-      )}
+    <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
+      <FormError mb="md">{error}</FormError>
 
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
@@ -90,6 +88,6 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
           Enviar link de recuperação
         </Button>
       </Stack>
-    </form>
+    </Box>
   );
 }

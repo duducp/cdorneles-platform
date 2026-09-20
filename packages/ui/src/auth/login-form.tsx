@@ -1,11 +1,10 @@
 "use client";
 
 import { loginSchema, type LoginFormValues } from "@cdorneles/schemas";
-import { Anchor, Box, Divider, Group, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { Anchor, Box, Divider, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { AlertCircle } from "lucide-react";
-
 import { Button } from "../components/button";
+import { FormError } from "../components/form-error";
 import { SocialLogin } from "./social-login";
 
 export type LoginCredentials = LoginFormValues;
@@ -60,7 +59,7 @@ export function LoginForm({
   );
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate p="xl">
+    <Box component="form" onSubmit={handleSubmit} noValidate>
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
           Bem-vindo de volta
@@ -99,14 +98,7 @@ export function LoginForm({
           Esqueci minha senha
         </Anchor>
 
-        {error ? (
-          <Group gap={6} align="flex-start" role="alert">
-            <AlertCircle size={16} aria-hidden />
-            <Text c="danger" fz="sm">
-              {error}
-            </Text>
-          </Group>
-        ) : null}
+        <FormError>{error}</FormError>
 
         <Button type="submit" fullWidth loading={loading} disabled={loading}>
           Entrar

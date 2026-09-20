@@ -1,8 +1,15 @@
 "use client";
 
 import { useAuth } from "@cdorneles/auth";
-import { AuthCard, AuthVisual, ResetPasswordForm, Logo, ThemeToggle } from "@cdorneles/ui";
-import { Anchor, Flex, Stack, Text } from "@mantine/core";
+import {
+  AuthCard,
+  AuthVisual,
+  FormError,
+  ResetPasswordForm,
+  Logo,
+  ThemeToggle,
+} from "@cdorneles/ui";
+import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
 import { Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
@@ -27,22 +34,34 @@ function ResetPasswordContent() {
 
   if (!userId || !secret) {
     return (
-      <div role="alert">
-        <Text>Link de recuperação inválido. Solicite um novo link.</Text>
-        <Anchor component={Link} href="/forgot-password" underline="always" mt="md" display="block">
+      <Stack gap="md">
+        <FormError>Link de recuperação inválido. Solicite um novo link.</FormError>
+        <Anchor
+          component={Link}
+          href="/forgot-password"
+          underline="always"
+          display="block"
+          ta="center"
+        >
           Solicitar novo link
         </Anchor>
-      </div>
+      </Stack>
     );
   }
 
   return (
-    <>
+    <Stack gap="md">
       <ResetPasswordForm onSubmit={handleSubmit} />
-      <Anchor component={Link} href="/login" underline="always" mt="md" display="block">
+      <Anchor
+        component={Link}
+        href="/login"
+        underline="always"
+        display="block"
+        ta="center"
+      >
         Voltar para o login
       </Anchor>
-    </>
+    </Stack>
   );
 }
 

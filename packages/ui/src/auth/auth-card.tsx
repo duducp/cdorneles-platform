@@ -11,6 +11,7 @@ export interface AuthCardProps {
 /**
  * The two-panel auth card: form on the left (slightly wider), visual on the
  * right. Centered by the page; the visual is hidden below the `md` breakpoint.
+ * The card owns the form panel padding — slots pass content only.
  */
 export function AuthCard({ form, visual }: AuthCardProps) {
   return (
@@ -24,7 +25,7 @@ export function AuthCard({ form, visual }: AuthCardProps) {
       style={{ overflow: "hidden" }}
     >
       <Flex align="stretch" mih={{ base: "auto", sm: 560 }}>
-        <Flex direction="column" justify="center" flex="1.05 1 0" miw={0}>
+        <Flex direction="column" justify="center" p="xl" flex="1.05 1 0" miw={0}>
           {form}
         </Flex>
         {visual ? (

@@ -2,7 +2,14 @@
 
 import { isApiError } from "@cdorneles/api-client";
 import { AuthNotConfiguredError, useAuth } from "@cdorneles/auth";
-import { AuthCard, AuthVisual, MfaChallengeForm, Logo, ThemeToggle } from "@cdorneles/ui";
+import {
+  AuthCard,
+  AuthVisual,
+  FormError,
+  MfaChallengeForm,
+  Logo,
+  ThemeToggle,
+} from "@cdorneles/ui";
 import { Anchor, Flex, Skeleton, Stack, Text } from "@mantine/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -102,17 +109,21 @@ export default function MfaPage() {
                   <Skeleton h={40} />
                 </Stack>
               ) : error ? (
-                <div role="alert">
-                  <Stack gap={4}>
-                    <Text component="h1" fw={600} fz="xl">
-                      Verificação em duas etapas
-                    </Text>
-                  </Stack>
-                  <Text c="danger" mt="md">{error}</Text>
-                  <Anchor component={Link} href="/login" underline="always" mt="md" display="block">
+                <Stack gap="md">
+                  <Text component="h1" fw={600} fz="xl">
+                    Verificação em duas etapas
+                  </Text>
+                  <FormError>{error}</FormError>
+                  <Anchor
+                    component={Link}
+                    href="/login"
+                    underline="always"
+                    display="block"
+                    ta="center"
+                  >
                     Voltar para o login
                   </Anchor>
-                </div>
+                </Stack>
               ) : (
                 <MfaChallengeForm
                   onSubmit={handleSubmit}

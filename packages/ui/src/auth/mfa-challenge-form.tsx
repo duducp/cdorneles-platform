@@ -1,10 +1,12 @@
 "use client";
 
 import { mfaChallengeSchema, type MfaChallengeFormValues } from "@cdorneles/schemas";
-import { Button, Text, TextInput } from "@mantine/core";
+import { Box, Button, Stack, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { KeyRoundIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { FormError } from "../components/form-error";
 
 export interface MfaChallengeFormProps {
   onSubmit: (values: MfaChallengeFormValues) => Promise<void>;
@@ -77,42 +79,48 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
   }, [onResend, cooldown]);
 
   return (
-    <form onSubmit={form.onSubmit(handleSubmit)} noValidate>
-      {error && (
-        <div role="alert" style={{ marginBottom: 16 }}>
-          <Text c="danger" fz="sm">{error}</Text>
-        </div>
-      )}
+    <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
+      <FormError mb="md">{error}</FormError>
 
-      <TextInput
-        label="Código de verificação"
-        placeholder="000000"
-        required
-        maxLength={6}
-        inputMode="numeric"
-        pattern="[0-9]*"
-        leftSection={<KeyRoundIcon size={16} aria-hidden />}
-        aria-label="Código de 6 dígitos"
-        aria-invalid={form.errors.code ? true : undefined}
-        {...form.getInputProps("code")}
-      />
+      <Stack gap={4}>
+        <Text component="h1" fw={600} fz="xl">
+          Verificação em duas etapas
+        </Text>
+        <Text c="dimmed" fz="sm">
+          Informe o código enviado para você para concluir o acesso.
+        </Text>
+      </Stack>
 
-      <Button type="submit" fullWidth mt="md" loading={status === "submitting"}>
-        Verificar código
-      </Button>
+      <Stack gap="md" mt="lg">
+        <TextInput
+          label="Código de verificação"
+          placeholder="000000"
+          required
+          maxLength={6}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          leftSection={<KeyRoundIcon size={16} aria-hidden />}
+          aria-label="Código de 6 dígitos"
+          aria-invalid={form.errors.code ? true : undefined}
+          {...form.getInputProps("code")}
+        />
 
-      {onResend && (
-        <Button
-          variant="subtle"
-          fullWidth
-          mt="sm"
-          onClick={handleResend}
-          disabled={cooldown > 0}
-          loading={resending}
-        >
-          {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar código"}
+        <Button type="submit" fullWidth loading={status === "submitting"}>
+          Verificar código
         </Button>
-      )}
-    </form>
+
+        {onResend && (
+          <Button
+            variant="subtle"
+            fullWidth
+            onClick={handleResend}
+            disabled={cooldown > 0}
+            loading={resending}
+          >
+            {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar código"}
+          </Button>
+        )}
+      </Stack>
+    </Box>
   );
 }

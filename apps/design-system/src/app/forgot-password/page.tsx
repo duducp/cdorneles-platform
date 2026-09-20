@@ -36,12 +36,18 @@ export default function ForgotPasswordPage() {
         <Stack w="100%" maw={920} gap="xl">
           <AuthCard
             form={
-              <>
+              <Stack gap="md">
                 <ForgotPasswordForm onSubmit={handleSubmit} />
-                <Anchor component={Link} href="/login" underline="always" mt="md" display="block">
+                <Anchor
+                  component={Link}
+                  href="/login"
+                  underline="always"
+                  display="block"
+                  ta="center"
+                >
                   Voltar para o login
                 </Anchor>
-              </>
+              </Stack>
             }
             visual={<AuthVisual />}
           />

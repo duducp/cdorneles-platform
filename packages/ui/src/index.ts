@@ -9,6 +9,7 @@ export * from "./auth/social-login";
 export * from "./components/badge";
 export * from "./components/button";
 export * from "./components/card";
+export * from "./components/form-error";
 export * from "./components/icon-button";
 export * from "./components/logo";
 export * from "./components/page-container";

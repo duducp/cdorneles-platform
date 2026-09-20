@@ -1,10 +1,12 @@
 "use client";
 
 import { resetPasswordSchema, type ResetPasswordFormValues } from "@cdorneles/schemas";
-import { Button, PasswordInput, Stack, Text } from "@mantine/core";
+import { Box, Button, PasswordInput, Stack, Text } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { LockIcon } from "lucide-react";
 import { useCallback, useState } from "react";
+
+import { FormError } from "../components/form-error";
 
 export interface ResetPasswordFormProps {
   onSubmit: (values: ResetPasswordFormValues) => Promise<void>;
@@ -54,12 +56,8 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
   }
 
   return (
-    <form onSubmit={form.onSubmit(handleSubmit)} noValidate>
-      {error && (
-        <div role="alert" style={{ marginBottom: 16 }}>
-          <Text c="danger" fz="sm">{error}</Text>
-        </div>
-      )}
+    <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
+      <FormError mb="md">{error}</FormError>
 
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
@@ -99,6 +97,6 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           Redefinir senha
         </Button>
       </Stack>
-    </form>
+    </Box>
   );
 }

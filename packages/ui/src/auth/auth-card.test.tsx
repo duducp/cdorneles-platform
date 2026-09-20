@@ -28,4 +28,15 @@ describe("AuthCard", () => {
     expect(screen.getByText("form-slot")).toBeInTheDocument();
     expect(screen.queryByText("visual-slot")).not.toBeInTheDocument();
   });
+
+  it("owns the form panel padding so slots pass content only", () => {
+    render(
+      <ThemeProvider>
+        <AuthCard form={<span>form-slot</span>} />
+      </ThemeProvider>,
+    );
+
+    const panel = screen.getByText("form-slot").parentElement;
+    expect(panel?.getAttribute("style")).toContain("padding");
+  });
 });
