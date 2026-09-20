@@ -1,7 +1,7 @@
 "use client";
 
 import { resetPasswordSchema, type ResetPasswordFormValues } from "@cdorneles/schemas";
-import { Button, PasswordInput } from "@mantine/core";
+import { Button, PasswordInput, Stack, Text } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { LockIcon } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -48,7 +48,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
   if (status === "done") {
     return (
       <div role="status" aria-live="polite">
-        <p>Senha redefinida com sucesso. Você já pode fazer login.</p>
+        <Text>Senha redefinida com sucesso. Você já pode fazer login.</Text>
       </div>
     );
   }
@@ -57,29 +57,48 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
     <form onSubmit={form.onSubmit(handleSubmit)} noValidate>
       {error && (
         <div role="alert" style={{ marginBottom: 16 }}>
-          <p style={{ color: "var(--mantine-color-red-6)" }}>{error}</p>
+          <Text c="danger" fz="sm">{error}</Text>
         </div>
       )}
 
-      <PasswordInput
-        label="Nova senha"
-        placeholder="Mínimo 8 caracteres"
-        required
-        leftSection={<LockIcon size={16} aria-hidden />}
-        {...form.getInputProps("password")}
-      />
+      <Stack gap={4}>
+        <Text component="h1" fw={600} fz="xl">
+          Redefinir senha
+        </Text>
+        <Text c="dimmed" fz="sm">
+          Crie uma nova senha para sua conta.
+        </Text>
+      </Stack>
 
-      <PasswordInput
-        label="Confirmar nova senha"
-        placeholder="Repita a nova senha"
-        required
-        leftSection={<LockIcon size={16} aria-hidden />}
-        {...form.getInputProps("passwordConfirmation")}
-      />
+      <Stack gap="md" mt="lg">
+        <PasswordInput
+          label="Nova senha"
+          placeholder="Mínimo 8 caracteres"
+          required
+          autoComplete="new-password"
+          leftSection={<LockIcon size={16} aria-hidden />}
+          visibilityToggleFocusable
+          visibilityToggleButtonProps={{ "aria-label": "Alternar visibilidade da senha" }}
+          aria-invalid={form.errors.password ? true : undefined}
+          {...form.getInputProps("password")}
+        />
 
-      <Button type="submit" fullWidth mt="md" loading={status === "submitting"}>
-        Redefinir senha
-      </Button>
+        <PasswordInput
+          label="Confirmar nova senha"
+          placeholder="Repita a nova senha"
+          required
+          autoComplete="new-password"
+          leftSection={<LockIcon size={16} aria-hidden />}
+          visibilityToggleFocusable
+          visibilityToggleButtonProps={{ "aria-label": "Alternar visibilidade da confirmação de senha" }}
+          aria-invalid={form.errors.passwordConfirmation ? true : undefined}
+          {...form.getInputProps("passwordConfirmation")}
+        />
+
+        <Button type="submit" fullWidth loading={status === "submitting"}>
+          Redefinir senha
+        </Button>
+      </Stack>
     </form>
   );
 }

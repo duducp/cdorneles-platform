@@ -1,10 +1,10 @@
 "use client";
 
 import { mfaChallengeSchema, type MfaChallengeFormValues } from "@cdorneles/schemas";
-import { Button, TextInput } from "@mantine/core";
+import { Button, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { KeyRoundIcon } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface MfaChallengeFormProps {
   onSubmit: (values: MfaChallengeFormValues) => Promise<void>;
@@ -12,10 +12,17 @@ export interface MfaChallengeFormProps {
 }
 
 export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) {
-  const [status, setStatus] = useState<"idle" | "submitting" | "sent">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting">("idle");
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
 
   const form = useForm<MfaChallengeFormValues>({
     initialValues: { code: "" },
@@ -49,6 +56,7 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
 
   const handleResend = useCallback(async () => {
     if (!onResend || cooldown > 0) return;
+    setResending(true);
     try {
       await onResend();
       setCooldown(30);
@@ -62,7 +70,9 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
         });
       }, 1000);
     } catch {
-      /* resend errors are non-critical */
+      setError("Erro ao reenviar código. Tente novamente.");
+    } finally {
+      setResending(false);
     }
   }, [onResend, cooldown]);
 
@@ -70,7 +80,7 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
     <form onSubmit={form.onSubmit(handleSubmit)} noValidate>
       {error && (
         <div role="alert" style={{ marginBottom: 16 }}>
-          <p style={{ color: "var(--mantine-color-red-6)" }}>{error}</p>
+          <Text c="danger" fz="sm">{error}</Text>
         </div>
       )}
 
@@ -83,6 +93,7 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
         pattern="[0-9]*"
         leftSection={<KeyRoundIcon size={16} aria-hidden />}
         aria-label="Código de 6 dígitos"
+        aria-invalid={form.errors.code ? true : undefined}
         {...form.getInputProps("code")}
       />
 
@@ -97,7 +108,7 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
           mt="sm"
           onClick={handleResend}
           disabled={cooldown > 0}
-          loading={status === "submitting"}
+          loading={resending}
         >
           {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar código"}
         </Button>

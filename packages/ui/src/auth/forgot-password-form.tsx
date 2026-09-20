@@ -1,7 +1,7 @@
 "use client";
 
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@cdorneles/schemas";
-import { Button, TextInput } from "@mantine/core";
+import { Button, Stack, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { MailIcon } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -48,10 +48,10 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
   if (status === "sent") {
     return (
       <div role="status" aria-live="polite">
-        <p>
+        <Text>
           Se o e-mail <strong>{form.values.email}</strong> estiver cadastrado, você receberá um link
           para redefinir sua senha.
-        </p>
+        </Text>
       </div>
     );
   }
@@ -60,21 +60,36 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
     <form onSubmit={form.onSubmit(handleSubmit)} noValidate>
       {error && (
         <div role="alert" style={{ marginBottom: 16 }}>
-          <p style={{ color: "var(--mantine-color-red-6)" }}>{error}</p>
+          <Text c="danger" fz="sm">{error}</Text>
         </div>
       )}
 
-      <TextInput
-        label="E-mail"
-        placeholder="voce@exemplo.com"
-        required
-        leftSection={<MailIcon size={16} aria-hidden />}
-        {...form.getInputProps("email")}
-      />
+      <Stack gap={4}>
+        <Text component="h1" fw={600} fz="xl">
+          Esqueceu sua senha?
+        </Text>
+        <Text c="dimmed" fz="sm">
+          Informe seu e-mail para receber um link de recuperação.
+        </Text>
+      </Stack>
 
-      <Button type="submit" fullWidth mt="md" loading={status === "submitting"}>
-        Enviar link de recuperação
-      </Button>
+      <Stack gap="md" mt="lg">
+        <TextInput
+          label="E-mail"
+          placeholder="voce@exemplo.com"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          required
+          leftSection={<MailIcon size={16} aria-hidden />}
+          aria-invalid={form.errors.email ? true : undefined}
+          {...form.getInputProps("email")}
+        />
+
+        <Button type="submit" fullWidth loading={status === "submitting"}>
+          Enviar link de recuperação
+        </Button>
+      </Stack>
     </form>
   );
 }

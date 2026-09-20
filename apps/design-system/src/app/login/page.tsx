@@ -3,7 +3,7 @@
 import { isApiError } from "@cdorneles/api-client";
 import { AuthNotConfiguredError, MfaRequiredError, useAuth } from "@cdorneles/auth";
 import { AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
-import { Anchor, Box, Group, Stack, Text } from "@mantine/core";
+import { Anchor, Flex, Stack, Text } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -36,20 +36,17 @@ export default function LoginPage() {
   }
 
   return (
-    <Box style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
-      <Group justify="flex-end" p="md">
+    <Flex direction="column" mih="100dvh">
+      <Flex justify="flex-end" p="md">
         <ThemeToggle />
-      </Group>
+      </Flex>
 
-      <Box
+      <Flex
         component="main"
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "var(--mantine-spacing-md)",
-        }}
+        align="center"
+        justify="center"
+        p="md"
+        style={{ flex: 1 }}
       >
         <Stack w="100%" maw={920} gap="xl">
           <AuthCard
@@ -80,7 +77,7 @@ export default function LoginPage() {
             <Logo alt="Cdorneles" height={48} />
           </Stack>
         </Stack>
-      </Box>
-    </Box>
+      </Flex>
+    </Flex>
   );
 }

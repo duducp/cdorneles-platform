@@ -20,7 +20,7 @@ export interface AuthSession {
   expiresAt: string;
 }
 
-export type MfaFactor = "totp" | "email" | "recovery";
+export type MfaFactor = "totp" | "email";
 
 export interface MfaChallenge {
   challengeId: string;

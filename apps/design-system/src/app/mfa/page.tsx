@@ -2,7 +2,7 @@
 
 import { useAuth } from "@cdorneles/auth";
 import { AuthCard, AuthVisual, MfaChallengeForm, Logo, ThemeToggle } from "@cdorneles/ui";
-import { Anchor, Box, Group, Stack, Text } from "@mantine/core";
+import { Anchor, Flex, Skeleton, Stack, Text } from "@mantine/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -13,6 +13,7 @@ export default function MfaPage() {
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factor, setFactor] = useState<"email" | "totp">("email");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +32,8 @@ export default function MfaPage() {
         setChallengeId(challenge.challengeId);
       } catch {
         if (!cancelled) setError("Erro ao iniciar desafio MFA.");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
     bootstrap();
@@ -59,36 +62,40 @@ export default function MfaPage() {
       const challenge = await service.createMfaChallenge({ factor });
       setChallengeId(challenge.challengeId);
     } catch {
-      /* resend errors are non-critical */
+      setError("Erro ao reenviar código. Tente novamente.");
     }
   }, [service, factor]);
 
   return (
-    <Box style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
-      <Group justify="flex-end" p="md">
+    <Flex direction="column" mih="100dvh">
+      <Flex justify="flex-end" p="md">
         <ThemeToggle />
-      </Group>
+      </Flex>
 
-      <Box
+      <Flex
         component="main"
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "var(--mantine-spacing-md)",
-        }}
+        align="center"
+        justify="center"
+        p="md"
+        style={{ flex: 1 }}
       >
         <Stack w="100%" maw={920} gap="xl">
           <AuthCard
             form={
-              !challengeId && !error ? (
-                <Text c="dimmed" ta="center">
-                  Carregando desafio MFA...
-                </Text>
+              loading && !error ? (
+                <Stack gap="md">
+                  <Skeleton h={36} />
+                  <Skeleton h={36} />
+                  <Skeleton h={40} />
+                </Stack>
               ) : error ? (
                 <div role="alert">
-                  <p>{error}</p>
+                  <Stack gap={4}>
+                    <Text component="h1" fw={600} fz="xl">
+                      Verificação em duas etapas
+                    </Text>
+                  </Stack>
+                  <Text c="danger" mt="md">{error}</Text>
                   <Anchor component={Link} href="/login" underline="always" mt="md" display="block">
                     Voltar para o login
                   </Anchor>
@@ -107,7 +114,7 @@ export default function MfaPage() {
             <Logo alt="Cdorneles" height={48} />
           </Stack>
         </Stack>
-      </Box>
-    </Box>
+      </Flex>
+    </Flex>
   );
 }
