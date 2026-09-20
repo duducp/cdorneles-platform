@@ -10,15 +10,17 @@ import {
   createAppwriteAuthService,
   createUnconfiguredAuthService,
 } from "@cdorneles/auth";
-import { TenantBridge, TenantProvider, createAppwriteTenantService } from "@cdorneles/tenant";
+import { OrgGuard, TenantBridge, TenantProvider, createAppwriteTenantService } from "@cdorneles/tenant";
 import type { TenantService } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
-import { useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useState, type ReactNode } from "react";
 
 import { initObservability } from "@/lib/observability";
 
 export function Providers({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [queryClient] = useState(() => createQueryClient());
   const [authService] = useState(() => {
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -39,8 +41,14 @@ export function Providers({ children }: { children: ReactNode }) {
 
   initObservability();
 
+  const handleRedirectToSelectOrg = useCallback(() => {
+    router.replace("/select-org");
+  }, [router]);
+
   const tenantContent = (
-    <AccessProvider granted={{ permissions: [], features: [] }}>{children}</AccessProvider>
+    <OrgGuard onRedirectToSelectOrg={handleRedirectToSelectOrg}>
+      <AccessProvider granted={{ permissions: [], features: [] }}>{children}</AccessProvider>
+    </OrgGuard>
   );
 
   return (

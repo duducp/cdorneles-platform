@@ -46,6 +46,7 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
   const { user, status } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const bootstrapped = useRef(false);
 
   useEffect(() => {
@@ -69,8 +70,19 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
       });
 
       setOrganizations(orgs);
-      setCurrentOrganizationId(resolved?.id ?? null);
+
+      if (resolved) {
+        setCurrentOrganizationId(resolved.id);
+        persistOrganizationId(resolved.id);
+      } else if (orgs.length === 1) {
+        setCurrentOrganizationId(orgs[0].id);
+        persistOrganizationId(orgs[0].id);
+      } else {
+        setCurrentOrganizationId(null);
+      }
+
       bootstrapped.current = true;
+      setReady(true);
     }
 
     load();
@@ -89,6 +101,7 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
     <TenantProvider
       organizations={organizations}
       currentOrganizationId={currentOrganizationId}
+      ready={ready}
       onOrganizationChange={handleOrganizationChange}
     >
       {children}

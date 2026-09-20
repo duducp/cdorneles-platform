@@ -7,6 +7,8 @@ import type { Organization } from "./types";
 export interface TenantContextValue {
   currentOrganization: Organization | null;
   organizations: Organization[];
+  /** Whether TenantBridge has finished fetching organizations. */
+  ready: boolean;
   /** Switches organization. Returns `false` for unknown/untrusted ids. */
   switchOrganization: (organizationId: string) => boolean;
 }
@@ -17,6 +19,8 @@ export interface TenantProviderProps {
   organizations?: Organization[];
   /** Initial organization id. Falls back to the first organization. */
   currentOrganizationId?: string | null;
+  /** Whether the tenant data has been loaded. */
+  ready?: boolean;
   onOrganizationChange?: (organization: Organization) => void;
   children: ReactNode;
 }
@@ -28,6 +32,7 @@ export interface TenantProviderProps {
 export function TenantProvider({
   organizations = [],
   currentOrganizationId = null,
+  ready = true,
   onOrganizationChange,
   children,
 }: TenantProviderProps) {
@@ -54,8 +59,8 @@ export function TenantProvider({
   );
 
   const value = useMemo<TenantContextValue>(
-    () => ({ currentOrganization, organizations, switchOrganization }),
-    [currentOrganization, organizations, switchOrganization],
+    () => ({ currentOrganization, organizations, ready, switchOrganization }),
+    [currentOrganization, organizations, ready, switchOrganization],
   );
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;

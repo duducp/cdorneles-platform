@@ -1,4 +1,5 @@
 export * from "./domain";
+export * from "./org-guard";
 export * from "./tenant-bridge";
 export * from "./tenant-context";
 export * from "./types";
