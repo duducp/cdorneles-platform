@@ -6,6 +6,7 @@ import {
   MantineProvider,
   useComputedColorScheme,
   useMantineColorScheme,
+  type CSSVariablesResolver,
   type MantineColorSchemeManager,
 } from "@mantine/core";
 import { useMemo, type ReactNode } from "react";
@@ -26,6 +27,15 @@ export interface ThemeProviderProps {
 
 const COLOR_SCHEME_STORAGE_KEY = "cdorneles-color-scheme";
 
+// Mantine's default `dimmed` (dark-2) fails AA on the dark body; use gray-4.
+const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {},
+  light: {},
+  dark: {
+    "--mantine-color-dimmed": "var(--mantine-color-gray-4)",
+  },
+});
+
 export function ThemeProvider({
   children,
   organizationDefault = "light",
@@ -44,6 +54,7 @@ export function ThemeProvider({
       theme={theme}
       defaultColorScheme={respectSystemPreference ? "auto" : organizationDefault}
       colorSchemeManager={manager}
+      cssVariablesResolver={cssVariablesResolver}
     >
       {children}
     </MantineProvider>
