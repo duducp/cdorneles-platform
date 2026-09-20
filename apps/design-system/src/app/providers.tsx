@@ -9,32 +9,24 @@ import {
   AuthProvider,
   createAppwriteAuthService,
   createUnconfiguredAuthService,
-  usePermissions,
 } from "@cdorneles/auth";
-import { OrgGuard, TenantBridge, TenantProvider, createAppwriteTenantService, useTenant } from "@cdorneles/tenant";
+import {
+  TenantBridge,
+  TenantProvider,
+  createAppwriteTenantService,
+} from "@cdorneles/tenant";
 import type { TenantService } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
-import { AccessProvider } from "@cdorneles/ui/permissions";
-import { useRouter } from "next/navigation";
-import { useCallback, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { initObservability } from "@/lib/observability";
 
-const APPLICATION_ID = "admin";
-
-function InnerProviders({ children }: { children: ReactNode }) {
-  const { currentOrganization } = useTenant();
-  const { granted, status } = usePermissions(APPLICATION_ID, currentOrganization?.id);
-
-  return (
-    <AccessProvider granted={granted ?? { permissions: [], features: [] }}>
-      {status === "loading" ? null : children}
-    </AccessProvider>
-  );
-}
-
+/**
+ * The design-system app is a visual playground, not an authenticated
+ * application: pages must render without Appwrite credentials or a session.
+ * Auth/tenant services stay wired so the demo pages can call useAuth/useTenant.
+ */
 export function Providers({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const [queryClient] = useState(() => createQueryClient());
   const [authService] = useState(() => {
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -55,23 +47,13 @@ export function Providers({ children }: { children: ReactNode }) {
 
   initObservability();
 
-  const handleRedirectToSelectOrg = useCallback(() => {
-    router.replace("/select-org");
-  }, [router]);
-
-  const tenantContent = (
-    <OrgGuard onRedirectToSelectOrg={handleRedirectToSelectOrg}>
-      <InnerProviders>{children}</InnerProviders>
-    </OrgGuard>
-  );
-
   return (
     <AppProvider queryClient={queryClient} organizationDefault="light">
       <AuthProvider service={authService}>
         {tenantService ? (
-          <TenantBridge tenantService={tenantService}>{tenantContent}</TenantBridge>
+          <TenantBridge tenantService={tenantService}>{children}</TenantBridge>
         ) : (
-          <TenantProvider>{tenantContent}</TenantProvider>
+          <TenantProvider>{children}</TenantProvider>
         )}
       </AuthProvider>
     </AppProvider>
