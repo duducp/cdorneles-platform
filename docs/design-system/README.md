@@ -46,7 +46,23 @@ page.
 - Each auth form carries its own title block: exactly one heading
   (`Text component="h1"`) plus a dimmed description. Pages must not add a
   second heading for the form.
+- **Announce submit errors and loading at form level** (reference: `packages/ui/src/auth/login-form.tsx`). Focus moves to the first invalid input, so its inline error is not announced: render the first field error also inside the shared `FormError` (its `role="alert"` announces it), point `aria-describedby` on the `<Box component="form">` to that alert's id, and set `aria-busy` on the form while submitting. Keep Mantine's own `aria-invalid`/`aria-describedby` wiring — do not duplicate it manually where `error` already flows through `getInputProps`.
+- **The visible label is the accessible name** (WCAG 2.5.3 Label in Name). Never add an `aria-label` that differs from the visible label on the same input; use `aria-describedby` for extra hints. Do not set `required` on auth forms: Mantine renders the asterisk inside the `<label>` (which breaks exact-match tests) and the indicator is redundant when validation happens on submit with `noValidate`.
+- **Password visibility toggles**: rely on Mantine's `aria-pressed` for state; pass only a static `aria-label` via `visibilityToggleButtonProps` plus `visibilityToggleFocusable`. There is no `aria-label-pressed` — do not invent it.
 - Every new `@cdorneles/ui` component ships with a co-located `*.test.tsx`.
+
+## Theme and contrast
+
+- **Mantine 9 resolves the primary color at the fixed main shade (index 5)** — there is no index 10, and `primaryShade` does not change which swatch filled buttons use. The theme pins `primaryShade: 5` so rendered UI matches `tokens.<palette>[5]`; contrast must always be computed against index 5, never against the old `{ light: 6, dark: 4 }` assumption.
+- **`autoContrast: true`** is set platform-wide: filled components pick black/white text from the background luminance (threshold 0.3). Never hardcode text color on filled buttons/variants; to improve contrast of a primary action, adjust or re-map the palette token instead of overriding text color.
+
+## Page structure (Next.js App Router)
+
+- Public pages follow the **server page + client component split** (reference: `apps/design-system/src/app/login/`): `page.tsx` stays a Server Component exporting `metadata` (Next 16 forbids `metadata` in `"use client"` files) and renders `<XxxPageClient />` from a co-located `page-client.tsx` that holds the hooks and handlers.
+- Each page exports a **document title** via `metadata`; the root layout provides the `%s | Cdorneles Design System` template.
+- Exactly one `<h1>` per page. Auth forms carry their own `h1`; pages without a form-level heading (e.g. `select-org`) add a visually hidden one (`VisuallyHidden` + `Title order={1}`).
+- Announce transient states to screen readers with a `VisuallyHidden aria-live="polite"` region (reference: login page "Entrando..."); use the shared `LoadingState` (`role="status"`) for full-page loading instead of bare dimmed text.
+- Keep the theme toggle row compact (`p="sm"`) so the `IconButton` stays near the touch target on mobile; links that are not underlined by default must set `underline="always"` (footer legal links) — never color alone.
 
 ## Branding assets
 
