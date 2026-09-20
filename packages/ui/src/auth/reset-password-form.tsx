@@ -1,3 +1,5 @@
+"use client";
+
 import { resetPasswordSchema, type ResetPasswordFormValues } from "@cdorneles/schemas";
 import { Button, PasswordInput } from "@mantine/core";
 import { useForm } from "@mantine/form";

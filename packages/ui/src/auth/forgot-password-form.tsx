@@ -1,3 +1,5 @@
+"use client";
+
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@cdorneles/schemas";
 import { Button, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";

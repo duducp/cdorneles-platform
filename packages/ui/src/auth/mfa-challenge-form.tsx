@@ -1,3 +1,5 @@
+"use client";
+
 import { mfaChallengeSchema, type MfaChallengeFormValues } from "@cdorneles/schemas";
 import { Button, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";

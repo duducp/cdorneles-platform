@@ -13,7 +13,6 @@ export default function MfaPage() {
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factor, setFactor] = useState<"email" | "totp">("email");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,15 +42,12 @@ export default function MfaPage() {
   const handleSubmit = useCallback(
     async (values: { code: string }) => {
       if (!challengeId) return;
-      setLoading(true);
       setError(null);
       try {
         await completeMfa({ challengeId, code: values.code });
         router.push("/");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Código inválido.");
-      } finally {
-        setLoading(false);
       }
     },
     [challengeId, completeMfa, router],
