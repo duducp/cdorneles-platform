@@ -1,7 +1,7 @@
 "use client";
 
 import { isApiError } from "@cdorneles/api-client";
-import { AuthNotConfiguredError, useAuth } from "@cdorneles/auth";
+import { AuthNotConfiguredError, MfaRequiredError, useAuth } from "@cdorneles/auth";
 import { AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
 import { Anchor, Box, Group, Stack, Text } from "@mantine/core";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,8 @@ export default function LoginPage() {
     } catch (err) {
       if (err instanceof AuthNotConfiguredError) {
         setError("Autenticação não configurada neste ambiente.");
+      } else if (err instanceof MfaRequiredError) {
+        router.push("/mfa");
       } else if (isApiError(err) && err.code === "user_invalid_credentials") {
         setError("E-mail ou senha inválidos.");
       } else {
@@ -57,6 +59,7 @@ export default function LoginPage() {
                 loading={loading}
                 error={error}
                 showSignUp={enableSignUp}
+                onForgotPassword={() => router.push("/forgot-password")}
               />
             }
             visual={<AuthVisual />}

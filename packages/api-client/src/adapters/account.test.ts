@@ -154,14 +154,12 @@ describe("createAccountApi", () => {
       userId: "u1",
       secret: "s1",
       password: "s3cret-pass",
-      passwordAgain: "s3cret-pass",
     });
 
     expect(mocks.account.updateRecovery).toHaveBeenCalledWith({
       userId: "u1",
       secret: "s1",
       password: "s3cret-pass",
-      passwordAgain: "s3cret-pass",
     });
   });
 

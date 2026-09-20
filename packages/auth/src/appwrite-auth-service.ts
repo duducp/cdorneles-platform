@@ -74,7 +74,6 @@ export function createAppwriteAuthService(accountApi: AccountApi): AuthService {
         userId: input.userId,
         secret: input.secret,
         password: input.password,
-        passwordAgain: input.password,
       });
     },
   };

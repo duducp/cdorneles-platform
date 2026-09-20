@@ -1,4 +1,4 @@
-import { Account } from "appwrite";
+import { Account, type AuthenticationFactor } from "appwrite";
 import type { Client } from "appwrite";
 
 import type { AccountApi } from "../client";
@@ -81,7 +81,6 @@ export function createAccountApi(client: Client): AccountApi {
           userId: input.userId,
           secret: input.secret,
           password: input.password,
-          passwordAgain: input.passwordAgain,
         });
       } catch (error) {
         throw mapAppwriteError(error);
@@ -104,7 +103,9 @@ export function createAccountApi(client: Client): AccountApi {
 
     async createMfaChallenge(input): Promise<AppwriteMfaChallenge> {
       try {
-        const challenge = await account.createMfaChallenge({ factor: input.factor });
+        const challenge = await account.createMfaChallenge({
+          factor: input.factor as AuthenticationFactor,
+        });
         return { $id: challenge.$id, factor: input.factor };
       } catch (error) {
         throw mapAppwriteError(error);

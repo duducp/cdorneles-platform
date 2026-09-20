@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-import { AuthProvider, useAuth, type AuthContextValue } from "./auth-context";
+import { AuthProvider, useAuth } from "./auth-context";
 import type { AuthService, AuthSession, AuthUser } from "./types";
 
 const futureDate = new Date(Date.now() + 86400000).toISOString();

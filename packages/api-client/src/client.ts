@@ -22,7 +22,6 @@ export interface AccountApi {
     userId: string;
     secret: string;
     password: string;
-    passwordAgain: string;
   }): Promise<void>;
   listMfaFactors(): Promise<AppwriteMfaFactors>;
   createMfaChallenge(input: { factor: "totp" | "email" }): Promise<AppwriteMfaChallenge>;

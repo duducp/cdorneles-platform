@@ -215,7 +215,6 @@ describe("createAppwriteAuthService", () => {
         userId: "u1",
         secret: "s1",
         password: "new-pass",
-        passwordAgain: "new-pass",
       });
     });
 
