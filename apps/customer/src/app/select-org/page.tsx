@@ -2,9 +2,9 @@
 
 import { useAuth } from "@cdorneles/auth";
 import { useTenant } from "@cdorneles/tenant";
-import { Logo, ThemeToggle } from "@cdorneles/ui";
+import { LoadingState, Logo, ThemeToggle } from "@cdorneles/ui";
 import { OrgPicker } from "@cdorneles/ui/tenant";
-import { Flex, Stack, Text } from "@mantine/core";
+import { Flex, Stack, Title, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -19,6 +19,7 @@ export default function SelectOrgPage() {
     const success = switchOrganization(organizationId);
     if (success) {
       router.push("/");
+      return;
     }
     setLoading(false);
   }
@@ -26,14 +27,14 @@ export default function SelectOrgPage() {
   if (status !== "authenticated") {
     return (
       <Flex direction="column" mih="100dvh" align="center" justify="center">
-        <Text c="dimmed">Carregando...</Text>
+        <LoadingState label="Carregando..." minHeight={0} />
       </Flex>
     );
   }
 
   return (
     <Flex direction="column" mih="100dvh">
-      <Flex justify="flex-end" p="md">
+      <Flex justify="flex-end" p="sm">
         <ThemeToggle />
       </Flex>
 
@@ -45,6 +46,9 @@ export default function SelectOrgPage() {
         style={{ flex: 1 }}
       >
         <Stack w="100%" maw={480} gap="xl">
+          <VisuallyHidden>
+            <Title order={1}>Selecionar organização</Title>
+          </VisuallyHidden>
           <OrgPicker
             organizations={organizations}
             currentOrganizationId={currentOrganization?.id}

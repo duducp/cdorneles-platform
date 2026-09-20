@@ -9,7 +9,10 @@ import type { ReactNode } from "react";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Cdorneles Design System",
+  title: {
+    default: "Cdorneles Design System",
+    template: "%s | Cdorneles Design System",
+  },
   description: "Visual playground for the shared Cdorneles design system.",
   icons: { icon: "/brand/favicon.png" },
 };

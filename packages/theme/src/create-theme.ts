@@ -49,7 +49,13 @@ export function createAppTheme(options: CreateAppThemeOptions = {}): MantineThem
 
   return createTheme({
     primaryColor: "brand",
-    primaryShade: { light: 6, dark: 4 },
+    // Mantine 9 resolves the primary color at the fixed main shade (index 5) —
+    // there is no index 10. Index 5 is `tokens.brand[5]`, keeping the rendered
+    // UI aligned with the documented token and its AA contrast measurements.
+    primaryShade: 5,
+    // Filled buttons pick black/white text from the background luminance
+    // (WCAG-friendlier than the hardcoded white default).
+    autoContrast: true,
     colors,
     fontFamily: fontFamily.sans,
     fontFamilyMonospace: fontFamily.mono,

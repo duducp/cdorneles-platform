@@ -43,8 +43,18 @@ describe("LoginForm", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
-    expect(await screen.findByText("Informe um e-mail válido.")).toBeInTheDocument();
+    // The message renders at the field and in the form-level alert.
+    expect(await screen.findAllByText("Informe um e-mail válido.")).not.toHaveLength(0);
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("announces the first validation error through the form-level alert", async () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Informe um e-mail válido.");
   });
 
   it("focuses the first invalid field on submit", async () => {
@@ -82,6 +92,28 @@ describe("LoginForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("exposes the password visibility toggle to keyboard and assistive tech", async () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    const toggle = screen.getByRole("button", { name: "Alternar visibilidade da senha" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    await userEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Senha")).toHaveAttribute("type", "text");
+  });
+
+  it("keeps autocomplete hints for password managers", () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    expect(screen.getByLabelText("E-mail")).toHaveAttribute("autocomplete", "email");
+    expect(screen.getByLabelText("Senha")).toHaveAttribute(
+      "autocomplete",
+      "current-password",
+    );
   });
 
   it("hides the sign-up link by default", () => {

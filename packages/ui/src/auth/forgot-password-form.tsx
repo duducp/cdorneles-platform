@@ -59,8 +59,13 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
   }
 
   return (
-    <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
-      <FormError mb="md">{error}</FormError>
+    <Box
+      component="form"
+      onSubmit={form.onSubmit(handleSubmit)}
+      noValidate
+      aria-busy={status === "submitting" || undefined}
+    >
+      <FormError id="forgot-password-form-error" mb="md">{error}</FormError>
 
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
@@ -81,6 +86,7 @@ export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
           required
           leftSection={<MailIcon size={16} aria-hidden />}
           aria-invalid={form.errors.email ? true : undefined}
+          aria-describedby={form.errors.email ? "forgot-password-form-error" : undefined}
           {...form.getInputProps("email")}
         />
 

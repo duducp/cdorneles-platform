@@ -20,7 +20,7 @@ describe("MfaChallengeForm", () => {
     const onSubmit = vi.fn();
     renderForm({ onSubmit });
 
-    expect(screen.getByLabelText(/código de 6 dígitos/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/código de verificação/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /verificar código/i })).toBeInTheDocument();
   });
 
@@ -40,7 +40,7 @@ describe("MfaChallengeForm", () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     renderForm({ onSubmit });
 
-    await user.type(screen.getByLabelText(/código de 6 dígitos/i), "123456");
+    await user.type(screen.getByLabelText(/código de verificação/i), "123456");
     await user.click(screen.getByRole("button", { name: /verificar código/i }));
 
     await waitFor(() => {
@@ -53,7 +53,7 @@ describe("MfaChallengeForm", () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error("Código expirado"));
     renderForm({ onSubmit });
 
-    await user.type(screen.getByLabelText(/código de 6 dígitos/i), "123456");
+    await user.type(screen.getByLabelText(/código de verificação/i), "123456");
     await user.click(screen.getByRole("button", { name: /verificar código/i }));
 
     await waitFor(() => {

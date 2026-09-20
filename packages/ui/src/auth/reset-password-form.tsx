@@ -56,8 +56,13 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
   }
 
   return (
-    <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
-      <FormError mb="md">{error}</FormError>
+    <Box
+      component="form"
+      onSubmit={form.onSubmit(handleSubmit)}
+      noValidate
+      aria-busy={status === "submitting" || undefined}
+    >
+      <FormError id="reset-password-form-error" mb="md">{error}</FormError>
 
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
@@ -78,6 +83,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           visibilityToggleFocusable
           visibilityToggleButtonProps={{ "aria-label": "Alternar visibilidade da senha" }}
           aria-invalid={form.errors.password ? true : undefined}
+          aria-describedby={form.errors.password ? "reset-password-form-error" : undefined}
           {...form.getInputProps("password")}
         />
 
@@ -90,6 +96,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           visibilityToggleFocusable
           visibilityToggleButtonProps={{ "aria-label": "Alternar visibilidade da confirmação de senha" }}
           aria-invalid={form.errors.passwordConfirmation ? true : undefined}
+          aria-describedby={form.errors.passwordConfirmation ? "reset-password-form-error" : undefined}
           {...form.getInputProps("passwordConfirmation")}
         />
 

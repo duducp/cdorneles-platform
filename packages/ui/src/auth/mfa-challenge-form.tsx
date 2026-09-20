@@ -79,8 +79,13 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
   }, [onResend, cooldown]);
 
   return (
-    <Box component="form" onSubmit={form.onSubmit(handleSubmit)} noValidate>
-      <FormError mb="md">{error}</FormError>
+    <Box
+      component="form"
+      onSubmit={form.onSubmit(handleSubmit)}
+      noValidate
+      aria-busy={status === "submitting" || undefined}
+    >
+      <FormError id="mfa-form-error" mb="md">{error}</FormError>
 
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
@@ -100,8 +105,8 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
           inputMode="numeric"
           pattern="[0-9]*"
           leftSection={<KeyRoundIcon size={16} aria-hidden />}
-          aria-label="Código de 6 dígitos"
           aria-invalid={form.errors.code ? true : undefined}
+          aria-describedby={form.errors.code ? "mfa-form-error" : undefined}
           {...form.getInputProps("code")}
         />
 

@@ -58,8 +58,17 @@ export function LoginForm({
     },
   );
 
+  const submitError =
+    form.errors.email ?? form.errors.password ?? null;
+
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      noValidate
+      aria-busy={loading || undefined}
+      aria-describedby={submitError ? "login-form-error" : undefined}
+    >
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
           Bem-vindo de volta
@@ -94,11 +103,13 @@ export function LoginForm({
           aria-invalid={form.errors.password ? true : undefined}
         />
 
-        <Anchor component="button" type="button" size="sm" c="brand" onClick={onForgotPassword}>
+        <Anchor component="button" type="button" size="sm" underline="hover" c="brand" onClick={onForgotPassword}>
           Esqueci minha senha
         </Anchor>
 
-        <FormError>{error}</FormError>
+        <FormError id="login-form-error" mb="xs">
+          {submitError ?? error}
+        </FormError>
 
         <Button type="submit" fullWidth loading={loading} disabled={loading}>
           Entrar
@@ -107,7 +118,7 @@ export function LoginForm({
         {showSignUp ? (
           <Text fz="sm" ta="center" c="dimmed">
             Não tem uma conta?{" "}
-            <Anchor component="button" type="button" c="brand" onClick={onSignUp}>
+            <Anchor component="button" type="button" underline="hover" c="brand" onClick={onSignUp}>
               Criar conta
             </Anchor>
           </Text>
