@@ -26,11 +26,11 @@ capabilities. No business modules yet.
 
 - [x] Replace `createUnconfiguredAuthService()` with an Appwrite-backed
       `AuthService` (login, logout, session, current user).
-- [ ] Implement MFA (`completeMfa`) and password recovery
-      (`requestPasswordRecovery` / `confirmPasswordRecovery`) — still stubs
-      that throw.
-- [ ] MFA challenge UI: a page to enter the 2FA (TOTP) code, or the code sent by
-      e-mail/SMS, after login — calls `completeMfa`.
+- [x] Implement MFA (`completeMfa`) and password recovery
+      (`requestPasswordRecovery` / `confirmPasswordRecovery`).
+- [x] MFA challenge UI: a page to enter the 2FA code after login — calls
+      `completeMfa`. Includes factor detection (email/TOTP), resend with cooldown,
+      and `/forgot-password` + `/reset-password` routes.
 - [x] Session bootstrap/refresh in the app `Providers` (all four apps), with a
       graceful `createUnconfiguredAuthService()` fallback when env vars are
       absent.
