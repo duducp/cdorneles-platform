@@ -77,9 +77,9 @@ capabilities. No business modules yet.
       Test organization: `e2e-org-probe`.
 - [x] Appwrite project privacy policy exposes `user_id` on memberships (needed
       for client-side resolution; name/email/phone stay hidden).
-- [ ] Feed `TenantProvider` in the apps (TanStack Query over the service) — needs
+- [x] Feed `TenantProvider` in the apps (TanStack Query over the service) — needs
       a login UI to be meaningful.
-- [ ] Organization picker: after login, when the user belongs to more than one
+- [x] Organization picker: after login, when the user belongs to more than one
       organization, a page to choose the active organization (feeds
       `TenantProvider`).
 - [ ] Document standard vs. custom domain behaviour (ADR-007).
@@ -93,12 +93,21 @@ capabilities. No business modules yet.
       path and two deny paths.
 - [x] Emit an audit-log record for the administrative action.
 
+### 6. Security Foundation (Phase 1)
+
+- [x] Extract shared `authorize()` into `@cdorneles/authz` package.
+- [x] Create `resolve-grants` Appwrite Function (validates auth, membership,
+      resolves roles → permissions → features).
+- [x] Add `resolveGrants()` to `@cdorneles/permissions` to call the Function.
+- [x] Add `usePermissions()` hook to `@cdorneles/auth` with TanStack Query.
+- [x] Mirror session state to `cdorneles-session` cookie for middleware.
+- [x] Wire `usePermissions()` into all 4 app providers (replaces empty grants).
+- [x] Add Next.js middleware for cookie-based route protection.
+
 ## Next
 
 - [ ] `@cdorneles/observability`: real Sentry provider behind the existing
       contract (browser + Functions).
-- [ ] `@cdorneles/permissions`: load real grants and feed `AccessProvider`
-      instead of the empty placeholder in `apps/*/providers.tsx`.
 - [ ] White-label branding: apply `organization_profiles` branding to
       `@cdorneles/theme` (contrast-validated tokens).
 - [ ] Storage upload flow: an `@cdorneles/ui` upload component plus a
