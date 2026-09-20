@@ -76,6 +76,7 @@ Every new page or component must satisfy this checklist.
 **Forms**
 - Mantine Form owns form state; Zod owns validation.
 - Keep the submit enabled and validate on submit — do not disable it until the fields are filled (a disabled button hides why it is disabled).
+- Form-level errors use the shared `FormError` component (`@cdorneles/ui`), never hand-rolled alerts or loose colored text; distinguish known error causes instead of swallowing them into a generic message. See `docs/design-system/README.md` → "Forms and auth pages".
 
 **Responsive**
 - Hide/reflow with `visibleFrom`/`hiddenFrom`; keep a fixed `minHeight` only at `sm` and up; no fixed height on mobile; no horizontal overflow.
