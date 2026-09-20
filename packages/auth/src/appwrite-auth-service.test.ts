@@ -9,6 +9,11 @@ function createMockAccountApi(): AccountApi {
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     deleteSession: vi.fn(),
+    createRecovery: vi.fn(),
+    updateRecovery: vi.fn(),
+    listMfaFactors: vi.fn(),
+    createMfaChallenge: vi.fn(),
+    updateMfaChallenge: vi.fn(),
   };
 }
 

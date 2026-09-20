@@ -4,6 +4,8 @@ import type {
   AppwriteExecution,
   AppwriteFile,
   AppwriteMembership,
+  AppwriteMfaChallenge,
+  AppwriteMfaFactors,
   AppwriteRow,
   AppwriteSession,
   AppwriteTeam,
@@ -15,6 +17,16 @@ export interface AccountApi {
   listSessions(): Promise<AppwriteSession[]>;
   createEmailPasswordSession(input: { email: string; password: string }): Promise<AppwriteSession>;
   deleteSession(sessionId?: string): Promise<void>;
+  createRecovery(input: { email: string; url: string }): Promise<void>;
+  updateRecovery(input: {
+    userId: string;
+    secret: string;
+    password: string;
+    passwordAgain: string;
+  }): Promise<void>;
+  listMfaFactors(): Promise<AppwriteMfaFactors>;
+  createMfaChallenge(input: { factor: "totp" | "email" }): Promise<AppwriteMfaChallenge>;
+  updateMfaChallenge(input: { challengeId: string; otp: string }): Promise<AppwriteSession>;
 }
 
 export interface TeamsApi {

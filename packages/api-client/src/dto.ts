@@ -56,3 +56,15 @@ export interface AppwriteFile {
   mimeType: string;
   sizeOriginal: number;
 }
+
+export interface AppwriteMfaFactors {
+  totp: boolean;
+  phone: boolean;
+  email: boolean;
+  recoveryCode: boolean;
+}
+
+export interface AppwriteMfaChallenge {
+  $id: string;
+  factor: string;
+}

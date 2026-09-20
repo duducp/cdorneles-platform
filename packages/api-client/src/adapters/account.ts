@@ -2,7 +2,7 @@ import { Account } from "appwrite";
 import type { Client } from "appwrite";
 
 import type { AccountApi } from "../client";
-import type { AppwriteAccount, AppwriteSession } from "../dto";
+import type { AppwriteAccount, AppwriteMfaChallenge, AppwriteMfaFactors, AppwriteSession } from "../dto";
 import { mapAppwriteError } from "./map-error";
 
 export function createAccountApi(client: Client): AccountApi {
@@ -62,6 +62,62 @@ export function createAccountApi(client: Client): AccountApi {
     async deleteSession(sessionId): Promise<void> {
       try {
         await account.deleteSession({ sessionId: sessionId || "current" });
+      } catch (error) {
+        throw mapAppwriteError(error);
+      }
+    },
+
+    async createRecovery(input): Promise<void> {
+      try {
+        await account.createRecovery({ email: input.email, url: input.url });
+      } catch (error) {
+        throw mapAppwriteError(error);
+      }
+    },
+
+    async updateRecovery(input): Promise<void> {
+      try {
+        await account.updateRecovery({
+          userId: input.userId,
+          secret: input.secret,
+          password: input.password,
+          passwordAgain: input.passwordAgain,
+        });
+      } catch (error) {
+        throw mapAppwriteError(error);
+      }
+    },
+
+    async listMfaFactors(): Promise<AppwriteMfaFactors> {
+      try {
+        const factors = await account.listMfaFactors();
+        return {
+          totp: factors.totp,
+          phone: factors.phone,
+          email: factors.email,
+          recoveryCode: factors.recoveryCode,
+        };
+      } catch (error) {
+        throw mapAppwriteError(error);
+      }
+    },
+
+    async createMfaChallenge(input): Promise<AppwriteMfaChallenge> {
+      try {
+        const challenge = await account.createMfaChallenge({ factor: input.factor });
+        return { $id: challenge.$id, factor: input.factor };
+      } catch (error) {
+        throw mapAppwriteError(error);
+      }
+    },
+
+    async updateMfaChallenge(input): Promise<AppwriteSession> {
+      try {
+        const session = await account.updateMfaChallenge({
+          challengeId: input.challengeId,
+          otp: input.otp,
+        });
+        return { $id: session.$id, userId: session.userId, expire: session.expire };
       } catch (error) {
         throw mapAppwriteError(error);
       }

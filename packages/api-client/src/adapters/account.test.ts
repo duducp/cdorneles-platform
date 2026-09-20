@@ -12,6 +12,11 @@ const mocks = vi.hoisted(() => ({
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     deleteSession: vi.fn(),
+    createRecovery: vi.fn(),
+    updateRecovery: vi.fn(),
+    listMfaFactors: vi.fn(),
+    createMfaChallenge: vi.fn(),
+    updateMfaChallenge: vi.fn(),
   },
 }));
 
@@ -127,5 +132,85 @@ describe("createAccountApi", () => {
     const api = createAccountApi(client);
 
     await expect(api.getCurrentUser()).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("creates a recovery with the given e-mail and url", async () => {
+    mocks.account.createRecovery.mockResolvedValue(undefined);
+
+    const api = createAccountApi(client);
+    await api.createRecovery({ email: "a@b.c", url: "https://app.test/reset-password" });
+
+    expect(mocks.account.createRecovery).toHaveBeenCalledWith({
+      email: "a@b.c",
+      url: "https://app.test/reset-password",
+    });
+  });
+
+  it("updates a recovery with the secret and the new password", async () => {
+    mocks.account.updateRecovery.mockResolvedValue(undefined);
+
+    const api = createAccountApi(client);
+    await api.updateRecovery({
+      userId: "u1",
+      secret: "s1",
+      password: "s3cret-pass",
+      passwordAgain: "s3cret-pass",
+    });
+
+    expect(mocks.account.updateRecovery).toHaveBeenCalledWith({
+      userId: "u1",
+      secret: "s1",
+      password: "s3cret-pass",
+      passwordAgain: "s3cret-pass",
+    });
+  });
+
+  it("maps the available MFA factors", async () => {
+    mocks.account.listMfaFactors.mockResolvedValue({
+      totp: true,
+      phone: false,
+      email: true,
+      recoveryCode: false,
+    });
+
+    const api = createAccountApi(client);
+
+    await expect(api.listMfaFactors()).resolves.toEqual({
+      totp: true,
+      phone: false,
+      email: true,
+      recoveryCode: false,
+    });
+  });
+
+  it("creates an MFA challenge for the given factor", async () => {
+    mocks.account.createMfaChallenge.mockResolvedValue({ $id: "c1", userId: "u1", factor: "email" });
+
+    const api = createAccountApi(client);
+    const challenge = await api.createMfaChallenge({ factor: "email" });
+
+    expect(mocks.account.createMfaChallenge).toHaveBeenCalledWith({ factor: "email" });
+    expect(challenge).toEqual({ $id: "c1", factor: "email" });
+  });
+
+  it("completes an MFA challenge and maps the session", async () => {
+    mocks.account.updateMfaChallenge.mockResolvedValue({
+      $id: "s1",
+      userId: "u1",
+      expire: "2026-01-01T00:00:00.000Z",
+    });
+
+    const api = createAccountApi(client);
+    const session = await api.updateMfaChallenge({ challengeId: "c1", otp: "123456" });
+
+    expect(mocks.account.updateMfaChallenge).toHaveBeenCalledWith({
+      challengeId: "c1",
+      otp: "123456",
+    });
+    expect(session).toEqual({
+      $id: "s1",
+      userId: "u1",
+      expire: "2026-01-01T00:00:00.000Z",
+    });
   });
 });
