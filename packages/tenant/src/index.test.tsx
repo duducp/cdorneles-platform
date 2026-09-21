@@ -83,6 +83,29 @@ describe("TenantProvider", () => {
     expect(onChange).toHaveBeenCalledWith(organizations[1]);
   });
 
+  it("applies a currentOrganizationId that arrives after mount", () => {
+    function PropProbe() {
+      const { currentOrganization } = useTenant();
+      return <span data-testid="current-id">{currentOrganization?.id ?? "none"}</span>;
+    }
+
+    const { rerender } = render(
+      <TenantProvider organizations={[]} currentOrganizationId={null}>
+        <PropProbe />
+      </TenantProvider>,
+    );
+
+    expect(screen.getByTestId("current-id")).toHaveTextContent("none");
+
+    rerender(
+      <TenantProvider organizations={organizations} currentOrganizationId="team-globex">
+        <PropProbe />
+      </TenantProvider>,
+    );
+
+    expect(screen.getByTestId("current-id")).toHaveTextContent("team-globex");
+  });
+
   it("ignores unknown organization ids", () => {
     const onChange = vi.fn();
     let result: boolean | undefined;

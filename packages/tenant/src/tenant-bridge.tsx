@@ -113,6 +113,18 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
     persistOrganizationId(organization.id);
   }, []);
 
+  const handleCreateOrganization = useCallback(
+    async (name: string): Promise<Organization> => {
+      const organization = await tenantService.createOrganization(name);
+      const orgs = await tenantService.listOrganizations();
+      setOrganizations(orgs);
+      setCurrentOrganizationId(organization.id);
+      persistOrganizationId(organization.id);
+      return organization;
+    },
+    [tenantService],
+  );
+
   return (
     <TenantProvider
       organizations={organizations}
@@ -120,6 +132,7 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
       branding={branding}
       ready={ready}
       onOrganizationChange={handleOrganizationChange}
+      onCreateOrganization={handleCreateOrganization}
     >
       {children}
     </TenantProvider>

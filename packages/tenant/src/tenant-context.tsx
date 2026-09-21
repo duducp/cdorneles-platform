@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import type { Branding } from "@cdorneles/types";
 
@@ -14,6 +22,8 @@ export interface TenantContextValue {
   ready: boolean;
   /** Switches organization. Returns `false` for unknown/untrusted ids. */
   switchOrganization: (organizationId: string) => boolean;
+  /** Creates an organization and makes it active. */
+  createOrganization: (name: string) => Promise<Organization>;
 }
 
 export const TenantContext = createContext<TenantContextValue | null>(null);
@@ -26,6 +36,7 @@ export interface TenantProviderProps {
   /** Whether the tenant data has been loaded. */
   ready?: boolean;
   onOrganizationChange?: (organization: Organization) => void;
+  onCreateOrganization?: (name: string) => Promise<Organization>;
   children: ReactNode;
 }
 
@@ -39,11 +50,18 @@ export function TenantProvider({
   branding = null,
   ready = true,
   onOrganizationChange,
+  onCreateOrganization,
   children,
 }: TenantProviderProps) {
   const [selectedId, setSelectedId] = useState<string | null>(
     currentOrganizationId ?? organizations[0]?.id ?? null,
   );
+
+  useEffect(() => {
+    if (currentOrganizationId) {
+      setSelectedId(currentOrganizationId);
+    }
+  }, [currentOrganizationId]);
 
   const currentOrganization = useMemo(
     () => organizations.find((organization) => organization.id === selectedId) ?? null,
@@ -63,9 +81,33 @@ export function TenantProvider({
     [organizations, onOrganizationChange],
   );
 
+  const createOrganization = useCallback(
+    async (name: string) => {
+      if (!onCreateOrganization) {
+        throw new Error("createOrganization is not configured.");
+      }
+      return onCreateOrganization(name);
+    },
+    [onCreateOrganization],
+  );
+
   const value = useMemo<TenantContextValue>(
-    () => ({ currentOrganization, organizations, branding, ready, switchOrganization }),
-    [currentOrganization, organizations, branding, ready, switchOrganization],
+    () => ({
+      currentOrganization,
+      organizations,
+      branding,
+      ready,
+      switchOrganization,
+      createOrganization,
+    }),
+    [
+      currentOrganization,
+      organizations,
+      branding,
+      ready,
+      switchOrganization,
+      createOrganization,
+    ],
   );
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;
