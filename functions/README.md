@@ -168,13 +168,21 @@ per-execution API key arrives as the `x-appwrite-key` request header.
 
 - `.github/workflows/ci.yml` runs the Go gate (`make -C functions build|vet|test`)
   on every push to `main` and every pull request.
+- `.github/workflows/release.yml` runs `release-please`: it keeps a Release PR
+  that bumps the version and updates `CHANGELOG.md` from Conventional Commits.
+  Merging it creates the `v*` tag and a GitHub Release.
 - `.github/workflows/functions-deploy.yml` deploys to production:
-  - pushing a `v*` tag deploys every function;
-  - a manual run (`workflow_dispatch`) deploys one function or all of them.
+  - when a release is cut (called by the release workflow);
+  - pushing a `v*` tag manually;
+  - a manual run (`workflow_dispatch`) for one function or all.
 
   It verifies first, then deploys from the `production` GitHub Environment
   (which can require reviewers). Secrets: `APPWRITE_ENDPOINT`,
   `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`.
+
+  Note: a tag pushed with `GITHUB_TOKEN` does not trigger other workflows, so
+  the release workflow invokes the deploy explicitly via `workflow_call` rather
+  than relying on the tag event.
 
 ## Adding a function
 

@@ -1,0 +1,40 @@
+name: Release
+
+# Maintains a "Release PR" from Conventional Commits. Merging it bumps the
+# version, updates CHANGELOG.md, creates the `v*` tag and a GitHub Release.
+# Because a tag pushed with GITHUB_TOKEN does not trigger other workflows, the
+# functions deploy is invoked explicitly (workflow_call) when a release is cut.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release PR
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  deploy-functions:
+    name: Deploy functions
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    uses: ./.github/workflows/functions-deploy.yml
+    secrets: inherit

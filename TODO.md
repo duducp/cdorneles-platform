@@ -141,6 +141,10 @@ capabilities. No business modules yet.
       job: `make -C functions build|vet|test`). Deploy runs separately in
       `.github/workflows/functions-deploy.yml` on `v*` tags or manual dispatch,
       gated by a `verify` job and the `production` environment.
+- [x] Releases are automated with release-please
+      (`.github/workflows/release.yml`): a Release PR bumps the version and
+      updates `CHANGELOG.md` from Conventional Commits; merging it tags `v*`
+      and invokes the functions deploy.
 - [x] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route
       redirects point to `/auth/login`, which does not exist — actual route is
       `/login` (design-system reference). Carry the `redirect` query param

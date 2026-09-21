@@ -4,7 +4,10 @@ name: Deploy Functions
 #
 # Triggers:
 #   - a `v*` tag (release) deploys every function;
-#   - a manual run deploys one function or all of them.
+#   - a manual run deploys one function or all of them;
+#   - called by the release workflow after release-please cuts a release.
+#     (A tag pushed with GITHUB_TOKEN does not trigger other workflows, so the
+#     release workflow calls this one explicitly instead of relying on the tag.)
 #
 # The deploy job uses the `production` GitHub Environment, so it can require
 # reviewers. Required secrets:
@@ -31,6 +34,13 @@ on:
           - send-email
           - get-organization-profile
           - provision-organization
+  workflow_call:
+    inputs:
+      function:
+        description: Function to deploy
+        required: false
+        type: string
+        default: all
   push:
     tags:
       - "v*"
@@ -99,7 +109,7 @@ jobs:
 
       - name: Deploy
         env:
-          TARGET: ${{ github.event.inputs.function }}
+          TARGET: ${{ inputs.function || 'all' }}
         run: |
           if [ -z "$TARGET" ] || [ "$TARGET" = "all" ]; then
             ./functions/scripts/deploy.sh
