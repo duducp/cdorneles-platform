@@ -34,10 +34,11 @@
 #                        (default sites.cdorneles.com.br). Set it empty to skip
 #                        domain management entirely.
 #   SITE_INSTALLATION_ID Appwrite VCS installation id. When set together with
-#   SITE_REPOSITORY_ID   SITE_REPOSITORY_ID, newly created sites are linked to
-#                        the repository (both come from the Console's Git
-#                        connection). Without them a new site is created
-#                        unlinked and the script deploys by upload.
+#   SITE_REPOSITORY_ID   SITE_REPOSITORY_ID (both from the Console's Git
+#                        connection), the script links the repository: new
+#                        sites are created linked, and existing sites without a
+#                        link are updated. Without them, sites are left
+#                        unlinked and deploy by upload.
 #   NEXT_PUBLIC_APPWRITE_ENDPOINT
 #   NEXT_PUBLIC_APPWRITE_PROJECT_ID
 #                        build-time variables, set on each site when present
@@ -146,32 +147,50 @@ for site in "${SITES[@]}"; do
   build_cmd="$(build_command "$site")"
   out_dir="$(output_directory "$site")"
 
+  base_args=(
+    --framework "$FRAMEWORK"
+    --build-runtime "$BUILD_RUNTIME"
+    --adapter "$ADAPTER"
+    --install-command "$INSTALL_COMMAND"
+    --build-command "$build_cmd"
+    --output-directory "$out_dir"
+  )
+
+  provider_args=()
+  if [ -n "${SITE_INSTALLATION_ID:-}" ] && [ -n "${SITE_REPOSITORY_ID:-}" ]; then
+    provider_args=(
+      --installation-id "$SITE_INSTALLATION_ID"
+      --provider-repository-id "$SITE_REPOSITORY_ID"
+      --provider-branch "$VCS_BRANCH"
+      # The repository root, not apps/<site>: the build needs the pnpm
+      # workspace and the lockfile, which only exist at the root.
+      --provider-root-directory "."
+    )
+  fi
+
   if site_exists "$site"; then
     echo "==> $site already exists"
+
+    if [ "${#provider_args[@]}" -gt 0 ] && ! site_is_vcs_linked "$site"; then
+      # `sites update` replaces unspecified fields, so the whole configuration
+      # has to be sent, not just the provider flags — otherwise the build
+      # settings are wiped.
+      echo "==> Linking $site to the repository"
+      appwrite sites update \
+        --site-id "$site" \
+        --name "$site" \
+        "${base_args[@]}" \
+        "${provider_args[@]}" \
+        --force
+    fi
   else
     echo "==> Creating $site"
-    create_args=(
-      --site-id "$site"
-      --name "$site"
-      --framework "$FRAMEWORK"
-      --build-runtime "$BUILD_RUNTIME"
-      --adapter "$ADAPTER"
-      --install-command "$INSTALL_COMMAND"
-      --build-command "$build_cmd"
-      --output-directory "$out_dir"
+    appwrite sites create \
+      --site-id "$site" \
+      --name "$site" \
+      "${base_args[@]}" \
+      ${provider_args[@]+"${provider_args[@]}"} \
       --force
-    )
-    if [ -n "${SITE_INSTALLATION_ID:-}" ] && [ -n "${SITE_REPOSITORY_ID:-}" ]; then
-      create_args+=(
-        --installation-id "$SITE_INSTALLATION_ID"
-        --provider-repository-id "$SITE_REPOSITORY_ID"
-        --provider-branch "$VCS_BRANCH"
-        # The repository root, not apps/<site>: the build needs the pnpm
-        # workspace and the lockfile, which only exist at the root.
-        --provider-root-directory "."
-      )
-    fi
-    appwrite sites create "${create_args[@]}"
   fi
 
   if [ -n "${NEXT_PUBLIC_APPWRITE_ENDPOINT:-}" ]; then

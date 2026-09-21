@@ -13,6 +13,10 @@ name: Deploy Sites
 # reviewers. Required secrets:
 #   APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY
 #
+# Repository variables (not secrets — they identify the Git connection, not a
+# credential), used to link newly created sites:
+#   SITE_INSTALLATION_ID, SITE_REPOSITORY_ID
+#
 # APPWRITE_ENDPOINT and APPWRITE_PROJECT_ID are also pushed to the sites as
 # NEXT_PUBLIC_APPWRITE_* build-time variables.
 
@@ -113,6 +117,11 @@ jobs:
           TARGET: ${{ inputs.site || 'all' }}
           NEXT_PUBLIC_APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
           NEXT_PUBLIC_APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          # Not secrets: they identify the repository connection, not a
+          # credential. Set them as repository variables so newly created
+          # sites are linked to Git instead of falling back to upload.
+          SITE_INSTALLATION_ID: ${{ vars.SITE_INSTALLATION_ID }}
+          SITE_REPOSITORY_ID: ${{ vars.SITE_REPOSITORY_ID }}
         run: |
           if [ -z "$TARGET" ] || [ "$TARGET" = "all" ]; then
             ./scripts/deploy-sites.sh

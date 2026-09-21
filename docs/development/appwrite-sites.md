@@ -20,6 +20,23 @@ variables, then deploys. It picks the mode automatically:
   `.gitignore`, so `node_modules/`, `.next/` and `dist/` are excluded
   (~700 KB of source).
 
+Set `SITE_INSTALLATION_ID` and `SITE_REPOSITORY_ID` (from the Console's Git
+connection) to have the script manage the link: new sites are created linked,
+and existing sites without a link are updated. Without them, sites are left
+unlinked and deploy by upload.
+
+In CI these come from repository **variables** (not secrets — they identify the
+connection, not a credential):
+
+```bash
+gh variable set SITE_INSTALLATION_ID --repo <owner>/<repo>
+gh variable set SITE_REPOSITORY_ID   --repo <owner>/<repo>
+```
+
+> `appwrite sites update` replaces unspecified fields, so the script always
+> sends the full configuration alongside the provider flags. Sending only the
+> provider flags wipes the build settings.
+
 ## What Appwrite's Next.js runtime expects
 
 Appwrite's runtime bundles SSR from the configured **output directory**:

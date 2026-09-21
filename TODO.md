@@ -165,6 +165,9 @@ capabilities. No business modules yet.
       `proxy create-site-rule` per site (idempotent) and
       `proxy update-rule-status` to trigger DNS verification, after which
       Appwrite provisions the TLS certificate. Suffix via `SITE_DOMAIN_SUFFIX`.
+- [x] VCS linking is scripted too: `SITE_INSTALLATION_ID` + `SITE_REPOSITORY_ID`
+      (repository variables in CI) make `deploy-sites.sh` create sites linked
+      and update existing unlinked ones. No per-site Console setup needed.
 - [ ] Remaining for sites:
       - confirm TLS is issued for `design-system.sites.cdorneles.com.br` after
         verification (it still served Traefik's default certificate); fall back
