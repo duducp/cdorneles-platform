@@ -130,6 +130,11 @@ capabilities. No business modules yet.
 - [x] App shell: Sidebar, Topbar, UserMenu, route-based navigation with
       PermissionGate on customers page. Admin app wired with
       (shell) route group, dashboard/settings/customers pages.
+- [x] Client and customer app shells with their own nav items.
+- [x] `DataTable` component (`@cdorneles/ui`) on TanStack Table + Mantine.
+- [x] Customer type + Zod schema (`@cdorneles/types`, `@cdorneles/schemas`).
+- [x] Admin customers page with DataTable and permission-gated actions
+      (mock data; real data fetching pending).
 
 ## Later — business modules (only after the above)
 
