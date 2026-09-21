@@ -31,6 +31,11 @@ export function createNextConfig(overrides = {}) {
     poweredByHeader: false,
     transpilePackages: sharedPackages,
     outputFileTracingRoot: repoRoot,
+    // Standalone output is what Appwrite Sites' SSR runner expects. In a
+    // monorepo it nests the server under .next/standalone/apps/<app>/server.js;
+    // scripts/build-appwrite-site.mjs restructures it to the layout Appwrite
+    // looks for.
+    output: "standalone",
     experimental: {
       optimizePackageImports: ["@mantine/core", "@mantine/hooks", "lucide-react"],
     },

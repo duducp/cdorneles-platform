@@ -10,16 +10,16 @@
 #
 #   1. VCS (preferred). If the site is linked to the Git repository
 #      (`providerRepositoryId` set), the deployment is triggered from the
-#      connected repo: Appwrite clones the whole monorepo, so the pnpm workspace
-#      resolves, and `providerRootDirectory` points the build at the app.
-#      This is the only mode that works for the SSR adapter in a monorepo,
-#      because Appwrite expects `next.config.*` at the build root.
+#      connected repository. `providerRootDirectory` must be the repository
+#      root, because the build needs the pnpm workspace.
 #
-#   2. Upload. If the site is not VCS-linked, the repository root is uploaded
-#      and built. The CLI respects .gitignore, so node_modules/, .next/ and
-#      dist/ are excluded. Note: the SSR bundling step expects `next.config.*`
-#      at the upload root, so this mode currently fails for this monorepo and
-#      exists only for `static` sites.
+#   2. Upload. If the site is not VCS-linked, the repository root is uploaded.
+#      The CLI respects .gitignore, so node_modules/, .next/ and dist/ are
+#      excluded.
+#
+# In both modes the build runs scripts/build-appwrite-site.mjs, which builds the
+# app and restructures the standalone output into the layout Appwrite's Next.js
+# runtime expects. See that script for why the restructuring is necessary.
 #
 # Requirements:
 #   - The Appwrite CLI installed and logged in (`appwrite login` +
@@ -49,16 +49,6 @@ VCS_BRANCH="${SITE_VCS_BRANCH:-main}"
 
 ALL_SITES=(admin client customer design-system)
 
-site_package() {
-  case "$1" in
-    admin)         echo "@cdorneles/admin" ;;
-    client)        echo "@cdorneles/client" ;;
-    customer)      echo "@cdorneles/customer" ;;
-    design-system) echo "@cdorneles/design-system" ;;
-    *)             echo "" ;;
-  esac
-}
-
 is_known() {
   local candidate="$1" known
   for known in "${ALL_SITES[@]}"; do
@@ -78,11 +68,14 @@ site_is_vcs_linked() {
 }
 
 build_command() {
-  echo "pnpm --filter $(site_package "$1") build"
+  echo "node scripts/build-appwrite-site.mjs $1"
 }
 
+# Appwrite's Next.js runtime bundles SSR from this directory: its bundle.sh
+# cd's here and looks for ./standalone/server.js. Our build script places the
+# wrapper at .next/standalone/server.js, so the output directory is `.next`.
 output_directory() {
-  echo "apps/$1/.next"
+  echo ".next"
 }
 
 set_variable() {
