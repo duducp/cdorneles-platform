@@ -44,8 +44,10 @@ Appwrite Functions are written in **Go**.
   source, matching the runtime's supported path.
 - `@cdorneles/authz` and the TypeScript functions are removed; the Go
   `internal/authz` port is the single source of truth.
-- Contributors need the Go toolchain (`go 1.26.8`; the Appwrite 2.x Go SDK
-  requires `go >= 1.26.5`).
+- Contributors need the Go toolchain (`go 1.26.5`; the Appwrite 2.x Go SDK
+  requires `go >= 1.26.5`). The module must not require a newer toolchain: the
+  Appwrite Go runtime ships Go 1.26.5 with `GOTOOLCHAIN=local`, so builds fail
+  with `requires go >= 1.26.8 (running go 1.26.5; GOTOOLCHAIN=local)`.
 - `pnpm lint/typecheck/test/build` no longer cover functions; `make -C functions test`
   does.
 - `functions/*/internal/` is generated — never edit it by hand; edit

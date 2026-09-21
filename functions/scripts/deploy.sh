@@ -11,9 +11,12 @@
 # `make prepare` materialises the shared packages into internal/ first.
 #
 # Requirements:
-#   - The Appwrite CLI installed and logged in (appwrite login).
-#   - A configured project (appwrite init project) or CI mode
-#     (appwrite client --endpoint ... --key ...).
+#   - The Appwrite CLI installed and logged in (`appwrite login` +
+#     `appwrite init project`), or configured in non-interactive mode
+#     (`appwrite client --endpoint ... --project-id ... --key ...`).
+#
+# Note: CLI flags are kebab-case (`--function-id`, `create-deployment`) and
+# `--scopes` is a stringArray, so each scope needs its own flag.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -51,7 +54,7 @@ is_known() {
 }
 
 function_exists() {
-  appwrite functions get --functionId "$1" >/dev/null 2>&1
+  appwrite functions get --function-id "$1" >/dev/null 2>&1
 }
 
 if [ "$#" -gt 0 ]; then
@@ -75,23 +78,27 @@ for fn in "${FUNCTIONS[@]}"; do
     echo "==> $fn already exists"
   else
     echo "==> Creating $fn"
-    # Word splitting is intentional: the CLI takes space-separated arrays.
-    # shellcheck disable=SC2086
+    scope_args=()
+    for scope in $(scopes_for "$fn"); do
+      scope_args+=(--scopes "$scope")
+    done
     appwrite functions create \
-      --functionId "$fn" \
+      --function-id "$fn" \
       --name "$fn" \
       --runtime "$RUNTIME" \
-      --execute $EXECUTE \
+      --execute "$EXECUTE" \
       --entrypoint "$ENTRYPOINT" \
-      --scopes $(scopes_for "$fn")
+      --force \
+      ${scope_args[@]+"${scope_args[@]}"}
   fi
 
   echo "==> Deploying $fn"
-  appwrite functions createDeployment \
-    --functionId "$fn" \
+  appwrite functions create-deployment \
+    --function-id "$fn" \
     --entrypoint "$ENTRYPOINT" \
     --code "$fn" \
-    --activate true
+    --activate \
+    --force
 done
 
 echo "==> Done"

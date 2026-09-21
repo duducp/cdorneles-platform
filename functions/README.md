@@ -78,7 +78,13 @@ The generated directories are gitignored.
 
 ## Requirements
 
-- Go **1.26.8** (the Appwrite 2.x Go SDK requires `go >= 1.26.5`).
+- Go **1.26.5**.
+
+  This is not arbitrary: the Appwrite Go runtime ships Go 1.26.5 with
+  `GOTOOLCHAIN=local`, so it cannot download a newer toolchain. A module that
+  requires `go >= 1.26.6` fails the build with
+  `requires go >= 1.26.8 (running go 1.26.5; GOTOOLCHAIN=local)`.
+  The Appwrite 2.x Go SDK requires `go >= 1.26.5`, which is exactly the ceiling.
 - The Appwrite CLI, logged in against the target instance, for deployment.
 
 ## Commands

@@ -1,6 +1,6 @@
 module openruntimes/handler
 
-go 1.26.8
+go 1.26.5
 
 require (
 	github.com/appwrite/sdk-for-go/v7 v7.3.0
