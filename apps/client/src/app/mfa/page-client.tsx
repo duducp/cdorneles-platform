@@ -3,6 +3,7 @@
 import { isApiError } from "@cdorneles/api-client";
 import {
   AuthNotConfiguredError,
+  describeAuthError,
   resolvePostAuthRedirect,
   useAuth,
   useRedirectIfAuthenticated,
@@ -86,7 +87,7 @@ export function MfaPageClient({ redirectWhenAuthenticated = false }: MfaPageClie
         // Carry the redirect the login page forwarded, if any.
         router.push(resolvePostAuthRedirect(window.location.search));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Código inválido.");
+        setError(describeAuthError(err, "Código inválido."));
       }
     },
     [challengeId, completeMfa, router],

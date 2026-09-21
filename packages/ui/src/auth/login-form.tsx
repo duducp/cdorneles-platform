@@ -15,7 +15,7 @@ export interface LoginFormProps {
   error?: string | null;
   showSignUp?: boolean;
   onGoogleClick?: () => void;
-  onForgotPassword?: () => void;
+  onForgotPassword?: (email: string) => void;
   onSignUp?: () => void;
 }
 
@@ -103,7 +103,7 @@ export function LoginForm({
           aria-invalid={form.errors.password ? true : undefined}
         />
 
-        <Anchor component="button" type="button" size="sm" underline="hover" c="brand" onClick={onForgotPassword}>
+        <Anchor component="button" type="button" size="sm" underline="hover" c="brand" onClick={() => onForgotPassword?.(form.values.email)}>
           Esqueci minha senha
         </Anchor>
 

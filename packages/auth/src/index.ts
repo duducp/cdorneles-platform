@@ -1,5 +1,6 @@
 export * from "./appwrite-auth-service";
 export * from "./auth-context";
+export * from "./describe-error";
 export * from "./errors";
 export * from "./provider";
 export * from "./safe-redirect";

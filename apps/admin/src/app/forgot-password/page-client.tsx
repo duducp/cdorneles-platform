@@ -10,10 +10,13 @@ import { useCallback } from "react";
 export interface ForgotPasswordPageClientProps {
   /** Product apps send an authenticated visitor to the app. */
   redirectWhenAuthenticated?: boolean;
+  /** Pre-fills the e-mail, e.g. the one typed on the login screen. */
+  initialEmail?: string;
 }
 
 export function ForgotPasswordPageClient({
   redirectWhenAuthenticated = false,
+  initialEmail,
 }: ForgotPasswordPageClientProps) {
   const { service } = useAuth();
   const router = useRouter();
@@ -52,7 +55,7 @@ export function ForgotPasswordPageClient({
           <AuthCard
             form={
               <Stack gap="md">
-                <ForgotPasswordForm onSubmit={handleSubmit} />
+                <ForgotPasswordForm onSubmit={handleSubmit} initialEmail={initialEmail} />
                 <Anchor
                   component={Link}
                   href="/login"

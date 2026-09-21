@@ -1,8 +1,9 @@
 "use client";
 
 import { isApiError } from "@cdorneles/api-client";
+import { forgotPasswordSchema } from "@cdorneles/schemas";
 import {
-  AuthNotConfiguredError,
+  describeAuthError,
   MfaRequiredError,
   resolvePostAuthRedirect,
   useAuth,
@@ -34,6 +35,18 @@ export function LoginPageClient({ redirectWhenAuthenticated = false }: LoginPage
   const [announcement, setAnnouncement] = useState("");
   const enableSignUp = process.env.NEXT_PUBLIC_ENABLE_SIGN_UP === "true";
 
+  // Carry a valid e-mail to the recovery screen so it does not have to be
+  // retyped; anything else goes to the plain screen and is validated there.
+  const handleForgotPassword = useCallback(
+    (email: string) => {
+      const valid = forgotPasswordSchema.shape.email.safeParse(email).success;
+      router.push(
+        valid ? `/forgot-password?email=${encodeURIComponent(email)}` : "/forgot-password",
+      );
+    },
+    [router],
+  );
+
   async function handleSubmit(credentials: { email: string; password: string }) {
     setError(null);
     setAnnouncement("Entrando...");
@@ -44,16 +57,16 @@ export function LoginPageClient({ redirectWhenAuthenticated = false }: LoginPage
       router.push(resolvePostAuthRedirect(window.location.search));
     } catch (err) {
       setAnnouncement("");
-      if (err instanceof AuthNotConfiguredError) {
-        setError("Autenticação não configurada neste ambiente.");
-      } else if (err instanceof MfaRequiredError) {
+      if (err instanceof MfaRequiredError) {
         router.push(
           `/mfa?redirect=${encodeURIComponent(resolvePostAuthRedirect(window.location.search))}`,
         );
-      } else if (isApiError(err) && err.code === "user_invalid_credentials") {
-        setError("E-mail ou senha inválidos.");
+      } else if (isApiError(err) && err.code === "user_session_already_exists") {
+        // The browser already holds a valid session — there is nothing to fix,
+        // so let the user straight through instead of showing a failure.
+        router.push(resolvePostAuthRedirect(window.location.search));
       } else {
-        setError("Não foi possível entrar. Tente novamente.");
+        setError(describeAuthError(err));
       }
     } finally {
       setLoading(false);
@@ -86,7 +99,7 @@ export function LoginPageClient({ redirectWhenAuthenticated = false }: LoginPage
                 loading={loading}
                 error={error}
                 showSignUp={enableSignUp}
-                onForgotPassword={() => router.push("/forgot-password")}
+                onForgotPassword={handleForgotPassword}
               />
             }
             visual={<AuthVisual />}

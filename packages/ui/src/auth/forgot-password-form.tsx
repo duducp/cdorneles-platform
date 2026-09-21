@@ -10,14 +10,16 @@ import { FormError } from "../components/form-error";
 
 export interface ForgotPasswordFormProps {
   onSubmit: (values: ForgotPasswordFormValues) => Promise<void>;
+  /** Pre-fills the e-mail, e.g. the one typed on the login screen. */
+  initialEmail?: string;
 }
 
-export function ForgotPasswordForm({ onSubmit }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm({ onSubmit, initialEmail = "" }: ForgotPasswordFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<ForgotPasswordFormValues>({
-    initialValues: { email: "" },
+    initialValues: { email: initialEmail },
     validate: (values) => {
       const result = forgotPasswordSchema.safeParse(values);
       if (result.success) return {};
