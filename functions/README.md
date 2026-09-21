@@ -90,6 +90,9 @@ make test      # prepare + go test ./... in each function
 make vet       # prepare + go vet ./... in each function
 make fmt       # gofmt -w shared
 make clean     # remove generated internal/ directories
+
+make deploy                    # deploy every function
+make deploy-resolve-grants     # deploy one function
 ```
 
 Run a single function's tests directly:
@@ -102,8 +105,19 @@ cd resolve-grants && go test ./...
 ## Deploy
 
 ```bash
-./scripts/deploy.sh
+make deploy                 # every function
+make deploy-resolve-grants  # one function
 ```
+
+Both call `scripts/deploy.sh`, which also accepts explicit names:
+
+```bash
+./scripts/deploy.sh                     # every function
+./scripts/deploy.sh resolve-grants      # one function
+./scripts/deploy.sh resolve-grants send-email
+```
+
+An unknown function name is rejected before anything is uploaded.
 
 The script is idempotent. For each function it:
 

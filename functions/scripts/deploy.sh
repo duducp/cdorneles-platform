@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Creates (if missing) and deploys every Go function to Appwrite as source.
+# Creates (if missing) and deploys Go functions to Appwrite as source.
+#
+# Usage:
+#   ./scripts/deploy.sh                     # every function
+#   ./scripts/deploy.sh resolve-grants      # one function
+#   ./scripts/deploy.sh resolve-grants send-email
 #
 # Appwrite's Go runtime builds each function from source, so the function's own
 # directory (main.go, go.mod, go.sum, internal/) is what gets uploaded.
@@ -17,7 +22,13 @@ RUNTIME="go-1.26"
 ENTRYPOINT="main.go"
 EXECUTE="users"
 
-FUNCTIONS=(resolve-grants update-organization-profile send-email get-organization-profile provision-organization)
+ALL_FUNCTIONS=(
+  resolve-grants
+  update-organization-profile
+  send-email
+  get-organization-profile
+  provision-organization
+)
 
 # API key scopes the function's per-execution key needs.
 scopes_for() {
@@ -31,9 +42,31 @@ scopes_for() {
   esac
 }
 
+is_known() {
+  local candidate="$1" known
+  for known in "${ALL_FUNCTIONS[@]}"; do
+    [ "$candidate" = "$known" ] && return 0
+  done
+  return 1
+}
+
 function_exists() {
   appwrite functions get --functionId "$1" >/dev/null 2>&1
 }
+
+if [ "$#" -gt 0 ]; then
+  FUNCTIONS=("$@")
+else
+  FUNCTIONS=("${ALL_FUNCTIONS[@]}")
+fi
+
+for fn in "${FUNCTIONS[@]}"; do
+  if ! is_known "$fn"; then
+    echo "Unknown function: $fn" >&2
+    echo "Known functions: ${ALL_FUNCTIONS[*]}" >&2
+    exit 1
+  fi
+done
 
 make prepare
 

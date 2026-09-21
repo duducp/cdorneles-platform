@@ -6,8 +6,9 @@
 # `scripts/prepare.sh` before building, testing, or deploying.
 
 FUNCTIONS := resolve-grants update-organization-profile send-email get-organization-profile provision-organization
+DEPLOY_TARGETS := $(addprefix deploy-,$(FUNCTIONS))
 
-.PHONY: prepare test vet fmt clean $(FUNCTIONS)
+.PHONY: prepare test vet fmt clean deploy $(FUNCTIONS) $(DEPLOY_TARGETS)
 
 # Materialise shared/ into each function's internal/.
 prepare:
@@ -36,3 +37,12 @@ fmt:
 
 clean:
 	rm -rf $(FUNCTIONS:%=%/internal)
+
+# Deploy every function (creates them in Appwrite if missing, then activates a
+# new deployment). Requires the Appwrite CLI, logged in and configured.
+deploy:
+	./scripts/deploy.sh
+
+# Deploy a single function, e.g. `make deploy-resolve-grants`.
+$(DEPLOY_TARGETS): deploy-%:
+	./scripts/deploy.sh $*
