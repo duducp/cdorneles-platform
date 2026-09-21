@@ -17,7 +17,7 @@ RUNTIME="go-1.26"
 ENTRYPOINT="main.go"
 EXECUTE="users"
 
-FUNCTIONS=(resolve-grants update-organization-profile send-email)
+FUNCTIONS=(resolve-grants update-organization-profile send-email get-organization-profile provision-organization)
 
 # API key scopes the function's per-execution key needs.
 scopes_for() {
@@ -25,6 +25,8 @@ scopes_for() {
     resolve-grants)              echo "teams.read rows.read" ;;
     update-organization-profile) echo "teams.read rows.read rows.write" ;;
     send-email)                  echo "messages.write" ;;
+    get-organization-profile)    echo "teams.read rows.read" ;;
+    provision-organization)      echo "teams.read rows.read rows.write" ;;
     *)                           echo "" ;;
   esac
 }

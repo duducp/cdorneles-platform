@@ -55,6 +55,8 @@ functions/
 │   └── internal/              # GENERATED from shared/ — do not edit
 ├── update-organization-profile/
 ├── send-email/
+├── get-organization-profile/
+├── provision-organization/
 ├── scripts/
 │   ├── prepare.sh             # copies shared/ into each function's internal/
 │   └── deploy.sh              # prepares and deploys every function
@@ -71,6 +73,8 @@ The generated directories are gitignored.
 | `resolve-grants` | Resolves a user's effective permissions and features for an organization + application | Authenticated; identity must match the body `userId`; membership required |
 | `update-organization-profile` | Updates organization branding (display name, colors, logos) | Full `authorize()`: membership, active org, application, `organizations.update`, `white-label` |
 | `send-email` | Sends transactional email via Appwrite Messaging | Authenticated |
+| `get-organization-profile` | Returns an organization's branding profile | Authenticated; membership required |
+| `provision-organization` | Idempotently bootstraps an organization's profile, roles, mappings and features | Authenticated; membership required |
 
 ## Requirements
 
@@ -133,6 +137,8 @@ Per-function scopes for the per-execution API key:
 | `resolve-grants` | `teams.read rows.read` |
 | `update-organization-profile` | `teams.read rows.read rows.write` |
 | `send-email` | `messages.write` |
+| `get-organization-profile` | `teams.read rows.read` |
+| `provision-organization` | `teams.read rows.read rows.write` |
 
 Appwrite compiles the uploaded source. The runtime's environment provides
 `APPWRITE_FUNCTION_API_ENDPOINT` and `APPWRITE_FUNCTION_PROJECT_ID`, and the

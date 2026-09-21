@@ -5,7 +5,7 @@
 # `shared/` and are materialised into each function's `internal/` by
 # `scripts/prepare.sh` before building, testing, or deploying.
 
-FUNCTIONS := resolve-grants update-organization-profile send-email
+FUNCTIONS := resolve-grants update-organization-profile send-email get-organization-profile provision-organization
 
 .PHONY: prepare test vet fmt clean $(FUNCTIONS)
 
