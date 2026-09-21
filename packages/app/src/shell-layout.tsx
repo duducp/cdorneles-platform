@@ -4,6 +4,8 @@ import { useAuth } from "@cdorneles/auth";
 import { OrgGuard, useTenant } from "@cdorneles/tenant";
 import { LoadingState } from "@cdorneles/ui";
 import { AppShell, Sidebar, Topbar, type SidebarNavItem } from "@cdorneles/ui/shell";
+
+import { NavPendingIndicator } from "./nav-pending";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState, type ReactNode } from "react";
@@ -52,6 +54,7 @@ export function createShellLayout({ navItems }: CreateShellLayoutOptions) {
             activeHref={pathname}
             collapsed={!opened}
             linkComponent={Link}
+            pendingComponent={NavPendingIndicator}
           />}
           topbar={
             <Topbar

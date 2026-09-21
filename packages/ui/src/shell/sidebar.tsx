@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, ScrollArea, Stack } from "@mantine/core";
-import type { ElementType } from "react";
+import type { ComponentType, ElementType } from "react";
 import type { LucideIcon } from "lucide-react";
 import { AppVersion } from "../components/app-version";
 import { Logo } from "../components/logo";
@@ -19,9 +19,17 @@ export interface SidebarProps {
   collapsed?: boolean;
   /** Anchor element for the nav links; Next apps pass `next/link`. */
   linkComponent?: ElementType;
+  /** Rendered beside a label while its navigation is pending. */
+  pendingComponent?: ComponentType;
 }
 
-export function Sidebar({ items, activeHref, collapsed, linkComponent }: SidebarProps) {
+export function Sidebar({
+  items,
+  activeHref,
+  collapsed,
+  linkComponent,
+  pendingComponent,
+}: SidebarProps) {
   return (
     <Stack gap="xs" p="md" h="100%">
       <Box px="xs" py="sm">
@@ -39,6 +47,7 @@ export function Sidebar({ items, activeHref, collapsed, linkComponent }: Sidebar
               active={activeHref.startsWith(item.href)}
               collapsed={collapsed}
               linkComponent={linkComponent}
+              pendingComponent={pendingComponent}
             />
           ))}
         </Stack>
