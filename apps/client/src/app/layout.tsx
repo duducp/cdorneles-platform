@@ -12,6 +12,7 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Cdorneles Client",
+  icons: { icon: "/brand/favicon.png" },
   description: "Organization administration and operations panel.",
 };
 
