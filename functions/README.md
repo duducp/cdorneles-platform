@@ -101,20 +101,48 @@ cd resolve-grants && go test ./...
 ./scripts/deploy.sh
 ```
 
-The script runs `make prepare` and then, for each function, uploads the
-function's directory as source with entrypoint `main.go`:
+The script is idempotent. For each function it:
+
+1. Checks whether the function exists (`appwrite functions get`).
+2. Creates it if missing, with runtime `go-1.26`, entrypoint `main.go`,
+   `--execute users`, and the API key scopes it needs.
+3. Uploads the function's directory as source and activates the deployment.
 
 ```bash
+# create (only when missing)
+appwrite functions create \
+  --functionId <function> \
+  --name <function> \
+  --runtime go-1.26 \
+  --execute users \
+  --entrypoint main.go \
+  --scopes <scopes>
+
+# deploy
 appwrite functions createDeployment \
   --functionId <function> \
-  --entrypoint "main.go" \
+  --entrypoint main.go \
   --code <function> \
   --activate true
 ```
 
+Per-function scopes for the per-execution API key:
+
+| Function | Scopes |
+|---|---|
+| `resolve-grants` | `teams.read rows.read` |
+| `update-organization-profile` | `teams.read rows.read rows.write` |
+| `send-email` | `messages.write` |
+
 Appwrite compiles the uploaded source. The runtime's environment provides
 `APPWRITE_FUNCTION_API_ENDPOINT` and `APPWRITE_FUNCTION_PROJECT_ID`, and the
 per-execution API key arrives as the `x-appwrite-key` request header.
+
+### Requirements
+
+- The Appwrite CLI installed and logged in (`appwrite login`).
+- A configured project (`appwrite init project`) or CI mode
+  (`appwrite client --endpoint ... --key ...`).
 
 ## Adding a function
 
@@ -131,8 +159,9 @@ per-execution API key arrives as the `x-appwrite-key` request header.
    `openruntimes/handler/internal/httpx`), then run `make prepare` from
    `functions/` so the package is materialised.
 
-4. Add the function to `FUNCTIONS` in the `Makefile` and to the loop in
-   `scripts/deploy.sh`.
+4. Add the function to `FUNCTIONS` in the `Makefile`, to the `FUNCTIONS` array
+   in `scripts/deploy.sh`, and to its `scopes_for` case with the API key scopes
+   the function needs.
 
 5. `make build && make test`, then commit.
 
