@@ -121,9 +121,9 @@ capabilities. No business modules yet.
       SDK has no `Messaging.createEmail` (it is server-side only), so email
       must be a Function invoked through `FunctionsApi.createExecution` — never
       a client-side Messaging API.
-- [ ] CI: confirm `install → lint → typecheck → test → build` stays green on
+- [x] CI: confirm `install → lint → typecheck → test → build` stays green on
       every change.
-- [ ] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route
+- [x] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route
       redirects point to `/auth/login`, which does not exist — actual route is
       `/login` (design-system reference). Carry the `redirect` query param
       through the login flow back to the original page.
