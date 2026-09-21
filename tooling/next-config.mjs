@@ -1,8 +1,19 @@
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(currentDir, "..");
+
+/**
+ * The root package version, bumped by release-please, is the single source of
+ * truth for "what is deployed". Next inlines `NEXT_PUBLIC_*` at build time, so
+ * baking it in here means the value travels with the bundle and needs no
+ * Appwrite variable to be configured per site.
+ */
+const appVersion = JSON.parse(
+  readFileSync(path.join(repoRoot, "package.json"), "utf8"),
+).version;
 
 /**
  * Every shared package is consumed as TypeScript source, so Next.js must
@@ -26,6 +37,8 @@ export const sharedPackages = [
  * genuinely app-specific, keeping the base consistent across the monorepo.
  */
 export function createNextConfig(overrides = {}) {
+  const { env: overrideEnv, ...rest } = overrides;
+
   return {
     reactStrictMode: true,
     poweredByHeader: false,
@@ -36,9 +49,13 @@ export function createNextConfig(overrides = {}) {
     // scripts/build-appwrite-site.mjs restructures it to the layout Appwrite
     // looks for.
     output: "standalone",
+    env: {
+      NEXT_PUBLIC_APP_VERSION: appVersion,
+      ...overrideEnv,
+    },
     experimental: {
       optimizePackageImports: ["@mantine/core", "@mantine/hooks", "lucide-react"],
     },
-    ...overrides,
+    ...rest,
   };
 }

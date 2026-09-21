@@ -83,7 +83,12 @@ export default function DesignSystemPage() {
         <PageHeader
           title="Cdorneles Design System"
           description="Playground for tokens, components and states. Toggle Light/Dark to verify both themes."
-          actions={<ThemeToggle />}
+          actions={
+            <Group gap="sm">
+              <Badge color="gray">v{process.env.NEXT_PUBLIC_APP_VERSION}</Badge>
+              <ThemeToggle />
+            </Group>
+          }
         />
 
         <Section

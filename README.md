@@ -89,6 +89,11 @@ Only `NEXT_PUBLIC_*` values reach the browser; never put server keys in them.
 | `NEXT_PUBLIC_SENTRY_DSN`            | browser      | Sentry DSN (optional)           |
 | `SENTRY_AUTH_TOKEN`                 | **server**   | Sentry source-map upload token  |
 
+`NEXT_PUBLIC_APP_VERSION` is not set by hand: `tooling/next-config.mjs` reads
+the root `package.json` version (bumped by release-please) and bakes it in at
+build time. Read it with `process.env.NEXT_PUBLIC_APP_VERSION` — no per-site
+Appwrite variable is involved.
+
 ## Appwrite MCP (project-scoped)
 
 This repository configures the Appwrite MCP server for opencode so agents can
