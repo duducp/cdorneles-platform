@@ -6,33 +6,49 @@
 #   ./scripts/deploy-sites.sh admin            # one site
 #   ./scripts/deploy-sites.sh admin customer
 #
-# Appwrite Sites builds the app from source. The apps live in a pnpm monorepo
-# and consume the shared packages as TypeScript source, so the deployment
-# uploads the REPOSITORY ROOT (not just the app directory) and builds a single
-# workspace with --filter. The CLI respects .gitignore, which already excludes
-# node_modules/, .next/ and dist/, so the upload stays around 5 MB.
+# Two deployment modes, chosen per site:
+#
+#   1. VCS (preferred). If the site is linked to the Git repository
+#      (`providerRepositoryId` set), the deployment is triggered from the
+#      connected repo: Appwrite clones the whole monorepo, so the pnpm workspace
+#      resolves, and `providerRootDirectory` points the build at the app.
+#      This is the only mode that works for the SSR adapter in a monorepo,
+#      because Appwrite expects `next.config.*` at the build root.
+#
+#   2. Upload. If the site is not VCS-linked, the repository root is uploaded
+#      and built. The CLI respects .gitignore, so node_modules/, .next/ and
+#      dist/ are excluded. Note: the SSR bundling step expects `next.config.*`
+#      at the upload root, so this mode currently fails for this monorepo and
+#      exists only for `static` sites.
 #
 # Requirements:
 #   - The Appwrite CLI installed and logged in (`appwrite login` +
 #     `appwrite init project`), or configured in non-interactive mode
 #     (`appwrite client --endpoint ... --project-id ... --key ...`).
-#   - Run from anywhere; the script cd's to the repository root.
 #
-# Optional environment (creates/updates the sites' build-time variables):
+# Environment:
+#   SITE_BUILD_RUNTIME   build runtime (default node-22; this instance offers
+#                        node-22 and node-25, not node-24)
+#   SITE_VCS_BRANCH      branch to deploy from (default main)
+#   SITE_INSTALLATION_ID Appwrite VCS installation id. When set together with
+#   SITE_REPOSITORY_ID   SITE_REPOSITORY_ID, newly created sites are linked to
+#                        the repository (both come from the Console's Git
+#                        connection).
 #   NEXT_PUBLIC_APPWRITE_ENDPOINT
 #   NEXT_PUBLIC_APPWRITE_PROJECT_ID
+#                        build-time variables, set on each site when present
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 FRAMEWORK="nextjs"
-BUILD_RUNTIME="node-24"
+BUILD_RUNTIME="${SITE_BUILD_RUNTIME:-node-22}"
 ADAPTER="ssr"
 INSTALL_COMMAND="corepack enable && pnpm install --frozen-lockfile"
+VCS_BRANCH="${SITE_VCS_BRANCH:-main}"
 
 ALL_SITES=(admin client customer design-system)
 
-# npm package name of an app.
 site_package() {
   case "$1" in
     admin)         echo "@cdorneles/admin" ;;
@@ -55,6 +71,12 @@ site_exists() {
   appwrite sites get --site-id "$1" >/dev/null 2>&1
 }
 
+# A site is VCS-linked when the API reports a provider repository id.
+site_is_vcs_linked() {
+  appwrite sites get --site-id "$1" --json 2>/dev/null \
+    | grep -Eq '"providerRepositoryId"[[:space:]]*:[[:space:]]*"[^"]+"'
+}
+
 build_command() {
   echo "pnpm --filter $(site_package "$1") build"
 }
@@ -63,7 +85,6 @@ output_directory() {
   echo "apps/$1/.next"
 }
 
-# Creates or updates a build-time variable, ignoring a missing command.
 set_variable() {
   local site_id="$1" var_id="$2" key="$3" value="$4"
   appwrite sites create-variable \
@@ -95,16 +116,26 @@ for site in "${SITES[@]}"; do
     echo "==> $site already exists"
   else
     echo "==> Creating $site"
-    appwrite sites create \
-      --site-id "$site" \
-      --name "$site" \
-      --framework "$FRAMEWORK" \
-      --build-runtime "$BUILD_RUNTIME" \
-      --adapter "$ADAPTER" \
-      --install-command "$INSTALL_COMMAND" \
-      --build-command "$build_cmd" \
-      --output-directory "$out_dir" \
+    create_args=(
+      --site-id "$site"
+      --name "$site"
+      --framework "$FRAMEWORK"
+      --build-runtime "$BUILD_RUNTIME"
+      --adapter "$ADAPTER"
+      --install-command "$INSTALL_COMMAND"
+      --build-command "$build_cmd"
+      --output-directory "$out_dir"
       --force
+    )
+    if [ -n "${SITE_INSTALLATION_ID:-}" ] && [ -n "${SITE_REPOSITORY_ID:-}" ]; then
+      create_args+=(
+        --installation-id "$SITE_INSTALLATION_ID"
+        --provider-repository-id "$SITE_REPOSITORY_ID"
+        --provider-branch "$VCS_BRANCH"
+        --provider-root-directory "apps/$site"
+      )
+    fi
+    appwrite sites create "${create_args[@]}"
   fi
 
   if [ -n "${NEXT_PUBLIC_APPWRITE_ENDPOINT:-}" ]; then
@@ -116,15 +147,25 @@ for site in "${SITES[@]}"; do
     set_variable "$site" "appwrite-project" "NEXT_PUBLIC_APPWRITE_PROJECT_ID" "$NEXT_PUBLIC_APPWRITE_PROJECT_ID"
   fi
 
-  echo "==> Deploying $site"
-  appwrite sites create-deployment \
-    --site-id "$site" \
-    --code . \
-    --install-command "$INSTALL_COMMAND" \
-    --build-command "$build_cmd" \
-    --output-directory "$out_dir" \
-    --activate \
-    --force
+  if site_is_vcs_linked "$site"; then
+    echo "==> Deploying $site (VCS, branch $VCS_BRANCH)"
+    appwrite sites create-vcs-deployment \
+      --site-id "$site" \
+      --type branch \
+      --reference "$VCS_BRANCH" \
+      --activate \
+      --force
+  else
+    echo "==> Deploying $site (upload)"
+    appwrite sites create-deployment \
+      --site-id "$site" \
+      --code . \
+      --install-command "$INSTALL_COMMAND" \
+      --build-command "$build_cmd" \
+      --output-directory "$out_dir" \
+      --activate \
+      --force
+  fi
 done
 
 echo "==> Done"
