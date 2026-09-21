@@ -17,6 +17,7 @@
   "dependencies": {
     "@cdorneles/permissions": "workspace:*",
     "@cdorneles/schemas": "workspace:*",
+    "@cdorneles/tenant": "workspace:*",
     "@cdorneles/theme": "workspace:*",
     "@cdorneles/tokens": "workspace:*",
     "@cdorneles/types": "workspace:*",

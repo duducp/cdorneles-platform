@@ -6,6 +6,8 @@ import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { OrgBranding } from "@cdorneles/ui/tenant";
+
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
@@ -27,6 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
+        <OrgBranding />
         <Providers>{children}</Providers>
       </body>
     </html>

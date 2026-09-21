@@ -733,6 +733,9 @@ importers:
       '@cdorneles/schemas':
         specifier: workspace:*
         version: link:../schemas
+      '@cdorneles/tenant':
+        specifier: workspace:*
+        version: link:../tenant
       '@cdorneles/theme':
         specifier: workspace:*
         version: link:../theme
