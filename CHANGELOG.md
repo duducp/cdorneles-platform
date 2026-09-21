@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/duducp/cdorneles-platform/compare/v1.1.1...v1.2.0) (2026-09-21)
+
+
+### Features
+
+* **apps:** port the auth screens to admin, client and customer ([57c4d7e](https://github.com/duducp/cdorneles-platform/commit/57c4d7ec6d8225c0e59a5d8ff5e45bf28d6c0a18))
+
 ## [1.1.1](https://github.com/duducp/cdorneles-platform/compare/v1.1.0...v1.1.1) (2026-09-21)
 
 
