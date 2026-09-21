@@ -14,6 +14,13 @@ This file defines mandatory engineering rules for AI agents working on the Cdorn
 - Appwrite Authentication is the identity source of truth.
 - Appwrite Team represents an Organization/tenant.
 - Appwrite Functions are the security boundary for business operations.
+- Appwrite Functions are written in Go (ADR-011). Each function is a standalone
+  module named `openruntimes/handler` with `main.go` exporting
+  `func Main(ctx openruntimes.Context) openruntimes.Response` in `package handler`.
+  Shared code lives in `functions/shared/`; `make -C functions prepare`
+  materialises it into each function's generated `internal/` directory. Never
+  edit `functions/*/internal/` by hand. Build/test with `make -C functions build`
+  and `make -C functions test`.
 - TanStack Query owns server state.
 - Mantine Form owns form state.
 - Zod owns validation schemas.

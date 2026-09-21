@@ -107,6 +107,11 @@ capabilities. No business modules yet.
 - [x] Session expiry handling: AuthProvider polls session validity every 4 min,
       sets `sessionExpiring` flag within 5 min of expiry, and redirects to
       `/login` when session expires.
+- [x] Go is the standard language for Appwrite Functions (ADR-011). Ported
+      `resolve-grants`, `update-organization-profile` and `send-email` to Go;
+      removed `@cdorneles/authz` and the TypeScript functions. Each function is
+      a standalone `openruntimes/handler` module; shared code lives in
+      `functions/shared/` and is materialised by `make -C functions prepare`.
 
 ## Next
 
