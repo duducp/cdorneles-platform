@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/duducp/cdorneles-platform/compare/v1.1.0...v1.1.1) (2026-09-21)
+
+
+### Bug Fixes
+
+* **ci:** stop setup-node v5 auto-caching in the deploy jobs ([82ceceb](https://github.com/duducp/cdorneles-platform/commit/82cecebe765e06aa9f931224532695e4e576286a))
+
 ## [1.1.0](https://github.com/duducp/cdorneles-platform/compare/v1.0.0...v1.1.0) (2026-09-21)
 
 
