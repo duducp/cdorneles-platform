@@ -117,6 +117,10 @@ capabilities. No business modules yet.
       role→application, feature flags) Go functions. Provisioning seeds only the
       global definitions; per-organization rows are created by the function.
       `deploy.sh` now creates functions idempotently with their scopes.
+- [x] Self-service organization creation: `/select-org` creates the Appwrite
+      Team (`TeamsApi.createTeam`), provisions it (`provision-organization`) and
+      switches to it. Fixed `TenantProvider` not syncing a late
+      `currentOrganizationId` prop.
 
 ## Next
 
