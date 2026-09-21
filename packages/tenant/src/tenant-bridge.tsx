@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@cdorneles/auth";
+import type { Branding } from "@cdorneles/types";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { resolveActiveOrganization } from "./active-organization";
@@ -46,6 +47,7 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
   const { user, status } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string | null>(null);
+  const [branding, setBranding] = useState<Branding | null>(null);
   const [ready, setReady] = useState(false);
   const bootstrapped = useRef(false);
 
@@ -92,6 +94,15 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
     };
   }, [status, user, tenantService]);
 
+  useEffect(() => {
+    if (!currentOrganizationId) {
+      setBranding(null);
+      return;
+    }
+
+    tenantService.getProfile(currentOrganizationId).then(setBranding);
+  }, [currentOrganizationId, tenantService]);
+
   const handleOrganizationChange = useCallback((organization: Organization) => {
     setCurrentOrganizationId(organization.id);
     persistOrganizationId(organization.id);
@@ -101,6 +112,7 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
     <TenantProvider
       organizations={organizations}
       currentOrganizationId={currentOrganizationId}
+      branding={branding}
       ready={ready}
       onOrganizationChange={handleOrganizationChange}
     >

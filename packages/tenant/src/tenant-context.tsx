@@ -2,11 +2,14 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
+import type { Branding } from "@cdorneles/types";
+
 import type { Organization } from "./types";
 
 export interface TenantContextValue {
   currentOrganization: Organization | null;
   organizations: Organization[];
+  branding: Branding | null;
   /** Whether TenantBridge has finished fetching organizations. */
   ready: boolean;
   /** Switches organization. Returns `false` for unknown/untrusted ids. */
@@ -19,6 +22,7 @@ export interface TenantProviderProps {
   organizations?: Organization[];
   /** Initial organization id. Falls back to the first organization. */
   currentOrganizationId?: string | null;
+  branding?: Branding | null;
   /** Whether the tenant data has been loaded. */
   ready?: boolean;
   onOrganizationChange?: (organization: Organization) => void;
@@ -32,6 +36,7 @@ export interface TenantProviderProps {
 export function TenantProvider({
   organizations = [],
   currentOrganizationId = null,
+  branding = null,
   ready = true,
   onOrganizationChange,
   children,
@@ -59,8 +64,8 @@ export function TenantProvider({
   );
 
   const value = useMemo<TenantContextValue>(
-    () => ({ currentOrganization, organizations, ready, switchOrganization }),
-    [currentOrganization, organizations, ready, switchOrganization],
+    () => ({ currentOrganization, organizations, branding, ready, switchOrganization }),
+    [currentOrganization, organizations, branding, ready, switchOrganization],
   );
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;
