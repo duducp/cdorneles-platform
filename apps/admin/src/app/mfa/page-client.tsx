@@ -1,7 +1,12 @@
 "use client";
 
 import { isApiError } from "@cdorneles/api-client";
-import { AuthNotConfiguredError, resolvePostAuthRedirect, useAuth } from "@cdorneles/auth";
+import {
+  AuthNotConfiguredError,
+  resolvePostAuthRedirect,
+  useAuth,
+  useRedirectIfAuthenticated,
+} from "@cdorneles/auth";
 import {
   AuthCard,
   AuthVisual,
@@ -15,9 +20,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-export function MfaPageClient() {
+export interface MfaPageClientProps {
+  /** Product apps send an authenticated visitor to the app. */
+  redirectWhenAuthenticated?: boolean;
+}
+
+export function MfaPageClient({ redirectWhenAuthenticated = false }: MfaPageClientProps) {
   const { service, completeMfa } = useAuth();
   const router = useRouter();
+  const goToApp = useCallback(() => {
+    router.replace(resolvePostAuthRedirect(window.location.search));
+  }, [router]);
+  const canRender = useRedirectIfAuthenticated(redirectWhenAuthenticated, goToApp);
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factor, setFactor] = useState<"email" | "totp">("email");
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +103,10 @@ export function MfaPageClient() {
     },
     [service, factor],
   );
+
+  if (!canRender) {
+    return null;
+  }
 
   return (
     <Flex direction="column" mih="100dvh">

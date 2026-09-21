@@ -6,15 +6,29 @@ import {
   MfaRequiredError,
   resolvePostAuthRedirect,
   useAuth,
+  useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
 import { AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
 import { Anchor, Flex, Stack, Text, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
-export function LoginPageClient() {
+export interface LoginPageClientProps {
+  /**
+   * Send an already-authenticated visitor to the app instead of showing the
+   * form. Off by default so the design-system gallery keeps every screen
+   * viewable.
+   */
+  redirectWhenAuthenticated?: boolean;
+}
+
+export function LoginPageClient({ redirectWhenAuthenticated = false }: LoginPageClientProps) {
   const { login } = useAuth();
   const router = useRouter();
+  const goToApp = useCallback(() => {
+    router.replace(resolvePostAuthRedirect(window.location.search));
+  }, [router]);
+  const canRender = useRedirectIfAuthenticated(redirectWhenAuthenticated, goToApp);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -44,6 +58,10 @@ export function LoginPageClient() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!canRender) {
+    return null;
   }
 
   return (

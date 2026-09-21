@@ -5,3 +5,4 @@ export * from "./provider";
 export * from "./safe-redirect";
 export * from "./types";
 export * from "./use-permissions";
+export * from "./use-redirect-if-authenticated";

@@ -5,5 +5,5 @@ import { LoginPageClient } from "./page-client";
 export const metadata: Metadata = { title: "Entrar" };
 
 export default function LoginPage() {
-  return <LoginPageClient />;
+  return <LoginPageClient redirectWhenAuthenticated />;
 }

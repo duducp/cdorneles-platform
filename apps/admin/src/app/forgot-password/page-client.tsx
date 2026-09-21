@@ -1,13 +1,24 @@
 "use client";
 
-import { useAuth } from "@cdorneles/auth";
+import { useAuth, useRedirectIfAuthenticated } from "@cdorneles/auth";
 import { AuthCard, AuthVisual, ForgotPasswordForm, Logo, ThemeToggle } from "@cdorneles/ui";
 import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-export function ForgotPasswordPageClient() {
+export interface ForgotPasswordPageClientProps {
+  /** Product apps send an authenticated visitor to the app. */
+  redirectWhenAuthenticated?: boolean;
+}
+
+export function ForgotPasswordPageClient({
+  redirectWhenAuthenticated = false,
+}: ForgotPasswordPageClientProps) {
   const { service } = useAuth();
+  const router = useRouter();
+  const goToApp = useCallback(() => router.replace("/"), [router]);
+  const canRender = useRedirectIfAuthenticated(redirectWhenAuthenticated, goToApp);
 
   const handleSubmit = useCallback(
     async (values: { email: string }) => {
@@ -19,6 +30,10 @@ export function ForgotPasswordPageClient() {
     },
     [service],
   );
+
+  if (!canRender) {
+    return null;
+  }
 
   return (
     <Flex direction="column" mih="100dvh">

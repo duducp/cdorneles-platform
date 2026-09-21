@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@cdorneles/auth";
+import { useAuth, useRedirectIfAuthenticated } from "@cdorneles/auth";
 import {
   AuthCard,
   AuthVisual,
@@ -11,7 +11,7 @@ import {
 } from "@cdorneles/ui";
 import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback } from "react";
 
 function ResetPasswordContent() {
@@ -65,7 +65,22 @@ function ResetPasswordContent() {
   );
 }
 
-export function ResetPasswordPageClient() {
+export interface ResetPasswordPageClientProps {
+  /** Product apps send an authenticated visitor to the app. */
+  redirectWhenAuthenticated?: boolean;
+}
+
+export function ResetPasswordPageClient({
+  redirectWhenAuthenticated = false,
+}: ResetPasswordPageClientProps) {
+  const router = useRouter();
+  const goToApp = useCallback(() => router.replace("/"), [router]);
+  const canRender = useRedirectIfAuthenticated(redirectWhenAuthenticated, goToApp);
+
+  if (!canRender) {
+    return null;
+  }
+
   return (
     <Flex direction="column" mih="100dvh">
       <Flex justify="flex-end" p="sm">
