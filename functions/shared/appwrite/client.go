@@ -3,6 +3,7 @@
 package appwrite
 
 import (
+	"errors"
 	"os"
 
 	sdk "github.com/appwrite/sdk-for-go/v7/appwrite"
@@ -17,6 +18,55 @@ import (
 
 // DatabaseID is the platform's TablesDB database.
 const DatabaseID = "cdorneles_platform"
+
+// NewTablesDB builds a TablesDB service from a client.
+func NewTablesDB(clt client.Client) *tablesdb.TablesDB {
+	return sdk.NewTablesDB(clt)
+}
+
+// FindOne returns the first row matching the given queries, or nil when no
+// row matches.
+func FindOne(tables *tablesdb.TablesDB, tableID string, queries ...string) (*models.Row, error) {
+	result, err := tables.ListRows(
+		DatabaseID,
+		tableID,
+		tables.WithListRowsQueries(queries),
+	)
+	if err != nil {
+		return nil, err
+	}
+	if len(result.Rows) == 0 {
+		return nil, nil
+	}
+	return &result.Rows[0], nil
+}
+
+// CreateRow creates a row. It returns false when the row already exists
+// (HTTP 409), which makes bootstrap operations idempotent.
+func CreateRow(
+	tables *tablesdb.TablesDB,
+	tableID string,
+	rowID string,
+	data map[string]interface{},
+) (bool, error) {
+	_, err := tables.CreateRow(DatabaseID, tableID, rowID, data)
+	if err != nil {
+		if IsConflict(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// IsConflict reports whether the error is an Appwrite 409.
+func IsConflict(err error) bool {
+	var apiErr *client.AppwriteError
+	if errors.As(err, &apiErr) {
+		return apiErr.GetStatusCode() == 409
+	}
+	return false
+}
 
 // NewClient builds an Appwrite client using the runtime's environment and
 // the per-execution API key header.
