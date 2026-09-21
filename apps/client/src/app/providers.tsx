@@ -12,13 +12,12 @@ import {
   createUnconfiguredAuthService,
   usePermissions,
 } from "@cdorneles/auth";
-import { OrgGuard, TenantBridge, TenantProvider, createAppwriteTenantService, useTenant } from "@cdorneles/tenant";
+import { TenantBridge, TenantProvider, createAppwriteTenantService, useTenant } from "@cdorneles/tenant";
 import { ThemeProvider } from "@cdorneles/theme";
 import type { TenantService } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
-import { useRouter } from "next/navigation";
-import { useCallback, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { initObservability } from "@/lib/observability";
 
@@ -47,7 +46,6 @@ function InnerProviders({
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const [queryClient] = useState(() => createQueryClient());
   const [authService] = useState(() => {
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -76,20 +74,17 @@ export function Providers({ children }: { children: ReactNode }) {
 
   initObservability();
 
-  const handleRedirectToSelectOrg = useCallback(() => {
-    router.replace("/select-org");
-  }, [router]);
-
+  // OrgGuard lives in the (shell) layout, not here: public routes such as
+  // /login must render for an unauthenticated visitor, and OrgGuard renders
+  // nothing until TenantBridge has resolved an organization.
   const tenantContent = (
-    <OrgGuard onRedirectToSelectOrg={handleRedirectToSelectOrg}>
-      <ThemeBranding>
-        {functionsApi ? (
-          <InnerProviders functionsApi={functionsApi}>{children}</InnerProviders>
-        ) : (
-          children
-        )}
-      </ThemeBranding>
-    </OrgGuard>
+    <ThemeBranding>
+      {functionsApi ? (
+        <InnerProviders functionsApi={functionsApi}>{children}</InnerProviders>
+      ) : (
+        children
+      )}
+    </ThemeBranding>
   );
 
   return (
