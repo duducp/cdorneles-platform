@@ -6,6 +6,7 @@ import {
   AuthVisual,
   FormError,
   ResetPasswordForm,
+  AppVersion,
   Logo,
   ThemeToggle,
 } from "@cdorneles/ui";
@@ -104,6 +105,7 @@ export function ResetPasswordPageClient({
 
           <Stack component="footer" align="center" gap="sm">
             <Logo alt="Cdorneles" variant="horizontal" height={32} />
+            <AppVersion />
           </Stack>
         </Stack>
       </Flex>

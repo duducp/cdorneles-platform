@@ -12,6 +12,7 @@ import {
   AuthVisual,
   FormError,
   MfaChallengeForm,
+  AppVersion,
   Logo,
   ThemeToggle,
 } from "@cdorneles/ui";
@@ -158,6 +159,7 @@ export function MfaPageClient({ redirectWhenAuthenticated = false }: MfaPageClie
 
           <Stack component="footer" align="center" gap="sm">
             <Logo alt="Cdorneles" variant="horizontal" height={32} />
+            <AppVersion />
           </Stack>
         </Stack>
       </Flex>

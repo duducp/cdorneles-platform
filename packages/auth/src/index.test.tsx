@@ -52,7 +52,7 @@ describe("AuthProvider", () => {
     );
   }
 
-  it("starts anonymous and updates on login/logout", async () => {
+  it("restores the session on mount, then updates on logout/login", async () => {
     const service = createFakeService();
     render(
       <AuthProvider service={service}>
@@ -60,15 +60,20 @@ describe("AuthProvider", () => {
       </AuthProvider>,
     );
 
-    expect(screen.getByTestId("status")).toHaveTextContent("anonymous");
+    // Starts loading while any existing session is resolved.
+    expect(screen.getByTestId("status")).toHaveTextContent("loading");
 
-    screen.getByRole("button", { name: "login" }).click();
+    // getCurrentUser resolves, so the session is restored without a login.
     await screen.findByText("user@example.com");
     expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
 
     screen.getByRole("button", { name: "logout" }).click();
     await screen.findByText("none");
     expect(screen.getByTestId("status")).toHaveTextContent("anonymous");
+
+    screen.getByRole("button", { name: "login" }).click();
+    await screen.findByText("user@example.com");
+    expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
   });
 
   it("throws when the hook is used outside the provider", () => {

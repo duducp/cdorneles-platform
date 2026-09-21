@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -84,13 +84,31 @@ function renderWithAuth(service: AuthService, children?: ReactNode) {
 }
 
 describe("AuthProvider", () => {
-  it("starts in anonymous state when no initial user", () => {
-    const service = createMockService();
+  it("resolves to anonymous when there is no session", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(null),
+      getCurrentUser: vi.fn().mockResolvedValue(null),
+    });
     renderWithAuth(service);
 
-    expect(screen.getByTestId("status")).toHaveTextContent("anonymous");
+    // Starts loading while any existing session is resolved, so the app never
+    // assumes "signed out" before it has looked.
+    expect(screen.getByTestId("status")).toHaveTextContent("loading");
+
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("anonymous"));
     expect(screen.getByTestId("user")).toHaveTextContent("null");
     expect(screen.getByTestId("session")).toHaveTextContent("null");
+  });
+
+  it("restores an existing session on mount", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    renderWithAuth(service);
+
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+    expect(screen.getByTestId("user")).toHaveTextContent("user@example.com");
   });
 
   it("starts in authenticated state when initialUser is provided", () => {

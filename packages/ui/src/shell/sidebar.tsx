@@ -2,6 +2,7 @@
 
 import { Box, ScrollArea, Stack } from "@mantine/core";
 import type { LucideIcon } from "lucide-react";
+import { AppVersion } from "../components/app-version";
 import { Logo } from "../components/logo";
 import { NavItem } from "./nav-item";
 
@@ -38,6 +39,10 @@ export function Sidebar({ items, activeHref, collapsed }: SidebarProps) {
           ))}
         </Stack>
       </ScrollArea>
+
+      <Box ta="center" pt="xs">
+        <AppVersion />
+      </Box>
     </Stack>
   );
 }

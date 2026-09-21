@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth, useRedirectIfAuthenticated } from "@cdorneles/auth";
-import { AuthCard, AuthVisual, ForgotPasswordForm, Logo, ThemeToggle } from "@cdorneles/ui";
+import { AppVersion, AuthCard, AuthVisual, ForgotPasswordForm, Logo, ThemeToggle } from "@cdorneles/ui";
 import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -69,6 +69,7 @@ export function ForgotPasswordPageClient({
 
           <Stack component="footer" align="center" gap="sm">
             <Logo alt="Cdorneles" variant="horizontal" height={32} />
+            <AppVersion />
           </Stack>
         </Stack>
       </Flex>

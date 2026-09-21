@@ -82,7 +82,11 @@ export function AuthProvider({
 }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(initialUser);
   const [session, setSession] = useState<AuthSession | null>(initialSession);
-  const [status, setStatus] = useState<AuthStatus>(initialUser ? "authenticated" : "anonymous");
+  // Start in "loading" when no user was provided so the bootstrap effect below
+  // runs. Defaulting to "anonymous" meant refresh() was never called, so an
+  // existing Appwrite session was never restored and the app behaved as if
+  // signed out after every reload.
+  const [status, setStatus] = useState<AuthStatus>(initialUser ? "authenticated" : "loading");
   const [sessionExpiring, setSessionExpiring] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
