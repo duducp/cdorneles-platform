@@ -1,6 +1,7 @@
 "use client";
 
 import type { ThemeMode } from "@cdorneles/types";
+import { semanticColors } from "@cdorneles/tokens";
 import {
   localStorageColorSchemeManager,
   MantineProvider,
@@ -27,9 +28,16 @@ export interface ThemeProviderProps {
 }
 
 // Mantine's default `dimmed` (dark-2) fails AA on the dark body; use gray-4.
-const cssVariablesResolver: CSSVariablesResolver = () => ({
+//
+// `--mantine-color-body` is what actually paints the page. Mantine defaults it
+// to white in Light, which ignores the `semanticColors.light.background` token
+// and leaves white surfaces sitting on a white page. Wiring it here is what
+// gives the Light theme its faint gray canvas and makes cards read as cards.
+export const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {},
-  light: {},
+  light: {
+    "--mantine-color-body": semanticColors.light.background,
+  },
   dark: {
     "--mantine-color-dimmed": "var(--mantine-color-gray-4)",
   },

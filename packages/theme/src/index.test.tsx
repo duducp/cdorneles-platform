@@ -1,11 +1,13 @@
 import "@testing-library/jest-dom/vitest";
 
+import type { MantineTheme } from "@mantine/core";
+import { semanticColors } from "@cdorneles/tokens";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { createAppTheme } from "./create-theme";
 import { createThemePreference, resolveThemeMode } from "./preference";
-import { ThemeProvider } from "./theme-provider";
+import { ThemeProvider, cssVariablesResolver } from "./theme-provider";
 
 describe("theme preference", () => {
   it("uses the organization default when there is no user override", () => {
@@ -49,5 +51,24 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     );
     expect(screen.getByText("content")).toBeInTheDocument();
+  });
+});
+
+describe("css variables", () => {
+  it("paints the page with the semantic background, not Mantine's white", () => {
+    // The resolver ignores the theme it is handed; the cast only satisfies the
+    // signature Mantine declares.
+    const resolved = cssVariablesResolver({} as MantineTheme);
+
+    expect(resolved.light?.["--mantine-color-body"]).toBe(semanticColors.light.background);
+    expect(semanticColors.light.background).not.toBe("#ffffff");
+  });
+
+  it("keeps `dimmed` readable on the dark body", () => {
+    // The resolver ignores the theme it is handed; the cast only satisfies the
+    // signature Mantine declares.
+    const resolved = cssVariablesResolver({} as MantineTheme);
+
+    expect(resolved.dark?.["--mantine-color-dimmed"]).toBe("var(--mantine-color-gray-4)");
   });
 });
