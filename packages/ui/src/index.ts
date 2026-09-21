@@ -6,6 +6,7 @@ export * from "./auth/login-form";
 export * from "./auth/mfa-challenge-form";
 export * from "./auth/reset-password-form";
 export * from "./auth/social-login";
+export * from "./components/data-table";
 export * from "./components/badge";
 export * from "./components/button";
 export * from "./components/card";

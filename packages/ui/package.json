@@ -25,6 +25,7 @@
     "@mantine/core": "catalog:",
     "@mantine/form": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
     "lucide-react": "catalog:"
   },
   "peerDependencies": {
