@@ -23,6 +23,11 @@ AI agents should search existing implementations before adding new abstractions 
 - Dependency direction: `types` → `tokens` → `theme` → `ui`; `permissions`,
   `schemas`, `auth`, `tenant`, `api-client`, `observability` sit beside `ui`
   and depend only on lower-level packages.
+- `@cdorneles/app` sits **above** the others: it is the composition layer the
+  applications share (auth screens, providers, shell, proxy, metadata), and the
+  only package allowed to depend on Next.js. `@cdorneles/ui` must never import
+  Next.js — it renders whatever the application hands it. See
+  [ADR-014](../decisions/ADR-014-shared-app-composition.md).
 
 ## Commands
 

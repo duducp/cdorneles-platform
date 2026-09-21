@@ -64,6 +64,51 @@ page.
 - Announce transient states to screen readers with a `VisuallyHidden aria-live="polite"` region (reference: login page "Entrando..."); use the shared `LoadingState` (`role="status"`) for full-page loading instead of bare dimmed text.
 - Keep the theme toggle row compact (`p="sm"`) so the `IconButton` stays near the touch target on mobile; links that are not underlined by default must set `underline="always"` (footer legal links) — never color alone.
 
+## Loading
+
+Four different waits, four different mechanisms — pick by what is actually
+waiting, not by habit.
+
+| Wait | Mechanism |
+|---|---|
+| A button's own action (submit, resend) | Mantine's `loading` prop on `Button` / `IconButton` |
+| A route segment being fetched | `loading.tsx` in that route group, rendering `LoadingState` |
+| The session and organization resolving | the `fallback` prop on `OrgGuard` |
+| A specific link's navigation | `useLinkStatus` (Next 16), rendered beside the nav label |
+
+Notes:
+
+- **`loading.tsx` is a safety net, not a visible feature.** With static pages
+  that Next has prefetched, navigation is instant and it never renders. It earns
+  its keep once a segment loads data on the server. Do not reach for it to give
+  feedback on every click — that is `useLinkStatus`.
+- **`OrgGuard` renders its `fallback` while resolving**, and also when there is
+  nothing to show (no organizations, or a selection is pending). It defaulted to
+  `null`, which left the shell blank until the session resolved.
+- **Do not disable a submit button to show that it is working.** Keep it enabled
+  and let `loading` show progress; a disabled button hides why it is disabled.
+- `LoadingState` carries `role="status"` and `aria-live="polite"`; prefer it
+  over bare dimmed text so the state reaches screen readers.
+
+## Framework boundary
+
+`@cdorneles/ui` must not import Next.js. The shell components render whatever
+element or component the application hands them, and `@cdorneles/app` — which
+does depend on Next — supplies the framework-aware pieces:
+
+```tsx
+<Sidebar
+  items={navItems}
+  linkComponent={Link}                 {/* next/link: client-side navigation */}
+  pendingComponent={NavPendingIndicator} {/* useLinkStatus: pending feedback */}
+/>
+```
+
+The same reasoning applies elsewhere: `@cdorneles/auth` and `@cdorneles/tenant`
+stay Next-free too (`OrgGuard` takes an `onRedirectToSelectOrg` callback rather
+than importing a router). Next-specific wiring belongs in the application or in
+`@cdorneles/app`.
+
 ## Branding assets
 
 - **Platform brand** (default logo + favicon) lives in the repo at `apps/<app>/public/brand/` (`logo-light.png`, `logo-dark.png`, `favicon.png`) and is served by Next. Keep it optimized (small PNG/SVG); it is versioned with the app. It is **not** stored in Appwrite Storage.

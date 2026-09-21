@@ -86,6 +86,11 @@ replaces its thin file. The design-system does exactly that for the auth
 screens (`redirectWhenAuthenticated={false}`, so the gallery stays viewable) and
 keeps its own providers and select-org page.
 
+It is also the only package that depends on Next.js. `@cdorneles/ui` stays
+framework-agnostic and renders whatever it is handed — the shell takes the
+anchor element (`next/link`) and the pending indicator (`useLinkStatus`) from
+`@cdorneles/app`, which supplies both.
+
 ## Getting started
 
 ```bash

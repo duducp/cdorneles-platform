@@ -44,6 +44,7 @@ apps/design-system
 ## 3. Shared Packages
 
 ```text
+@cdorneles/app
 @cdorneles/ui
 @cdorneles/theme
 @cdorneles/tokens
@@ -55,6 +56,13 @@ apps/design-system
 @cdorneles/types
 @cdorneles/observability
 ```
+
+`@cdorneles/app` is the composition layer the applications share: the auth
+screens, the provider tree, the shell layout, the request proxy, observability
+and the root metadata, exposed as factories so each app keeps only its own
+values (`applicationId`, navigation, titles). It is the one package allowed to
+depend on Next.js; `@cdorneles/ui` stays framework-agnostic and renders whatever
+the application hands it.
 
 Packages should contain reusable platform capabilities, not business modules.
 
