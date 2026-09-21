@@ -161,12 +161,14 @@ capabilities. No business modules yet.
       fixes, both documented in `docs/development/appwrite-sites.md`:
       the output directory must be `.next` (not `.next/standalone`) and pnpm's
       absolute symlinks must be rewritten as relative before packaging.
+- [x] Domains are created by the deploy script: it calls
+      `proxy create-site-rule` per site (idempotent) and
+      `proxy update-rule-status` to trigger DNS verification, after which
+      Appwrite provisions the TLS certificate. Suffix via `SITE_DOMAIN_SUFFIX`.
 - [ ] Remaining for sites:
-      - proxy rule (`proxy_create_site_rule`) per site domain — not created by
-        the deploy script
-      - wildcard TLS certificate for `*.sites.cdorneles.com.br` (DNS-01 in
-        Traefik/Dokploy); Appwrite's sites router has `tls=true` without a
-        `certresolver`, so it serves Traefik's default certificate
+      - confirm TLS is issued for `design-system.sites.cdorneles.com.br` after
+        verification (it still served Traefik's default certificate); fall back
+        to a wildcard cert via DNS-01 if not
       - port `/login` to admin/client/customer before deploying them (they
         redirect to a route that does not exist there)
 - [x] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route

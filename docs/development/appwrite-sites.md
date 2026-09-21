@@ -81,30 +81,40 @@ container.
 
 ## Domains and TLS
 
-**A site has no domain by default.** Create a proxy rule per site:
+**A site has no domain by default.** Without a proxy rule Traefik has no router
+for the host and the request never reaches the runtime — it returns `404`
+immediately, or `500`/`408` when Appwrite tries to screenshot the deployment.
+
+`scripts/deploy-sites.sh` creates it automatically after each deploy:
 
 ```bash
-# via the Appwrite MCP / console API
-proxy_create_site_rule --domain <site>.<sites-domain> --site_id <site>
+appwrite proxy create-site-rule --site-id <site> --domain <site>.<suffix>
+appwrite proxy update-rule-status --rule-id <id>   # triggers verification
 ```
 
-Without it Traefik has no router and the request never reaches the runtime —
-it returns `404` immediately, or `500`/`408` when Appwrite tries to screenshot
-the deployment.
+The suffix comes from `SITE_DOMAIN_SUFFIX` (default `sites.cdorneles.com.br`);
+set it empty to skip domain management. `update-rule-status` starts DNS
+verification, after which Appwrite provisions a TLS certificate for the domain
+asynchronously.
 
-**TLS is the operator's responsibility.** Appwrite's sites router is declared as
+To do it by hand, the console/MCP equivalent is
+`proxy_create_site_rule --domain <site>.<suffix> --site_id <site>`.
+
+**TLS follows domain verification.** Appwrite's sites wildcard router is
+declared as
 
 ```yaml
 traefik.http.routers.appwrite-sites-wildcard-secure.rule=HostRegexp(`^.+\.${_APP_DOMAIN_SITES}$`)
 traefik.http.routers.appwrite-sites-wildcard-secure.tls=true
 ```
 
-with **no `certresolver`**, so Traefik serves its self-signed default
-certificate (`CN=TRAEFIK DEFAULT CERT`) and browsers reject the connection.
-A `HostRegexp` router cannot enumerate hosts for ACME, and a wildcard
-certificate cannot be issued over HTTP-01 — so supply a wildcard certificate
-for `*.<sites-domain>` through a DNS-01 challenge (Cloudflare, Route53, …) in
-the Traefik/Dokploy configuration.
+with **no `certresolver`**, so before a domain is verified Traefik serves its
+self-signed default certificate (`CN=TRAEFIK DEFAULT CERT`) and browsers reject
+the connection. `update-rule-status` triggers verification, and Appwrite
+provisions a per-domain certificate afterwards. If a domain stays on the
+default certificate, the fallback is a wildcard certificate for
+`*.<suffix>` issued through a DNS-01 challenge (Cloudflare, Route53, …), since
+a wildcard cannot be issued over HTTP-01.
 
 ## Troubleshooting playbook
 

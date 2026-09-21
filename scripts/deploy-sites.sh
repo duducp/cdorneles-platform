@@ -30,10 +30,14 @@
 #   SITE_BUILD_RUNTIME   build runtime (default node-22; this instance offers
 #                        node-22 and node-25, not node-24)
 #   SITE_VCS_BRANCH      branch to deploy from (default main)
+#   SITE_DOMAIN_SUFFIX   domain suffix for the per-site proxy rule
+#                        (default sites.cdorneles.com.br). Set it empty to skip
+#                        domain management entirely.
 #   SITE_INSTALLATION_ID Appwrite VCS installation id. When set together with
 #   SITE_REPOSITORY_ID   SITE_REPOSITORY_ID, newly created sites are linked to
 #                        the repository (both come from the Console's Git
-#                        connection).
+#                        connection). Without them a new site is created
+#                        unlinked and the script deploys by upload.
 #   NEXT_PUBLIC_APPWRITE_ENDPOINT
 #   NEXT_PUBLIC_APPWRITE_PROJECT_ID
 #                        build-time variables, set on each site when present
@@ -46,6 +50,7 @@ BUILD_RUNTIME="${SITE_BUILD_RUNTIME:-node-22}"
 ADAPTER="ssr"
 INSTALL_COMMAND="corepack enable && pnpm install --frozen-lockfile"
 VCS_BRANCH="${SITE_VCS_BRANCH:-main}"
+DOMAIN_SUFFIX="${SITE_DOMAIN_SUFFIX:-sites.cdorneles.com.br}"
 
 ALL_SITES=(admin client customer design-system)
 
@@ -87,6 +92,42 @@ set_variable() {
     || echo "   (could not set $key)"
 }
 
+site_domain() {
+  echo "$1.${DOMAIN_SUFFIX}"
+}
+
+# Proxy rule ids are the MD5 of the domain; computing that portably is awkward,
+# so look the rule up by domain instead.
+proxy_rule_id() {
+  appwrite proxy list-rules --filter "domain=$1" --json 2>/dev/null \
+    | node -e 'let raw="";process.stdin.on("data",c=>raw+=c).on("end",()=>{try{const p=JSON.parse(raw);const rules=p.rules??p;if(Array.isArray(rules)&&rules[0]&&rules[0].$id)process.stdout.write(rules[0].$id)}catch{}})'
+}
+
+# A site has no domain by default. Without a proxy rule Traefik has no router
+# for the host and the request never reaches the runtime.
+ensure_domain() {
+  local site="$1" domain="$2" rule_id
+
+  rule_id="$(proxy_rule_id "$domain")"
+
+  if [ -n "$rule_id" ]; then
+    echo "==> Domain $domain already exists"
+  else
+    echo "==> Creating domain $domain"
+    appwrite proxy create-site-rule \
+      --site-id "$site" --domain "$domain" --force >/dev/null 2>&1 \
+      || echo "   (could not create the proxy rule for $domain)"
+    rule_id="$(proxy_rule_id "$domain")"
+  fi
+
+  if [ -n "$rule_id" ]; then
+    # Triggers DNS verification; on success Appwrite provisions a TLS
+    # certificate for the domain asynchronously.
+    appwrite proxy update-rule-status --rule-id "$rule_id" --force >/dev/null 2>&1 \
+      || echo "   (could not trigger verification for $domain)"
+  fi
+}
+
 if [ "$#" -gt 0 ]; then
   SITES=("$@")
 else
@@ -125,7 +166,9 @@ for site in "${SITES[@]}"; do
         --installation-id "$SITE_INSTALLATION_ID"
         --provider-repository-id "$SITE_REPOSITORY_ID"
         --provider-branch "$VCS_BRANCH"
-        --provider-root-directory "apps/$site"
+        # The repository root, not apps/<site>: the build needs the pnpm
+        # workspace and the lockfile, which only exist at the root.
+        --provider-root-directory "."
       )
     fi
     appwrite sites create "${create_args[@]}"
@@ -158,6 +201,11 @@ for site in "${SITES[@]}"; do
       --output-directory "$out_dir" \
       --activate \
       --force
+  fi
+
+  # After the deploy, so the proxy rule can bind to an active deployment.
+  if [ -n "$DOMAIN_SUFFIX" ]; then
+    ensure_domain "$site" "$(site_domain "$site")"
   fi
 done
 
