@@ -100,7 +100,12 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
       return;
     }
 
-    tenantService.getProfile(currentOrganizationId).then(setBranding);
+    let cancelled = false;
+    tenantService.getProfile(currentOrganizationId).then((result) => {
+      if (!cancelled) setBranding(result);
+    });
+
+    return () => { cancelled = true; };
   }, [currentOrganizationId, tenantService]);
 
   const handleOrganizationChange = useCallback((organization: Organization) => {
