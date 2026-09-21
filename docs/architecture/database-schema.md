@@ -134,3 +134,21 @@ Database: `cdorneles_platform` (Appwrite TablesDB)
 - **3 applications:** admin, client, customer
 - **24 permissions:** organizations.{read,update}, customers.{read,create,update,delete}, orders.{read,create,update,delete}, invoices.{read,create,approve}, products.{read,create,update,delete}, roles.{read,create,update,delete}, features.{read,manage}, audit.read
 - **8 features:** customers, orders, invoices, products, inventory, financial, sales, white-label
+
+## Per-Organization Rows
+
+Provisioning seeds only the **global** definitions above. The per-organization
+rows are created at runtime by the `provision-organization` Appwrite Function,
+which is idempotent (create-if-missing):
+
+| Table | Rows created |
+|-------|--------------|
+| `organization_profiles` | one row (`displayName`, `active: true`) |
+| `roles` | `owner`, `admin`, `member` |
+| `role_permissions` | owner/admin → all permissions (admin excludes `features.manage`); member → read permissions |
+| `role_applications` | owner/admin → admin + client + customer; member → client + customer |
+| `organization_features` | one row per feature; only `white-label` enabled by default |
+
+The `role_permissions` and `role_applications` rows reference the deterministic
+seeded IDs (`perm_*`, `app_*`, `feat_*`), so no lookup is required.
+

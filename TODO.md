@@ -112,6 +112,11 @@ capabilities. No business modules yet.
       removed `@cdorneles/authz` and the TypeScript functions. Each function is
       a standalone `openruntimes/handler` module; shared code lives in
       `functions/shared/` and is materialised by `make -C functions prepare`.
+- [x] `get-organization-profile` (branding read) and `provision-organization`
+      (per-organization bootstrap: profile, roles, role→permission,
+      role→application, feature flags) Go functions. Provisioning seeds only the
+      global definitions; per-organization rows are created by the function.
+      `deploy.sh` now creates functions idempotently with their scopes.
 
 ## Next
 
