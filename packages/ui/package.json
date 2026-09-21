@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./permissions": "./src/permissions/index.ts",
     "./storage": "./src/storage/index.ts",
+    "./shell": "./src/shell/index.ts",
     "./tenant": "./src/tenant/index.ts"
   },
   "types": "./src/index.ts",
