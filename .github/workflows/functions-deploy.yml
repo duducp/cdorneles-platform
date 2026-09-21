@@ -91,6 +91,10 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 24
+          # This job only runs the Appwrite CLI; pnpm is not installed here.
+          # setup-node v5 enables caching automatically when package.json
+          # declares a packageManager, which then fails on the missing binary.
+          package-manager-cache: false
 
       - name: Install Appwrite CLI
         run: npm install -g appwrite-cli
