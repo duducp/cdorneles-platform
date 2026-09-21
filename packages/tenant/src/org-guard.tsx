@@ -8,18 +8,24 @@ export interface OrgGuardProps {
   children: ReactNode;
   /** Called when org selection is needed. The consumer decides how to navigate. */
   onRedirectToSelectOrg: () => void;
+  /**
+   * Rendered while the tenant state is still resolving, and when there is
+   * nothing to show (no organizations, or a selection is pending). Defaults to
+   * nothing; applications pass a loading indicator so the wait is visible.
+   */
+  fallback?: ReactNode;
 }
 
 /**
  * Wraps authenticated content and ensures an active organization exists.
  *
- * - Still loading → render nothing (TenantBridge is fetching)
- * - 0 orgs → render nothing (account needs invite)
+ * - Still loading → render `fallback` (TenantBridge is fetching)
+ * - 0 orgs → render `fallback` (account needs invite)
  * - 1 org → already auto-selected by TenantBridge
  * - 2+ orgs with none selected → call onRedirectToSelectOrg
  * - org selected → render children
  */
-export function OrgGuard({ children, onRedirectToSelectOrg }: OrgGuardProps) {
+export function OrgGuard({ children, onRedirectToSelectOrg, fallback = null }: OrgGuardProps) {
   const { organizations, currentOrganization, ready } = useTenant();
 
   useEffect(() => {
@@ -31,15 +37,15 @@ export function OrgGuard({ children, onRedirectToSelectOrg }: OrgGuardProps) {
   }, [ready, organizations, currentOrganization, onRedirectToSelectOrg]);
 
   if (!ready) {
-    return null;
+    return <>{fallback}</>;
   }
 
   if (organizations.length === 0) {
-    return null;
+    return <>{fallback}</>;
   }
 
   if (organizations.length > 1 && !currentOrganization) {
-    return null;
+    return <>{fallback}</>;
   }
 
   return <>{children}</>;

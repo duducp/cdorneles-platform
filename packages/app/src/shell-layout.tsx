@@ -2,7 +2,9 @@
 
 import { useAuth } from "@cdorneles/auth";
 import { OrgGuard, useTenant } from "@cdorneles/tenant";
+import { LoadingState } from "@cdorneles/ui";
 import { AppShell, Sidebar, Topbar, type SidebarNavItem } from "@cdorneles/ui/shell";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState, type ReactNode } from "react";
 
@@ -40,9 +42,17 @@ export function createShellLayout({ navItems }: CreateShellLayoutOptions) {
     }, [router]);
 
     return (
-      <OrgGuard onRedirectToSelectOrg={handleRedirectToSelectOrg}>
+      <OrgGuard
+        onRedirectToSelectOrg={handleRedirectToSelectOrg}
+        fallback={<LoadingState label="Carregando…" />}
+      >
         <AppShell
-          sidebar={<Sidebar items={navItems} activeHref={pathname} collapsed={!opened} />}
+          sidebar={<Sidebar
+            items={navItems}
+            activeHref={pathname}
+            collapsed={!opened}
+            linkComponent={Link}
+          />}
           topbar={
             <Topbar
               userName={currentOrganization?.name ?? user?.name ?? "User"}
