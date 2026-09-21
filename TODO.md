@@ -127,6 +127,9 @@ capabilities. No business modules yet.
       redirects point to `/auth/login`, which does not exist — actual route is
       `/login` (design-system reference). Carry the `redirect` query param
       through the login flow back to the original page.
+- [x] App shell: Sidebar, Topbar, UserMenu, route-based navigation with
+      PermissionGate on customers page. Admin app wired with
+      (shell) route group, dashboard/settings/customers pages.
 
 ## Later — business modules (only after the above)
 
