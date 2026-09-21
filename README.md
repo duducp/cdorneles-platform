@@ -145,6 +145,53 @@ CI (`.github/workflows/ci.yml`) runs two jobs:
   with the lockfile cached;
 - `functions` — the Go gate (`make -C functions build|vet|test`).
 
+## Releases
+
+Releases are automated with
+[release-please](https://github.com/googleapis/release-please-action), driven by
+[Conventional Commits](./CONTRIBUTING.md#commits).
+
+`.github/workflows/release.yml` runs on every push to `main` and maintains a
+**Release PR** containing:
+
+- the version bump in the root `package.json`;
+- `.release-please-manifest.json`;
+- a generated `CHANGELOG.md`.
+
+Merging that PR is what cuts a release: release-please creates the `vX.Y.Z` tag
+and the GitHub Release, and the same run invokes both deploy workflows.
+
+```text
+push to main
+  └─ release-please updates the Release PR
+       └─ merge it
+            ├─ tag vX.Y.Z + GitHub Release
+            ├─ Deploy functions
+            └─ Deploy sites
+```
+
+The tag is `vX.Y.Z` with no component prefix: the whole repository — apps and
+functions — versions together, matching the monorepo boundary decision in
+[ADR-012](./docs/decisions/ADR-012-monorepo-boundary.md).
+
+The version reaches the frontend as `NEXT_PUBLIC_APP_VERSION`, baked in at
+build time from the root `package.json`.
+
+### Deploying without a release
+
+Both deploy workflows can be run by hand from the current `main`, for one
+target or all of them:
+
+```bash
+gh workflow run "Deploy Functions" --ref main -f function=all
+gh workflow run "Deploy Sites"     --ref main -f site=all
+```
+
+There is deliberately **no `push: tags` trigger**: release tags are created with
+`GITHUB_TOKEN`, which does not trigger other workflows, so relying on the tag
+would not work — and allowing it as well as the explicit call would risk two
+deploys of different commits.
+
 ## Deploy
 
 Both deploys run from the repository root and require the Appwrite CLI,

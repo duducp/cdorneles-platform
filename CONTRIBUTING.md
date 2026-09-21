@@ -41,6 +41,11 @@ test: cover permission resolver
 chore: update dependencies
 ```
 
+The type and scope are not cosmetic: release-please derives the version bump
+and the changelog from them (see [Releases](./README.md#releases) in the
+README). A `feat` produces a minor bump, a `fix` a patch, and a `!` or a
+`BREAKING CHANGE:` footer a major one.
+
 ## Pull Requests
 
 A PR should contain:
