@@ -27,6 +27,7 @@ import {
   ThemeToggle,
 } from "@cdorneles/ui";
 import {
+  Anchor,
   Box,
   Checkbox,
   Code,
@@ -38,7 +39,37 @@ import {
   TextInput,
 } from "@mantine/core";
 import { Plus, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
+
+/** Auth and tenant screens shipped in this app. */
+const SCREENS = [
+  {
+    href: "/login",
+    title: "Login",
+    description: "E-mail e senha, com detecção de MFA.",
+  },
+  {
+    href: "/forgot-password",
+    title: "Esqueci minha senha",
+    description: "Solicita o e-mail de recuperação.",
+  },
+  {
+    href: "/reset-password",
+    title: "Redefinir senha",
+    description: "Define uma nova senha a partir do link recebido.",
+  },
+  {
+    href: "/mfa",
+    title: "Verificação em duas etapas",
+    description: "Código por app autenticador ou e-mail.",
+  },
+  {
+    href: "/select-org",
+    title: "Selecionar organização",
+    description: "Escolhe a organização ativa e cria uma nova.",
+  },
+];
 
 export default function DesignSystemPage() {
   const [name, setName] = useState("");
@@ -54,6 +85,27 @@ export default function DesignSystemPage() {
           description="Playground for tokens, components and states. Toggle Light/Dark to verify both themes."
           actions={<ThemeToggle />}
         />
+
+        <Section
+          title="Screens"
+          description="Fluxos de autenticação e de organização implementados neste app."
+        >
+          <ResponsiveGrid columns={{ base: 1, sm: 2, md: 3 }}>
+            {SCREENS.map((screen) => (
+              <Card key={screen.href}>
+                <Stack gap="xs">
+                  <Text fw={fontWeights.semibold}>{screen.title}</Text>
+                  <Text size="sm" c="dimmed">
+                    {screen.description}
+                  </Text>
+                  <Anchor component={Link} href={screen.href} underline="always">
+                    Abrir
+                  </Anchor>
+                </Stack>
+              </Card>
+            ))}
+          </ResponsiveGrid>
+        </Section>
 
         <Section title="Colors" description="Token palettes (index 0 lightest → 9 darkest).">
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">

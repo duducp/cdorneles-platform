@@ -46,6 +46,14 @@ export default tseslint.config(
     },
   },
   {
+    files: ["**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     files: ["apps/**/*.{ts,tsx}"],
     plugins: { "@next/next": nextPlugin },
     rules: {
