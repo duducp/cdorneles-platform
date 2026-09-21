@@ -1,7 +1,16 @@
 "use client";
 
 import type { Branding } from "@cdorneles/types";
-import { Button, Card, Flex, Image, Stack, Text, Title } from "@mantine/core";
+import {
+  Button,
+  Card,
+  Flex,
+  Image,
+  Stack,
+  Text,
+  Title,
+  rgba,
+} from "@mantine/core";
 import { Building2, Check } from "lucide-react";
 
 export interface OrgPickerOrganization {
@@ -65,7 +74,7 @@ export function OrgPicker({
                     : undefined,
                   backgroundColor:
                     isSelected && branding?.primaryColor
-                      ? `${branding.primaryColor}10`
+                      ? rgba(branding.primaryColor, 0.06)
                       : undefined,
                 }}
               >

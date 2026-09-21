@@ -87,7 +87,7 @@ describe("OrgPicker", () => {
     );
 
     const button = screen.getByRole("button", { name: /Test/ });
-    expect(button).toHaveStyle({ backgroundColor: "#ff000010" });
+    expect(button.style.backgroundColor).toMatch(/rgba\(255, 0, 0, 0\.06/);
   });
 
   it("does not apply brand colors when branding is absent", () => {
