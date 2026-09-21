@@ -4,6 +4,7 @@ import {
   createAppwriteServices,
   createQueryClient,
   resolveApiClientConfig,
+  type FunctionsApi,
 } from "@cdorneles/api-client";
 import {
   AuthProvider,
@@ -22,9 +23,15 @@ import { initObservability } from "@/lib/observability";
 
 const APPLICATION_ID = "customer";
 
-function InnerProviders({ children }: { children: ReactNode }) {
+function InnerProviders({
+  children,
+  functionsApi,
+}: {
+  children: ReactNode;
+  functionsApi: FunctionsApi;
+}) {
   const { currentOrganization } = useTenant();
-  const { granted, status } = usePermissions(APPLICATION_ID, currentOrganization?.id);
+  const { granted, status } = usePermissions(APPLICATION_ID, currentOrganization?.id, functionsApi);
 
   return (
     <AccessProvider granted={granted ?? { permissions: [], features: [] }}>
@@ -52,6 +59,14 @@ export function Providers({ children }: { children: ReactNode }) {
     const services = createAppwriteServices(config);
     return createAppwriteTenantService(services.teams);
   });
+  const functionsApi = (() => {
+    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+    if (!endpoint || !projectId) return null;
+    const config = resolveApiClientConfig({ endpoint, projectId });
+    const services = createAppwriteServices(config);
+    return services.functions;
+  })();
 
   initObservability();
 
@@ -61,7 +76,11 @@ export function Providers({ children }: { children: ReactNode }) {
 
   const tenantContent = (
     <OrgGuard onRedirectToSelectOrg={handleRedirectToSelectOrg}>
-      <InnerProviders>{children}</InnerProviders>
+      {functionsApi ? (
+        <InnerProviders functionsApi={functionsApi}>{children}</InnerProviders>
+      ) : (
+        children
+      )}
     </OrgGuard>
   );
 

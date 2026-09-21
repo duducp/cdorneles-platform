@@ -59,12 +59,13 @@ capabilities. No business modules yet.
 - [x] Run `pnpm provision` against the live Appwrite project.
 - [x] Migrate provisioning to the Appwrite 2.x `TablesDB` API
       (`createTable` / `create*Column` / `createRow`).
-- [ ] Define table permissions and indexes (columns exist; permissions and
+- [x] Define table permissions and indexes (columns exist; permissions and
       indexes do not). Tables currently have `rowSecurity: false`.
-- [ ] Record the schema in `docs/` and, if it changes architecture, an ADR.
+- [x] Record the schema in `docs/` and, if it changes architecture, an ADR.
 - [ ] Rotate leaked secrets: `project_list_keys` exposed its API key secret, and a
       `compose.one` read exposed `_APP_OPENSSL_KEY_V1` and
       `_APP_NOTIFICATIONS_TRACKING_SECRET`, in session transcripts.
+      **See `docs/development/secrets-rotation.md` for rotation steps.**
 
 ### 4. Tenancy and domain resolution
 
@@ -82,7 +83,7 @@ capabilities. No business modules yet.
 - [x] Organization picker: after login, when the user belongs to more than one
       organization, a page to choose the active organization (feeds
       `TenantProvider`).
-- [ ] Document standard vs. custom domain behaviour (ADR-007).
+- [x] Document standard vs. custom domain behaviour (ADR-007).
 
 ### 5. First Appwrite Function (security boundary)
 
@@ -103,17 +104,20 @@ capabilities. No business modules yet.
 - [x] Mirror session state to `cdorneles-session` cookie for middleware.
 - [x] Wire `usePermissions()` into all 4 app providers (replaces empty grants).
 - [x] Add Next.js middleware for cookie-based route protection.
+- [x] Session expiry handling: AuthProvider polls session validity every 4 min,
+      sets `sessionExpiring` flag within 5 min of expiry, and redirects to
+      `/login` when session expires.
 
 ## Next
 
-- [ ] `@cdorneles/observability`: real Sentry provider behind the existing
+- [x] `@cdorneles/observability`: real Sentry provider behind the existing
       contract (browser + Functions).
 - [ ] White-label branding: apply `organization_profiles` branding to
       `@cdorneles/theme` (contrast-validated tokens).
-- [ ] Storage upload flow: an `@cdorneles/ui` upload component plus a
+- [x] Storage upload flow: an `@cdorneles/ui` upload component plus a
       `branding-logos` flow that writes per-file `read("team:<orgId>")`
       permissions and stores the resulting URL on `organization_profiles`.
-- [ ] Transactional email via an Appwrite Function. The browser `appwrite`
+- [x] Transactional email via an Appwrite Function. The browser `appwrite`
       SDK has no `Messaging.createEmail` (it is server-side only), so email
       must be a Function invoked through `FunctionsApi.createExecution` — never
       a client-side Messaging API.

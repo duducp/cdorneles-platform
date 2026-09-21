@@ -1,15 +1,20 @@
-import { createNoopProvider, setObservabilityProvider } from "@cdorneles/observability";
+import {
+  createNoopProvider,
+  createSentryProvider,
+  setObservabilityProvider,
+} from "@cdorneles/observability";
 
 let initialized = false;
 
 /**
- * Installs the noop observability provider. Replace with the Sentry adapter
- * once it is authorized and configured (ADR-009).
+ * Installs the observability provider. Uses Sentry when SENTRY_DSN is set,
+ * otherwise falls back to noop (ADR-009).
  */
 export function initObservability(): void {
   if (initialized) {
     return;
   }
-  setObservabilityProvider(createNoopProvider());
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  setObservabilityProvider(dsn ? createSentryProvider() : createNoopProvider());
   initialized = true;
 }

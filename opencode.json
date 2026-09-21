@@ -10,6 +10,10 @@
         "APPWRITE_PROJECT_ID": "{env:NEXT_PUBLIC_APPWRITE_PROJECT_ID}",
         "APPWRITE_API_KEY": "{env:APPWRITE_API_KEY}"
       }
+    },
+    "mantine": {
+      "type": "remote",
+      "url": "https://mantine.dev/mcp"
     }
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import type { FunctionsApi } from "@cdorneles/api-client";
 import { resolveGrants, type GrantedAccess } from "@cdorneles/permissions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
@@ -20,8 +21,9 @@ export interface UsePermissionsResult {
 export function usePermissions(
   applicationId: string,
   organizationId: string | null | undefined,
+  functionsApi: FunctionsApi,
 ): UsePermissionsResult {
-  const { user, status: authStatus, service } = useAuth();
+  const { user, status: authStatus } = useAuth();
   const queryClient = useQueryClient();
 
   const enabled = authStatus === "authenticated" && !!user && !!organizationId;
@@ -29,7 +31,7 @@ export function usePermissions(
   const query = useQuery({
     queryKey: ["grants", user?.id, organizationId, applicationId],
     queryFn: async (): Promise<GrantedAccess> => {
-      return resolveGrants(service as any, {
+      return resolveGrants(functionsApi, {
         userId: user!.id,
         organizationId: organizationId!,
         applicationId,
