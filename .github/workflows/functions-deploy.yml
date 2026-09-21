@@ -3,11 +3,13 @@ name: Deploy Functions
 # Production deploy of the Appwrite Go functions.
 #
 # Triggers:
-#   - a `v*` tag (release) deploys every function;
-#   - a manual run deploys one function or all of them;
-#   - called by the release workflow after release-please cuts a release.
-#     (A tag pushed with GITHUB_TOKEN does not trigger other workflows, so the
-#     release workflow calls this one explicitly instead of relying on the tag.)
+#   - called by the release workflow when release-please cuts a release;
+#   - a manual run (`workflow_dispatch`) deploys one function or all of them.
+#
+# There is deliberately no `push: tags` trigger. Release tags are created with
+# GITHUB_TOKEN, which does not trigger other workflows, so the release workflow
+# calls this one explicitly. Allowing a tag push to deploy as well would open
+# the door to two deploys of different commits.
 #
 # The deploy job uses the `production` GitHub Environment, so it can require
 # reviewers. Required secrets:
@@ -41,9 +43,6 @@ on:
         required: false
         type: string
         default: all
-  push:
-    tags:
-      - "v*"
 
 # Never let two deploys race; a running deploy is allowed to finish.
 concurrency:

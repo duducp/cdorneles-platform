@@ -166,9 +166,11 @@ The same scripts run in GitHub Actions:
 - `.github/workflows/functions-deploy.yml`
 - `.github/workflows/sites-deploy.yml`
 
-Both trigger on a `v*` tag, on manual dispatch (one target or all), and are
-called by the release workflow after release-please cuts a release. Both deploy
-from the `production` environment, which can require reviewers.
+Both are triggered two ways: by the release workflow when release-please cuts a
+release, and by manual dispatch (one target or all). They deliberately have no
+`push: tags` trigger — release tags are created with `GITHUB_TOKEN`, which does
+not trigger other workflows, so the release workflow calls them explicitly.
+Both deploy from the `production` environment, which can require reviewers.
 
 Required secrets: `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`,
 `APPWRITE_API_KEY`. For the sites, the endpoint and project id are also pushed

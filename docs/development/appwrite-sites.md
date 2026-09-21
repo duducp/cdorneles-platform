@@ -207,4 +207,7 @@ sudo docker exec exc1 env | grep -E "RUNTIMES|IMAGES"
   `create-deployment`) and `--scopes` is a string array, so each scope needs
   its own flag.
 - **A tag pushed with `GITHUB_TOKEN` does not trigger other workflows**, which
-  is why the release workflow invokes the deploy via `workflow_call`.
+  is why the release workflow invokes the deploy via `workflow_call`. The
+  deploy workflows therefore have **no `push: tags` trigger**: relying on the
+  tag would not fire for release-please tags, and allowing it as well as the
+  explicit call would risk two deploys of different commits.
