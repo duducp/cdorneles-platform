@@ -1,9 +1,2 @@
-import type { Metadata } from "next";
-
-import { MfaPageClient } from "./page-client";
-
-export const metadata: Metadata = { title: "Verificação em duas etapas" };
-
-export default function MfaPage() {
-  return <MfaPageClient redirectWhenAuthenticated />;
-}
+export { MfaPage as default } from "@cdorneles/app/auth";
+export { mfaMetadata as metadata } from "@cdorneles/app/auth-metadata";

@@ -1,9 +1,7 @@
-import type { Metadata } from "next";
+import { LoginPage } from "@cdorneles/app/auth";
 
-import { LoginPageClient } from "./page-client";
+export { loginMetadata as metadata } from "@cdorneles/app/auth-metadata";
 
-export const metadata: Metadata = { title: "Entrar" };
-
-export default function LoginPage() {
-  return <LoginPageClient />;
+export default function Page() {
+  return <LoginPage redirectWhenAuthenticated={false} />;
 }

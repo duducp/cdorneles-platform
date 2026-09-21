@@ -14,16 +14,16 @@ import { Anchor, Flex, Stack, Text, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
-export interface LoginPageClientProps {
+export interface LoginPageProps {
   /**
    * Send an already-authenticated visitor to the app instead of showing the
-   * form. Off by default so the design-system gallery keeps every screen
-   * viewable.
+   * form. Defaults to on; the design-system gallery passes false so every
+   * screen stays viewable there.
    */
   redirectWhenAuthenticated?: boolean;
 }
 
-export function LoginPageClient({ redirectWhenAuthenticated = false }: LoginPageClientProps) {
+export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) {
   const { login } = useAuth();
   const router = useRouter();
   const goToApp = useCallback(() => {

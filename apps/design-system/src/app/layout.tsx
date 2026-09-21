@@ -3,21 +3,17 @@ import "./globals.css";
 
 import { COLOR_SCHEME_STORAGE_KEY } from "@cdorneles/theme";
 import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
-import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { createMetadata } from "@cdorneles/app";
 import { OrgBranding } from "@cdorneles/ui/tenant";
 
 import { Providers } from "./providers";
 
-export const metadata: Metadata = {
-  title: {
-    default: "Cdorneles Design System",
-    template: "%s | Cdorneles Design System",
-  },
+export const metadata = createMetadata({
+  title: "Cdorneles Design System",
   description: "Visual playground for the shared Cdorneles design system.",
-  icons: { icon: "/brand/favicon.png" },
-};
+});
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

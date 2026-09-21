@@ -1,9 +1,2 @@
-import type { Metadata } from "next";
-
-import { ResetPasswordPageClient } from "./page-client";
-
-export const metadata: Metadata = { title: "Redefinir senha" };
-
-export default function ResetPasswordPage() {
-  return <ResetPasswordPageClient redirectWhenAuthenticated />;
-}
+export { ResetPasswordPage as default } from "@cdorneles/app/auth";
+export { resetPasswordMetadata as metadata } from "@cdorneles/app/auth-metadata";

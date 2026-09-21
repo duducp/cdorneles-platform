@@ -7,17 +7,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-export interface ForgotPasswordPageClientProps {
-  /** Product apps send an authenticated visitor to the app. */
+export interface ForgotPasswordPageProps {
+  /** Send an already-authenticated visitor to the app. Defaults to on. */
   redirectWhenAuthenticated?: boolean;
   /** Pre-fills the e-mail, e.g. the one typed on the login screen. */
   initialEmail?: string;
 }
 
-export function ForgotPasswordPageClient({
-  redirectWhenAuthenticated = false,
+export function ForgotPasswordPage({
+  redirectWhenAuthenticated = true,
   initialEmail,
-}: ForgotPasswordPageClientProps) {
+}: ForgotPasswordPageProps) {
   const { service } = useAuth();
   const router = useRouter();
   const goToApp = useCallback(() => router.replace("/"), [router]);

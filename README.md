@@ -49,6 +49,7 @@ apps/
   admin/ client/ customer/     # Next.js applications
   design-system/               # UI playground
 packages/
+  app/                         # composition layer shared by the apps
   tokens/ theme/ ui/           # design system
   auth/ tenant/ permissions/   # platform capabilities
   api-client/                  # single Appwrite access layer
@@ -60,6 +61,30 @@ tooling/                       # shared Next.js / PostCSS config
 
 Shared packages are consumed as TypeScript source (no per-package build step);
 apps list them in `transpilePackages` from `tooling/next-config.mjs`.
+
+### `@cdorneles/app`
+
+The composition layer. It owns everything the applications used to copy
+verbatim — the auth screens, `select-org`, the provider tree, the shell layout,
+the request proxy, observability and the root metadata — exposed as factories
+so each app keeps only what is genuinely its own:
+
+```typescript
+// providers.tsx
+export const Providers = createProviders({ applicationId: "admin" });
+
+// (shell)/layout.tsx
+export default createShellLayout({ navItems: ADMIN_NAV });
+
+// login/page.tsx
+export { LoginPage as default } from "@cdorneles/app/auth";
+export { loginMetadata as metadata } from "@cdorneles/app/auth-metadata";
+```
+
+The package is the default, not a cage: an app that needs different behaviour
+replaces its thin file. The design-system does exactly that for the auth
+screens (`redirectWhenAuthenticated={false}`, so the gallery stays viewable) and
+keeps its own providers and select-org page.
 
 ## Getting started
 

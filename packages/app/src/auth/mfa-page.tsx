@@ -22,12 +22,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-export interface MfaPageClientProps {
-  /** Product apps send an authenticated visitor to the app. */
+export interface MfaPageProps {
+  /** Send an already-authenticated visitor to the app. Defaults to on. */
   redirectWhenAuthenticated?: boolean;
 }
 
-export function MfaPageClient({ redirectWhenAuthenticated = false }: MfaPageClientProps) {
+export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
   const { service, completeMfa } = useAuth();
   const router = useRouter();
   const goToApp = useCallback(() => {

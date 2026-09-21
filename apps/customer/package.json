@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@cdorneles/api-client": "workspace:*",
+    "@cdorneles/app": "workspace:*",
     "@cdorneles/auth": "workspace:*",
     "@cdorneles/observability": "workspace:*",
     "@cdorneles/permissions": "workspace:*",

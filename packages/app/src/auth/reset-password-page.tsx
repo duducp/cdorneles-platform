@@ -66,14 +66,14 @@ function ResetPasswordContent() {
   );
 }
 
-export interface ResetPasswordPageClientProps {
-  /** Product apps send an authenticated visitor to the app. */
+export interface ResetPasswordPageProps {
+  /** Send an already-authenticated visitor to the app. Defaults to on. */
   redirectWhenAuthenticated?: boolean;
 }
 
-export function ResetPasswordPageClient({
-  redirectWhenAuthenticated = false,
-}: ResetPasswordPageClientProps) {
+export function ResetPasswordPage({
+  redirectWhenAuthenticated = true,
+}: ResetPasswordPageProps) {
   const router = useRouter();
   const goToApp = useCallback(() => router.replace("/"), [router]);
   const canRender = useRedirectIfAuthenticated(redirectWhenAuthenticated, goToApp);
