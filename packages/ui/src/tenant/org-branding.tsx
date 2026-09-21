@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
-import { useTenant } from "@cdorneles/tenant";
+import { useContext, useEffect } from "react";
+import { TenantContext } from "@cdorneles/tenant";
 
+/**
+ * Injects the active organization's favicon into the document head.
+ * Render once in the root layout. Silently no-ops if TenantProvider
+ * is not in the tree (e.g. during SSR/static rendering).
+ */
 export function OrgBranding() {
-  const { branding } = useTenant();
+  const context = useContext(TenantContext);
+  const branding = context?.branding ?? null;
 
   useEffect(() => {
     if (!branding?.favicon) return;

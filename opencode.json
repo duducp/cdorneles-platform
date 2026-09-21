@@ -12,8 +12,8 @@
       }
     },
     "mantine": {
-      "type": "remote",
-      "url": "https://mantine.dev/mcp"
+      "type": "local",
+      "command": ["npx", "-y", "@mantine/mcp-server"]
     }
   }
 }

@@ -112,7 +112,7 @@ capabilities. No business modules yet.
 
 - [x] `@cdorneles/observability`: real Sentry provider behind the existing
       contract (browser + Functions).
-- [ ] White-label branding: apply `organization_profiles` branding to
+- [x] White-label branding: apply `organization_profiles` branding to
       `@cdorneles/theme` (contrast-validated tokens).
 - [x] Storage upload flow: an `@cdorneles/ui` upload component plus a
       `branding-logos` flow that writes per-file `read("team:<orgId>")`

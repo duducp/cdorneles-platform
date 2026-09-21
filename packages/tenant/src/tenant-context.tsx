@@ -16,7 +16,7 @@ export interface TenantContextValue {
   switchOrganization: (organizationId: string) => boolean;
 }
 
-const TenantContext = createContext<TenantContextValue | null>(null);
+export const TenantContext = createContext<TenantContextValue | null>(null);
 
 export interface TenantProviderProps {
   organizations?: Organization[];
