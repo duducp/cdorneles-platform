@@ -170,6 +170,24 @@ push to main
             └─ Deploy sites
 ```
 
+### When the Release PR appears
+
+**You never create it.** On every push to `main`, release-please decides:
+
+| State | What it does |
+|---|---|
+| No releasable commits since the last tag | nothing |
+| Releasable commits, no Release PR open | **creates** the PR |
+| Releasable commits, PR already open | **updates** it |
+
+A commit is releasable when its type changes the version: `feat` (minor), `fix`
+(patch), or a `!` / `BREAKING CHANGE` footer (major). Types like `docs`,
+`chore`, `test` and `ci` do not change the version on their own, so they never
+open a PR — they show up in the changelog once a releasable commit does.
+
+Merging the PR closes it, so the **next** releasable commit opens a fresh one.
+The only manual step in the whole flow is that merge.
+
 The tag is `vX.Y.Z` with no component prefix: the whole repository — apps and
 functions — versions together, matching the monorepo boundary decision in
 [ADR-012](./docs/decisions/ADR-012-monorepo-boundary.md).
