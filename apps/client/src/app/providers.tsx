@@ -13,6 +13,7 @@ import {
   usePermissions,
 } from "@cdorneles/auth";
 import { OrgGuard, TenantBridge, TenantProvider, createAppwriteTenantService, useTenant } from "@cdorneles/tenant";
+import { ThemeProvider } from "@cdorneles/theme";
 import type { TenantService } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
@@ -22,6 +23,11 @@ import { useCallback, useState, type ReactNode } from "react";
 import { initObservability } from "@/lib/observability";
 
 const APPLICATION_ID = "client";
+
+function ThemeBranding({ children }: { children: ReactNode }) {
+  const { branding } = useTenant();
+  return <ThemeProvider branding={branding}>{children}</ThemeProvider>;
+}
 
 function InnerProviders({
   children,
@@ -76,11 +82,13 @@ export function Providers({ children }: { children: ReactNode }) {
 
   const tenantContent = (
     <OrgGuard onRedirectToSelectOrg={handleRedirectToSelectOrg}>
-      {functionsApi ? (
-        <InnerProviders functionsApi={functionsApi}>{children}</InnerProviders>
-      ) : (
-        children
-      )}
+      <ThemeBranding>
+        {functionsApi ? (
+          <InnerProviders functionsApi={functionsApi}>{children}</InnerProviders>
+        ) : (
+          children
+        )}
+      </ThemeBranding>
     </OrgGuard>
   );
 

@@ -14,12 +14,19 @@ import {
   TenantBridge,
   TenantProvider,
   createAppwriteTenantService,
+  useTenant,
 } from "@cdorneles/tenant";
+import { ThemeProvider } from "@cdorneles/theme";
 import type { TenantService } from "@cdorneles/tenant";
 import { AppProvider } from "@cdorneles/ui";
 import { useState, type ReactNode } from "react";
 
 import { initObservability } from "@/lib/observability";
+
+function ThemeBranding({ children }: { children: ReactNode }) {
+  const { branding } = useTenant();
+  return <ThemeProvider branding={branding}>{children}</ThemeProvider>;
+}
 
 /**
  * The design-system app is a visual playground, not an authenticated
@@ -51,9 +58,13 @@ export function Providers({ children }: { children: ReactNode }) {
     <AppProvider queryClient={queryClient} organizationDefault="light">
       <AuthProvider service={authService}>
         {tenantService ? (
-          <TenantBridge tenantService={tenantService}>{children}</TenantBridge>
+          <TenantBridge tenantService={tenantService}>
+            <ThemeBranding>{children}</ThemeBranding>
+          </TenantBridge>
         ) : (
-          <TenantProvider>{children}</TenantProvider>
+          <TenantProvider>
+            <ThemeBranding>{children}</ThemeBranding>
+          </TenantProvider>
         )}
       </AuthProvider>
     </AppProvider>
