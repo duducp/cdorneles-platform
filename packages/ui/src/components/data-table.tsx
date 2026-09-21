@@ -10,7 +10,7 @@ import { flexRender, type RowData } from "@tanstack/react-table";
 
 export interface DataTableProps<TData extends RowData> {
   data: TData[];
-  columns: LegacyColumnDef<TData, any>[];
+  columns: LegacyColumnDef<TData, unknown>[];
 }
 
 export function DataTable<TData extends RowData>({
