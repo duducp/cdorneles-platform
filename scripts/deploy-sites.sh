@@ -209,13 +209,16 @@ for site in "${SITES[@]}"; do
       --force
   fi
 
+  # Variable ids are unique per project, not per site, so they must be
+  # namespaced by site — reusing "appwrite-endpoint" would silently fail for
+  # every site after the first.
   if [ -n "${NEXT_PUBLIC_APPWRITE_ENDPOINT:-}" ]; then
     echo "==> Setting NEXT_PUBLIC_APPWRITE_ENDPOINT on $site"
-    set_variable "$site" "appwrite-endpoint" "NEXT_PUBLIC_APPWRITE_ENDPOINT" "$NEXT_PUBLIC_APPWRITE_ENDPOINT"
+    set_variable "$site" "$site-appwrite-endpoint" "NEXT_PUBLIC_APPWRITE_ENDPOINT" "$NEXT_PUBLIC_APPWRITE_ENDPOINT"
   fi
   if [ -n "${NEXT_PUBLIC_APPWRITE_PROJECT_ID:-}" ]; then
     echo "==> Setting NEXT_PUBLIC_APPWRITE_PROJECT_ID on $site"
-    set_variable "$site" "appwrite-project" "NEXT_PUBLIC_APPWRITE_PROJECT_ID" "$NEXT_PUBLIC_APPWRITE_PROJECT_ID"
+    set_variable "$site" "$site-appwrite-project" "NEXT_PUBLIC_APPWRITE_PROJECT_ID" "$NEXT_PUBLIC_APPWRITE_PROJECT_ID"
   fi
 
   if site_is_vcs_linked "$site"; then

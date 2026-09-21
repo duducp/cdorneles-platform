@@ -38,9 +38,17 @@ function InnerProviders({
   const { currentOrganization } = useTenant();
   const { granted, status } = usePermissions(APPLICATION_ID, currentOrganization?.id, functionsApi);
 
+  // Public routes (/login, recovery, /select-org) have no organization, so the
+  // permissions query stays disabled and its status never leaves "loading".
+  // Wait only while a query is actually in flight, otherwise those routes would
+  // render nothing — the same trap OrgGuard had.
+  if (currentOrganization && status === "loading") {
+    return null;
+  }
+
   return (
     <AccessProvider granted={granted ?? { permissions: [], features: [] }}>
-      {status === "loading" ? null : children}
+      {children}
     </AccessProvider>
   );
 }
