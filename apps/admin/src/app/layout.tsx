@@ -1,4 +1,6 @@
 import "@mantine/core/styles.css";
+// Notifications styles must be imported after core styles.
+import "@mantine/notifications/styles.css";
 import "./globals.css";
 
 import { COLOR_SCHEME_STORAGE_KEY } from "@cdorneles/theme";

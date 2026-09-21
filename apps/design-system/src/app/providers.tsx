@@ -18,7 +18,7 @@ import {
 } from "@cdorneles/tenant";
 import { ThemeProvider } from "@cdorneles/theme";
 import type { TenantService } from "@cdorneles/tenant";
-import { AppProvider } from "@cdorneles/ui";
+import { AppNotifications, AppProvider } from "@cdorneles/ui";
 import { useState, type ReactNode } from "react";
 
 import { initObservability } from "@/lib/observability";
@@ -57,6 +57,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <AppProvider queryClient={queryClient} organizationDefault="light">
       <AuthProvider service={authService}>
+        <AppNotifications />
         {tenantService ? (
           <TenantBridge tenantService={tenantService}>
             <ThemeBranding>{children}</ThemeBranding>

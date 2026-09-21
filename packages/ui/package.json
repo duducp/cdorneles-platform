@@ -24,6 +24,7 @@
     "@cdorneles/types": "workspace:*",
     "@mantine/core": "catalog:",
     "@mantine/form": "catalog:",
+    "@mantine/notifications": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-table": "catalog:",
     "lucide-react": "catalog:"

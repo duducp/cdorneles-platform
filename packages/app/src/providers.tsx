@@ -20,11 +20,12 @@ import {
   type TenantService,
 } from "@cdorneles/tenant";
 import { ThemeProvider } from "@cdorneles/theme";
-import { AppProvider } from "@cdorneles/ui";
+import { AppNotifications, AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
 import { useState, type ReactNode } from "react";
 
 import { initObservability } from "./observability";
+import { SessionExpiryNotice } from "./session-expiry-notice";
 
 function ThemeBranding({ children }: { children: ReactNode }) {
   const { branding } = useTenant();
@@ -122,6 +123,8 @@ export function createProviders({ applicationId }: CreateProvidersOptions) {
     return (
       <AppProvider queryClient={queryClient} organizationDefault="light">
         <AuthProvider service={authService}>
+          <AppNotifications />
+          <SessionExpiryNotice />
           {tenantService ? (
             <TenantBridge tenantService={tenantService}>{tenantContent}</TenantBridge>
           ) : (

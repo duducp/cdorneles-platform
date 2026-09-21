@@ -17,6 +17,9 @@ import {
   ErrorState,
   IconButton,
   LoadingState,
+  notifyError,
+  notifyInfo,
+  notifySuccess,
   PageContainer,
   PageHeader,
   ResponsiveGrid,
@@ -197,6 +200,23 @@ export default function DesignSystemPage() {
             <IconButton icon={Plus} label="Add" variant="default" />
             <IconButton icon={Search} label="Search" />
             <IconButton icon={Trash2} label="Delete" color="danger" />
+          </Group>
+        </Section>
+
+        <Section
+          title="Feedback"
+          description="Toasts are for transient outcomes. A failed form keeps its inline FormError instead — a toast that expires takes the reason with it."
+        >
+          <Group gap="sm">
+            <Button variant="primary" onClick={() => notifySuccess("Organização atualizada.")}>
+              Success
+            </Button>
+            <Button variant="secondary" onClick={() => notifyInfo("Sua sessão expira em alguns minutos.")}>
+              Info
+            </Button>
+            <Button variant="danger" onClick={() => notifyError("Não foi possível salvar.")}>
+              Error (persists)
+            </Button>
           </Group>
         </Section>
 

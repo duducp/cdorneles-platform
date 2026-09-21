@@ -90,6 +90,39 @@ Notes:
 - `LoadingState` carries `role="status"` and `aria-live="polite"`; prefer it
   over bare dimmed text so the state reaches screen readers.
 
+## Feedback: inline vs toast
+
+Two mechanisms, and the choice is not cosmetic.
+
+| Situation | Use |
+|---|---|
+| A form failed validation or submit | inline `FormError` |
+| A terminal state on the page ("senha redefinida") | inline, `role="status"` |
+| An action succeeded, context is obvious | `notifySuccess` |
+| Transient system information (session expiring) | `notifyInfo` |
+| A failure with no form to attach it to | `notifyError` |
+
+The rule behind the table: **a toast must never be the only place a failure is
+explained.** It expires, it lives in a portal away from the control that failed,
+and once dismissed the information is gone. A form that failed keeps its inline
+`FormError`; the toast is for outcomes whose context the user already has.
+
+`notify*` helpers (`@cdorneles/ui`) fix the icon and the theme color per kind, so
+the state is never conveyed by color alone, and set the duration:
+
+| Kind | Duration | Why |
+|---|---|---|
+| `success` | 4s | confirms, then gets out of the way |
+| `info` | 6s | readable but transient |
+| `error` | never | a failure the user may need to read twice |
+
+Pass a stable `id` for anything that can re-fire (the session warning does):
+re-showing an id that is already visible is a no-op, so repeated renders cannot
+stack duplicates. `notifyHide(id)` clears it.
+
+`<AppNotifications />` is the host and is mounted once by
+`createProviders`. Mounting a second one duplicates every notification.
+
 ## Framework boundary
 
 `@cdorneles/ui` must not import Next.js. The shell components render whatever
