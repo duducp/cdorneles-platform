@@ -70,6 +70,13 @@ either triggers a VCS deployment or uploads the repository root.
 - **A site has no domain by default.** A proxy rule
   (`proxy_create_site_rule`) must be created for each site domain; without it
   the request never reaches the runtime. The deploy script does not create it.
+- **Appwrite's automatic deployments are disabled.** Linking a site to the
+  repository makes Appwrite redeploy whenever the production branch is updated,
+  which would bypass the release workflow and send every merge to `main` to
+  production. `providerBranches` is the only control (empty means "every
+  branch"), so the script sets it to `__no-autodeploy__`. Deployments happen
+  only from the release workflow or an explicit run. The Go functions are not
+  VCS-linked, so they never auto-deploy.
 - **Site domains use Traefik's default certificate.** Appwrite's sites router
   is a `HostRegexp` with `tls=true` and no `certresolver`, so the operator is
   expected to supply a wildcard certificate for `*.<sites domain>` (a wildcard

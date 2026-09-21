@@ -39,6 +39,11 @@
 #                        sites are created linked, and existing sites without a
 #                        link are updated. Without them, sites are left
 #                        unlinked and deploy by upload.
+#   SITE_NO_AUTODEPLOY_PATTERN
+#                        Branch pattern for Appwrite's automatic deployments
+#                        (default __no-autodeploy__, which matches nothing).
+#                        Deploys therefore come only from this script and the
+#                        release workflow.
 #   NEXT_PUBLIC_APPWRITE_ENDPOINT
 #   NEXT_PUBLIC_APPWRITE_PROJECT_ID
 #                        build-time variables, set on each site when present
@@ -52,6 +57,12 @@ ADAPTER="ssr"
 INSTALL_COMMAND="corepack enable && pnpm install --frozen-lockfile"
 VCS_BRANCH="${SITE_VCS_BRANCH:-main}"
 DOMAIN_SUFFIX="${SITE_DOMAIN_SUFFIX:-sites.cdorneles.com.br}"
+# Appwrite auto-deploys a VCS-linked site whenever the production branch is
+# updated, which would bypass the release workflow and push every merge to
+# main straight to production. `providerBranches` is the only lever — leaving it
+# empty means "every branch" — so restrict it to a pattern that never matches.
+# Explicit deployments (create-vcs-deployment) are unaffected.
+NO_AUTODEPLOY_PATTERN="${SITE_NO_AUTODEPLOY_PATTERN:-__no-autodeploy__}"
 
 ALL_SITES=(admin client customer design-system)
 
@@ -165,6 +176,8 @@ for site in "${SITES[@]}"; do
       # The repository root, not apps/<site>: the build needs the pnpm
       # workspace and the lockfile, which only exist at the root.
       --provider-root-directory "."
+      # Keep Appwrite from auto-deploying on every push to the branch.
+      --provider-branches "$NO_AUTODEPLOY_PATTERN"
     )
   fi
 

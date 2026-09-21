@@ -25,6 +25,25 @@ connection) to have the script manage the link: new sites are created linked,
 and existing sites without a link are updated. Without them, sites are left
 unlinked and deploy by upload.
 
+### Automatic deployments are disabled on purpose
+
+A VCS-linked site makes Appwrite **auto-deploy whenever the production branch
+is updated**, which would push every merge to `main` straight to production and
+bypass the release workflow. `providerBranches` is the only lever — leaving it
+empty means "every branch" — so the script sets it to a pattern that never
+matches:
+
+```bash
+--provider-branches "__no-autodeploy__"
+```
+
+Override with `SITE_NO_AUTODEPLOY_PATTERN`. Explicit deployments
+(`create-vcs-deployment`, which is what the release workflow runs) are
+**unaffected** — verified: an explicit deployment still builds and activates
+with the pattern in place.
+
+The Go functions are not VCS-linked at all, so they never auto-deploy.
+
 In CI these come from repository **variables** (not secrets — they identify the
 connection, not a credential):
 
