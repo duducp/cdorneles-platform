@@ -12,7 +12,7 @@ import (
 	"github.com/appwrite/sdk-for-go/v7/tablesdb"
 	"github.com/appwrite/sdk-for-go/v7/teams"
 
-	"github.com/cdorneles/platform/functions/internal/authz"
+	"openruntimes/handler/internal/authz"
 )
 
 // DatabaseID is the platform's TablesDB database.

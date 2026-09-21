@@ -1,4 +1,4 @@
-module github.com/cdorneles/platform/functions
+module openruntimes/handler
 
 go 1.26.8
 

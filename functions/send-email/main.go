@@ -6,8 +6,8 @@ import (
 	"github.com/appwrite/sdk-for-go/v7/id"
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
-	platform "github.com/cdorneles/platform/functions/internal/appwrite"
-	"github.com/cdorneles/platform/functions/internal/httpx"
+	platform "openruntimes/handler/internal/appwrite"
+	"openruntimes/handler/internal/httpx"
 )
 
 type emailRequest struct {

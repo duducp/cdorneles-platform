@@ -13,9 +13,9 @@ import (
 	"github.com/appwrite/sdk-for-go/v7/query"
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
-	"github.com/cdorneles/platform/functions/internal/appwrite"
-	"github.com/cdorneles/platform/functions/internal/authz"
-	"github.com/cdorneles/platform/functions/internal/httpx"
+	"openruntimes/handler/internal/appwrite"
+	"openruntimes/handler/internal/authz"
+	"openruntimes/handler/internal/httpx"
 )
 
 // profileFields is the ordered set of white-label profile fields, matching the

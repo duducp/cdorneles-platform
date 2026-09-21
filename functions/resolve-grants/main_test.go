@@ -6,7 +6,7 @@ import (
 
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
-	"github.com/cdorneles/platform/functions/internal/httpx"
+	"openruntimes/handler/internal/httpx"
 )
 
 func newContext(body string, headers map[string]string) openruntimes.Context {

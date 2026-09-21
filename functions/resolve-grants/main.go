@@ -9,8 +9,8 @@ import (
 	"github.com/appwrite/sdk-for-go/v7/query"
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
-	"github.com/cdorneles/platform/functions/internal/appwrite"
-	"github.com/cdorneles/platform/functions/internal/httpx"
+	"openruntimes/handler/internal/appwrite"
+	"openruntimes/handler/internal/httpx"
 )
 
 type grantRequest struct {
