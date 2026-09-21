@@ -191,8 +191,9 @@ sudo docker exec exc1 env | grep -E "RUNTIMES|IMAGES"
 
 ## Gotchas
 
-- **Build runtimes depend on the instance.** This instance offers `node-22` and
-  `node-25`, not `node-24`. List them with
+- **Build runtimes depend on the instance.** This one offers `node-22`,
+  `node-24` and `node-26`. We use `node-24` (LTS, matches CI, still ships
+  corepack). List them with
   `appwrite functions list-runtimes` (there is no `sites list-runtimes`).
 - **Site request timeout caps at 60s.** A runtime that fails to start surfaces
   as `408`, not as a startup error.

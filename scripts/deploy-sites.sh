@@ -27,8 +27,9 @@
 #     (`appwrite client --endpoint ... --project-id ... --key ...`).
 #
 # Environment:
-#   SITE_BUILD_RUNTIME   build runtime (default node-22; this instance offers
-#                        node-22 and node-25, not node-24)
+#   SITE_BUILD_RUNTIME   build runtime (default node-24; LTS, and it still
+#                        ships corepack. node-25+ dropped corepack, so those
+#                        would need a different install command.)
 #   SITE_VCS_BRANCH      branch to deploy from (default main)
 #   SITE_DOMAIN_SUFFIX   domain suffix for the per-site proxy rule
 #                        (default sites.cdorneles.com.br). Set it empty to skip
@@ -52,7 +53,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 FRAMEWORK="nextjs"
-BUILD_RUNTIME="${SITE_BUILD_RUNTIME:-node-22}"
+# node-24 is LTS and matches the Node version CI builds with. It still ships
+# corepack, which the install command relies on (corepack was removed in 25).
+BUILD_RUNTIME="${SITE_BUILD_RUNTIME:-node-24}"
 ADAPTER="ssr"
 INSTALL_COMMAND="corepack enable && pnpm install --frozen-lockfile"
 VCS_BRANCH="${SITE_VCS_BRANCH:-main}"
@@ -182,19 +185,19 @@ for site in "${SITES[@]}"; do
   fi
 
   if site_exists "$site"; then
-    echo "==> $site already exists"
-
-    if [ "${#provider_args[@]}" -gt 0 ] && ! site_is_vcs_linked "$site"; then
-      # `sites update` replaces unspecified fields, so the whole configuration
-      # has to be sent, not just the provider flags — otherwise the build
-      # settings are wiped.
-      echo "==> Linking $site to the repository"
+    # Keep the site configuration in sync (build runtime, commands, provider).
+    # Only when the provider args are present: `sites update` replaces
+    # unspecified fields, so updating without them would clear the VCS link.
+    if [ "${#provider_args[@]}" -gt 0 ]; then
+      echo "==> Updating $site"
       appwrite sites update \
         --site-id "$site" \
         --name "$site" \
         "${base_args[@]}" \
         "${provider_args[@]}" \
         --force
+    else
+      echo "==> $site already exists"
     fi
   else
     echo "==> Creating $site"

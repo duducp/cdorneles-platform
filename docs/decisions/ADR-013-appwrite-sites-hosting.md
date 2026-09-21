@@ -25,7 +25,7 @@ falls back to a middleware path that does not exist. The runtime also boots
 ## Decision
 
 Host the applications on **Appwrite Sites**, with `framework: nextjs`,
-`buildRuntime: node-22` and `adapter: ssr`.
+`buildRuntime: node-24` and `adapter: ssr`.
 
 Because the apps are not self-contained, each site builds from the
 **repository root** (the pnpm workspace must be present) and a post-build step
@@ -45,8 +45,9 @@ restructures the output into the layout Appwrite expects:
 3. copies `public/` and `.next/static/` beside the nested server;
 4. rewrites pnpm's **absolute** symlinks as relative ones (see below).
 
-`buildRuntime` is `node-22` because the instance offers `node-22` and
-`node-25`, not `node-24`; `node-22` is LTS and still ships `corepack`.
+`buildRuntime` is `node-24`: it is LTS, it matches the Node version CI builds
+with, and it still ships `corepack` (which the install command relies on —
+corepack was removed in Node 25). Override with `SITE_BUILD_RUNTIME`.
 
 Deployment is driven by `scripts/deploy-sites.sh`
 (`make deploy-sites` / `make deploy-site-<app>`), and by
