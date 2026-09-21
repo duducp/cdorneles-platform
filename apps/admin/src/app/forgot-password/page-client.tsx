@@ -1,0 +1,62 @@
+"use client";
+
+import { useAuth } from "@cdorneles/auth";
+import { AuthCard, AuthVisual, ForgotPasswordForm, Logo, ThemeToggle } from "@cdorneles/ui";
+import { Anchor, Flex, Stack } from "@mantine/core";
+import Link from "next/link";
+import { useCallback } from "react";
+
+export function ForgotPasswordPageClient() {
+  const { service } = useAuth();
+
+  const handleSubmit = useCallback(
+    async (values: { email: string }) => {
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      await service.requestPasswordRecovery({
+        email: values.email,
+        redirectUrl,
+      });
+    },
+    [service],
+  );
+
+  return (
+    <Flex direction="column" mih="100dvh">
+      <Flex justify="flex-end" p="sm">
+        <ThemeToggle />
+      </Flex>
+
+      <Flex
+        component="main"
+        align="center"
+        justify="center"
+        p="md"
+        style={{ flex: 1 }}
+      >
+        <Stack w="100%" maw={920} gap="xl">
+          <AuthCard
+            form={
+              <Stack gap="md">
+                <ForgotPasswordForm onSubmit={handleSubmit} />
+                <Anchor
+                  component={Link}
+                  href="/login"
+                  underline="always"
+                  display="block"
+                  ta="center"
+                >
+                  Voltar para o login
+                </Anchor>
+              </Stack>
+            }
+            visual={<AuthVisual />}
+          />
+
+          <Stack component="footer" align="center" gap="sm">
+            <Logo alt="Cdorneles" variant="horizontal" height={32} />
+          </Stack>
+        </Stack>
+      </Flex>
+    </Flex>
+  );
+}
