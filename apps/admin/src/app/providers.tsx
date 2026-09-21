@@ -57,7 +57,7 @@ export function Providers({ children }: { children: ReactNode }) {
     if (!endpoint || !projectId) return null;
     const config = resolveApiClientConfig({ endpoint, projectId });
     const services = createAppwriteServices(config);
-    return createAppwriteTenantService(services.teams);
+    return createAppwriteTenantService(services.teams, services.functions);
   });
   const functionsApi = (() => {
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;

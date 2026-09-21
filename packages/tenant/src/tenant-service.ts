@@ -1,4 +1,5 @@
-import type { TeamsApi } from "@cdorneles/api-client";
+import type { FunctionsApi, TeamsApi } from "@cdorneles/api-client";
+import type { Branding } from "@cdorneles/types";
 
 import type { Organization, OrganizationMembership } from "./types";
 
@@ -14,9 +15,13 @@ export interface TenantService {
    */
   listOrganizations(): Promise<Organization[]>;
   listMemberships(userId: string): Promise<OrganizationMembership[]>;
+  getProfile(organizationId: string): Promise<Branding | null>;
 }
 
-export function createAppwriteTenantService(teamsApi: TeamsApi): TenantService {
+export function createAppwriteTenantService(
+  teamsApi: TeamsApi,
+  functionsApi: FunctionsApi,
+): TenantService {
   return {
     async listOrganizations() {
       const teams = await teamsApi.listTeams();
@@ -37,6 +42,31 @@ export function createAppwriteTenantService(teamsApi: TeamsApi): TenantService {
       return memberships.filter(
         (membership): membership is OrganizationMembership => membership !== null,
       );
+    },
+
+    async getProfile(organizationId: string): Promise<Branding | null> {
+      try {
+        const response = await functionsApi.createExecution({
+          functionId: "get-organization-profile",
+          body: JSON.stringify({ organizationId }),
+          method: "POST",
+        });
+
+        const data = JSON.parse(response.responseBody);
+        if (data.error) return null;
+
+        return {
+          displayName: data.displayName ?? "",
+          logoLight: data.logoLight ?? null,
+          logoDark: data.logoDark ?? null,
+          favicon: data.favicon ?? null,
+          primaryColor: data.primaryColor ?? null,
+          secondaryColor: data.secondaryColor ?? null,
+          defaultTheme: data.defaultTheme ?? "light",
+        };
+      } catch {
+        return null;
+      }
     },
   };
 }

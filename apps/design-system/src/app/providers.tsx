@@ -42,7 +42,7 @@ export function Providers({ children }: { children: ReactNode }) {
     if (!endpoint || !projectId) return null;
     const config = resolveApiClientConfig({ endpoint, projectId });
     const services = createAppwriteServices(config);
-    return createAppwriteTenantService(services.teams);
+    return createAppwriteTenantService(services.teams, services.functions);
   });
 
   initObservability();

@@ -72,7 +72,7 @@ if (!email || !password) {
 
 const config = resolveApiClientConfig({ endpoint, projectId });
 const services = createAppwriteServices(config);
-const tenant = createAppwriteTenantService(services.teams);
+const tenant = createAppwriteTenantService(services.teams, services.functions);
 
 console.log(`[verify-tenant] endpoint=${endpoint} project=${projectId}`);
 
