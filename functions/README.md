@@ -201,5 +201,6 @@ per-execution API key arrives as the `x-appwrite-key` request header.
 
 - `docs/decisions/ADR-005-authorization.md`
 - `docs/decisions/ADR-011-go-functions.md`
+- `docs/decisions/ADR-012-monorepo-boundary.md`
 - `docs/authorization/README.md`
 - `AGENTS.md`

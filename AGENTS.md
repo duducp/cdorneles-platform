@@ -48,7 +48,15 @@ packages/
 ├── schemas/
 ├── types/
 └── observability/
+
+functions/
+└── (Go Appwrite Functions — see ADR-011 and ADR-012)
 ```
+
+The Appwrite Functions live in this repository (`functions/`) rather than a
+separate one (ADR-012). They are coupled to the TypeScript sources of truth for
+the database schema, seed ids and permission keys, so cross-cutting changes stay
+atomic in a single commit.
 
 ## UI Rules
 
