@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Flex, Stack, Text, Title } from "@mantine/core";
+import type { Branding } from "@cdorneles/types";
+import { Button, Card, Flex, Image, Stack, Text, Title } from "@mantine/core";
 import { Building2, Check } from "lucide-react";
 
 export interface OrgPickerOrganization {
@@ -13,6 +14,7 @@ export interface OrgPickerProps {
   currentOrganizationId?: string | null;
   onSelect: (organizationId: string) => void;
   loading?: boolean;
+  branding?: Branding | null;
 }
 
 export function OrgPicker({
@@ -20,6 +22,7 @@ export function OrgPicker({
   currentOrganizationId,
   onSelect,
   loading = false,
+  branding,
 }: OrgPickerProps) {
   if (organizations.length === 0) {
     return (
@@ -56,9 +59,28 @@ export function OrgPicker({
                 loading={loading}
                 rightSection={isSelected ? <Check size={16} /> : undefined}
                 onClick={() => onSelect(org.id)}
+                style={{
+                  borderColor: isSelected
+                    ? (branding?.primaryColor ?? "var(--mantine-color-brand-6)")
+                    : undefined,
+                  backgroundColor:
+                    isSelected && branding?.primaryColor
+                      ? `${branding.primaryColor}10`
+                      : undefined,
+                }}
               >
                 <Flex align="center" gap="sm">
-                  <Building2 aria-hidden size={18} />
+                  {branding?.logoLight ? (
+                    <Image
+                      src={branding.logoLight}
+                      alt={org.name}
+                      h={24}
+                      w="auto"
+                      fit="contain"
+                    />
+                  ) : (
+                    <Building2 aria-hidden size={18} />
+                  )}
                   {org.name}
                 </Flex>
               </Button>
