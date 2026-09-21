@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0](https://github.com/duducp/cdorneles-platform/compare/v1.0.0...v1.1.0) (2026-09-21)
+
+
+### Features
+
+* expose the app version to the frontend ([0404fe9](https://github.com/duducp/cdorneles-platform/commit/0404fe9ead3f9aaf64e6ce7f8ae2cb2ca077177a))
+* **sites:** build on node-24 ([67ce3ff](https://github.com/duducp/cdorneles-platform/commit/67ce3ff13a7fbe13986181a0cfb7e0de9f73ed59))
+* **sites:** disable Appwrite's automatic deployments ([0b144c3](https://github.com/duducp/cdorneles-platform/commit/0b144c31a25374ff5e3bdc56ac3fcfb757523b96))
+
 ## 1.0.0 (2026-09-21)
 
 
