@@ -2,17 +2,20 @@
 
 import { useAuth } from "@cdorneles/auth";
 import { useTenant } from "@cdorneles/tenant";
-import { LoadingState, Logo, ThemeToggle } from "@cdorneles/ui";
-import { OrgPicker } from "@cdorneles/ui/tenant";
-import { Flex, Stack, Title, VisuallyHidden } from "@mantine/core";
+import { Button, LoadingState, Logo, ThemeToggle } from "@cdorneles/ui";
+import { CreateOrganizationForm, OrgPicker } from "@cdorneles/ui/tenant";
+import { Flex, Modal, Stack, Title, VisuallyHidden } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function SelectOrgPage() {
   const { status } = useAuth();
-  const { organizations, currentOrganization, switchOrganization } = useTenant();
+  const { organizations, currentOrganization, switchOrganization, createOrganization } =
+    useTenant();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
 
   function handleSelect(organizationId: string) {
     setLoading(true);
@@ -21,6 +24,13 @@ export default function SelectOrgPage() {
       router.push("/");
     }
     setLoading(false);
+  }
+
+  async function handleCreate(name: string) {
+    const organization = await createOrganization(name);
+    closeCreate();
+    switchOrganization(organization.id);
+    router.push("/");
   }
 
   if (status !== "authenticated") {
@@ -54,6 +64,19 @@ export default function SelectOrgPage() {
             onSelect={handleSelect}
             loading={loading}
           />
+
+          <Button variant="subtle" onClick={openCreate}>
+            Create organization
+          </Button>
+
+          <Modal
+            opened={createOpened}
+            onClose={closeCreate}
+            title="New organization"
+            centered
+          >
+            <CreateOrganizationForm onCreate={handleCreate} onCancel={closeCreate} />
+          </Modal>
 
           <Stack component="footer" align="center" gap="sm">
             <Logo alt="Cdorneles" variant="horizontal" height={32} />
