@@ -40,7 +40,7 @@ export function LoginPageClient({ redirectWhenAuthenticated = false }: LoginPage
     setLoading(true);
     try {
       await login(credentials);
-      // Honour the path the middleware sent the user away from.
+      // Honour the path the proxy sent the user away from.
       router.push(resolvePostAuthRedirect(window.location.search));
     } catch (err) {
       setAnnouncement("");
