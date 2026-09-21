@@ -1,6 +1,6 @@
 {
   "name": "cdorneles-platform",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
   "description": "Cdorneles Platform monorepo — multi-tenant SaaS/ERP foundation.",
   "packageManager": "pnpm@11.20.0",

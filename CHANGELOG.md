@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.0](https://github.com/duducp/cdorneles-platform/compare/v1.1.1...v1.2.0) (2026-09-21)
+
+
+### Features
+
+* **apps:** keep authenticated users out of the auth screens ([aee8177](https://github.com/duducp/cdorneles-platform/commit/aee8177063c56802bebf288dec7c03771873ddfa))
+* **apps:** port the auth screens to admin, client and customer ([57c4d7e](https://github.com/duducp/cdorneles-platform/commit/57c4d7ec6d8225c0e59a5d8ff5e45bf28d6c0a18))
+* **apps:** suffix every page title with the platform name ([3f932ad](https://github.com/duducp/cdorneles-platform/commit/3f932ada63011e8c3cbc6e7eebd38923110818e9))
+* **auth:** carry the typed e-mail into password recovery ([fa18375](https://github.com/duducp/cdorneles-platform/commit/fa1837585f2c163db6584ea6d5a0e1c45b67c82a))
+* **shell:** make navigation client-side and the waits visible ([3bbc077](https://github.com/duducp/cdorneles-platform/commit/3bbc077a6de08a4ca547eb764790fb321c2c3c4a))
+* **shell:** show a spinner on the nav item being navigated to ([6a7bfd5](https://github.com/duducp/cdorneles-platform/commit/6a7bfd5d1f8facdfde6f29629235c6baadfdb3e8))
+* **ui:** add Mantine toasts for transient feedback ([d205c22](https://github.com/duducp/cdorneles-platform/commit/d205c22fe97270ba2de4ca3af4bb53d45848e060))
+
+
+### Bug Fixes
+
+* **apps:** ship the brand assets in admin, client and customer ([26e1b11](https://github.com/duducp/cdorneles-platform/commit/26e1b11f3e68ccf7ae333e0eedd1d59a494723f6))
+* **apps:** stop OrgGuard from blanking the public routes ([7897ee1](https://github.com/duducp/cdorneles-platform/commit/7897ee10c744a405000f07192b2a88b8e4c2acb9))
+* **apps:** stop the permissions gate from blanking the public routes ([2311149](https://github.com/duducp/cdorneles-platform/commit/23111492a216059ac5895610aa6b430fa6262b1f))
+* **auth:** restore the session on mount, and show the build version ([f210f44](https://github.com/duducp/cdorneles-platform/commit/f210f441d6528fe8073b5742e5df3d16c4065823))
+* **theme:** paint the light page with its token, not Mantine's white ([bde23d6](https://github.com/duducp/cdorneles-platform/commit/bde23d6dadf714be2cc5a3fc209e824a39c47059))
+
 ## [1.1.1](https://github.com/duducp/cdorneles-platform/compare/v1.1.0...v1.1.1) (2026-09-21)
 
 
