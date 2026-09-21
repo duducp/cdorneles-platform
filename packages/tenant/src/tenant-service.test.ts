@@ -7,6 +7,7 @@ function createMockTeamsApi(): TeamsApi {
   return {
     listTeams: vi.fn(),
     listMemberships: vi.fn(),
+    createTeam: vi.fn(),
   };
 }
 

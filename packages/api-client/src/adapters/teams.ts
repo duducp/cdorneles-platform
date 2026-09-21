@@ -1,4 +1,4 @@
-import { Teams } from "appwrite";
+import { ID, Teams } from "appwrite";
 import type { Client } from "appwrite";
 
 import type { TeamsApi } from "../client";
@@ -27,6 +27,18 @@ export function createTeamsApi(client: Client): TeamsApi {
           userId: membership.userId,
           roles: membership.roles,
         }));
+      } catch (error) {
+        throw mapAppwriteError(error);
+      }
+    },
+
+    async createTeam(input): Promise<AppwriteTeam> {
+      try {
+        const team = await teams.create({
+          teamId: input.teamId ?? ID.unique(),
+          name: input.name,
+        });
+        return { $id: team.$id, name: team.name };
       } catch (error) {
         throw mapAppwriteError(error);
       }

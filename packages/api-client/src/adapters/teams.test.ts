@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   teams: {
     list: vi.fn(),
     listMemberships: vi.fn(),
+    create: vi.fn(),
   },
 }));
 
@@ -94,6 +95,48 @@ describe("createTeamsApi", () => {
     expect(memberships[0]).not.toHaveProperty("mfa");
   });
 
+  it("creates a team with a generated id", async () => {
+    mocks.teams.create.mockResolvedValue({
+      $id: "t1",
+      name: "Acme",
+      $createdAt: "2026-01-01T00:00:00.000Z",
+      $updatedAt: "2026-01-01T00:00:00.000Z",
+      total: 1,
+      prefs: {},
+    });
+
+    const api = createTeamsApi(client);
+    const team = await api.createTeam({ name: "Acme" });
+
+    expect(mocks.teams.create).toHaveBeenCalledWith({
+      teamId: expect.any(String),
+      name: "Acme",
+    });
+    expect(team).toEqual({ $id: "t1", name: "Acme" });
+    expect(team).not.toHaveProperty("prefs");
+    expect(team).not.toHaveProperty("$createdAt");
+  });
+
+  it("creates a team with an explicit id", async () => {
+    mocks.teams.create.mockResolvedValue({
+      $id: "custom-id",
+      name: "Globex",
+      $createdAt: "2026-01-01T00:00:00.000Z",
+      $updatedAt: "2026-01-01T00:00:00.000Z",
+      total: 1,
+      prefs: {},
+    });
+
+    const api = createTeamsApi(client);
+    const team = await api.createTeam({ name: "Globex", teamId: "custom-id" });
+
+    expect(mocks.teams.create).toHaveBeenCalledWith({
+      teamId: "custom-id",
+      name: "Globex",
+    });
+    expect(team).toEqual({ $id: "custom-id", name: "Globex" });
+  });
+
   it("wraps failures in ApiError", async () => {
     mocks.teams.list.mockRejectedValue(new AppwriteException("nope", 401, "user_unauthorized"));
 
@@ -110,5 +153,15 @@ describe("createTeamsApi", () => {
     const api = createTeamsApi(client);
 
     await expect(api.listMemberships("t1")).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("wraps create failures in ApiError", async () => {
+    mocks.teams.create.mockRejectedValue(
+      new AppwriteException("nope", 409, "team_already_exists"),
+    );
+
+    const api = createTeamsApi(client);
+
+    await expect(api.createTeam({ name: "Acme" })).rejects.toBeInstanceOf(ApiError);
   });
 });

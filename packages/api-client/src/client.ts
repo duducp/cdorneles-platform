@@ -31,6 +31,7 @@ export interface AccountApi {
 export interface TeamsApi {
   listTeams(): Promise<AppwriteTeam[]>;
   listMemberships(teamId: string): Promise<AppwriteMembership[]>;
+  createTeam(input: { name: string; teamId?: string }): Promise<AppwriteTeam>;
 }
 
 export interface TablesApi {

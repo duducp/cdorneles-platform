@@ -18,7 +18,7 @@ const services: AppwriteServices = {
     createMfaChallenge: vi.fn(),
     updateMfaChallenge: vi.fn(),
   },
-  teams: { listTeams: vi.fn(), listMemberships: vi.fn() },
+  teams: { listTeams: vi.fn(), listMemberships: vi.fn(), createTeam: vi.fn() },
   tables: { listRows: vi.fn(), getRow: vi.fn() },
   functions: { createExecution: vi.fn() },
   storage: {
