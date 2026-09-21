@@ -38,3 +38,10 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     uses: ./.github/workflows/functions-deploy.yml
     secrets: inherit
+
+  deploy-sites:
+    name: Deploy sites
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    uses: ./.github/workflows/sites-deploy.yml
+    secrets: inherit

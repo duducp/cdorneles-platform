@@ -134,8 +134,40 @@ pnpm format:check  # Prettier check
 
 ## Quality gates
 
-CI (`.github/workflows/ci.yml`) runs, in order: `install` → `lint` →
-`typecheck` → `test` → `build`, using pnpm with the lockfile cached.
+CI (`.github/workflows/ci.yml`) runs two jobs:
+
+- `quality` — `install` → `lint` → `typecheck` → `test` → `build`, using pnpm
+  with the lockfile cached;
+- `functions` — the Go gate (`make -C functions build|vet|test`).
+
+## Deploy
+
+Both deploys run from the repository root and require the Appwrite CLI,
+logged in and configured (`appwrite login` + `appwrite init project`, or
+`appwrite client --endpoint ... --project-id ... --key ...`).
+
+```bash
+# Go Appwrite Functions
+make -C functions deploy                    # every function
+make -C functions deploy-resolve-grants     # one function
+
+# Next.js apps on Appwrite Sites
+make deploy-sites                           # every site
+make deploy-site-admin                      # one site
+```
+
+The same scripts run in GitHub Actions:
+
+- `.github/workflows/functions-deploy.yml`
+- `.github/workflows/sites-deploy.yml`
+
+Both trigger on a `v*` tag, on manual dispatch (one target or all), and are
+called by the release workflow after release-please cuts a release. Both deploy
+from the `production` environment, which can require reviewers.
+
+Required secrets: `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`,
+`APPWRITE_API_KEY`. For the sites, the endpoint and project id are also pushed
+as `NEXT_PUBLIC_APPWRITE_*` build-time variables.
 
 ## Documentation
 

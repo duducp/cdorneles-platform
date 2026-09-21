@@ -1,0 +1,121 @@
+name: Deploy Sites
+
+# Production deploy of the Next.js apps to Appwrite Sites.
+#
+# Triggers:
+#   - a `v*` tag (release) deploys every site;
+#   - a manual run deploys one site or all of them;
+#   - called by the release workflow after release-please cuts a release.
+#     (A tag pushed with GITHUB_TOKEN does not trigger other workflows, so the
+#     release workflow calls this one explicitly instead of relying on the tag.)
+#
+# The deploy job uses the `production` GitHub Environment, so it can require
+# reviewers. Required secrets:
+#   APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY
+#
+# APPWRITE_ENDPOINT and APPWRITE_PROJECT_ID are also pushed to the sites as
+# NEXT_PUBLIC_APPWRITE_* build-time variables.
+
+on:
+  workflow_dispatch:
+    inputs:
+      site:
+        description: Site to deploy
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - admin
+          - client
+          - customer
+          - design-system
+  workflow_call:
+    inputs:
+      site:
+        description: Site to deploy
+        required: false
+        type: string
+        default: all
+  push:
+    tags:
+      - "v*"
+
+# Never let two deploys race; a running deploy is allowed to finish.
+concurrency:
+  group: sites-deploy
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  deploy:
+    name: Deploy
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Appwrite CLI
+        run: npm install -g appwrite-cli
+
+      - name: Configure Appwrite CLI
+        env:
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+        run: |
+          appwrite client \
+            --endpoint "$APPWRITE_ENDPOINT" \
+            --project-id "$APPWRITE_PROJECT_ID" \
+            --key "$APPWRITE_API_KEY"
+
+      - name: Deploy
+        env:
+          TARGET: ${{ inputs.site || 'all' }}
+          NEXT_PUBLIC_APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          NEXT_PUBLIC_APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+        run: |
+          if [ -z "$TARGET" ] || [ "$TARGET" = "all" ]; then
+            ./scripts/deploy-sites.sh
+          else
+            ./scripts/deploy-sites.sh "$TARGET"
+          fi

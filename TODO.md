@@ -151,6 +151,12 @@ capabilities. No business modules yet.
       runtime `go-1.26`, deployments `ready`, both via `make -C functions deploy`
       and via the CI workflow. Modules pin `go 1.26.5` because the runtime ships
       1.26.5 with `GOTOOLCHAIN=local`.
+- [x] Site deploy tooling for Appwrite Sites (ADR-013): `scripts/deploy-sites.sh`
+      creates each site if missing and uploads the repo root;
+      `make deploy-sites` / `make deploy-site-<app>`;
+      `.github/workflows/sites-deploy.yml` on `v*` tags or manual dispatch,
+      gated by a `verify` job and the `production` environment. Not yet run
+      against the live project.
 - [x] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route
       redirects point to `/auth/login`, which does not exist — actual route is
       `/login` (design-system reference). Carry the `redirect` query param
