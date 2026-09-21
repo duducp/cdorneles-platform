@@ -16,6 +16,13 @@ export interface TenantService {
   listOrganizations(): Promise<Organization[]>;
   listMemberships(userId: string): Promise<OrganizationMembership[]>;
   getProfile(organizationId: string): Promise<Branding | null>;
+  /**
+   * Creates a new organization (Appwrite Team) and provisions its platform
+   * rows. The creator becomes the team owner. Provisioning is idempotent and
+   * retriable; a provisioning failure does not fail the creation, since the
+   * team itself already exists.
+   */
+  createOrganization(name: string): Promise<Organization>;
 }
 
 export function createAppwriteTenantService(
@@ -68,6 +75,22 @@ export function createAppwriteTenantService(
         console.warn("getProfile failed for organizationId:", organizationId, error);
         return null;
       }
+    },
+
+    async createOrganization(name: string): Promise<Organization> {
+      const team = await teamsApi.createTeam({ name });
+
+      try {
+        await functionsApi.createExecution({
+          functionId: "provision-organization",
+          body: { organizationId: team.$id, displayName: name },
+          method: "POST",
+        });
+      } catch (error) {
+        console.warn("provision-organization failed for", team.$id, error);
+      }
+
+      return { id: team.$id, name: team.name };
     },
   };
 }

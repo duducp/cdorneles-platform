@@ -116,6 +116,44 @@ describe("createAppwriteTenantService", () => {
     });
   });
 
+  describe("createOrganization", () => {
+    it("creates a team and provisions it", async () => {
+      const teamsApi = createMockTeamsApi();
+      vi.mocked(teamsApi.createTeam).mockResolvedValue({ $id: "team-new", name: "Acme" });
+      const functionsApi = createMockFunctionsApi();
+      vi.mocked(functionsApi.createExecution).mockResolvedValue({
+        responseBody: JSON.stringify({ ok: true }),
+      } as never);
+
+      const service = createAppwriteTenantService(teamsApi, functionsApi);
+
+      const organization = await service.createOrganization("Acme");
+
+      expect(organization).toEqual({ id: "team-new", name: "Acme" });
+      expect(teamsApi.createTeam).toHaveBeenCalledWith({ name: "Acme" });
+      expect(functionsApi.createExecution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          functionId: "provision-organization",
+          body: { organizationId: "team-new", displayName: "Acme" },
+        }),
+      );
+    });
+
+    it("still returns the organization when provisioning fails", async () => {
+      const teamsApi = createMockTeamsApi();
+      vi.mocked(teamsApi.createTeam).mockResolvedValue({ $id: "team-new", name: "Acme" });
+      const functionsApi = createMockFunctionsApi();
+      vi.mocked(functionsApi.createExecution).mockRejectedValue(new Error("boom"));
+
+      const service = createAppwriteTenantService(teamsApi, functionsApi);
+
+      await expect(service.createOrganization("Acme")).resolves.toEqual({
+        id: "team-new",
+        name: "Acme",
+      });
+    });
+  });
+
   describe("getProfile", () => {
     it("fetches organization profile", async () => {
       const api = createMockFunctionsApi();
