@@ -16,7 +16,7 @@
 // Usage: node scripts/build-appwrite-site.mjs <app>
 
 import { spawnSync } from "node:child_process";
-import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readlink, rm, symlink, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -89,4 +89,49 @@ await writeFile(
 // Entry point Appwrite boots: delegate to the real (nested) server.
 await writeFile(path.join(out, "server.js"), `require("./apps/${app}/server.js");\n`);
 
+// pnpm links packages with ABSOLUTE symlinks that point at the machine that ran
+// the build. Those break inside the runtime container, which is a different
+// filesystem, and the app dies with "Cannot find module 'next'". Rewrite them
+// as relative links so the tree is self-contained and relocatable.
+const rewritten = await makeSymlinksRelative(out);
+console.log(`[appwrite-site] rewrote ${rewritten} absolute symlinks as relative`);
+
 console.log(`[appwrite-site] ready: .next/standalone (app: ${app})`);
+
+/**
+ * Rewrites every absolute symlink under `root` that points inside a
+ * `.next/standalone` tree so it resolves relative to the packaged output.
+ * Symlinks that point elsewhere are reported and left alone.
+ */
+async function makeSymlinksRelative(root) {
+  const marker = "/.next/standalone/";
+  let rewritten = 0;
+
+  async function walk(dir) {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const entryPath = path.join(dir, entry.name);
+
+      if (entry.isSymbolicLink()) {
+        const target = await readlink(entryPath);
+        if (!target.startsWith("/")) continue;
+
+        const markerAt = target.indexOf(marker);
+        if (markerAt === -1) {
+          console.warn(`[appwrite-site] symlink outside the build tree: ${entryPath} -> ${target}`);
+          continue;
+        }
+
+        const inside = target.slice(markerAt + marker.length);
+        const absolute = path.join(root, inside);
+        await rm(entryPath, { force: true });
+        await symlink(path.relative(path.dirname(entryPath), absolute), entryPath);
+        rewritten += 1;
+      } else if (entry.isDirectory()) {
+        await walk(entryPath);
+      }
+    }
+  }
+
+  await walk(root);
+  return rewritten;
+}

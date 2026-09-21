@@ -169,6 +169,12 @@ Required secrets: `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`,
 `APPWRITE_API_KEY`. For the sites, the endpoint and project id are also pushed
 as `NEXT_PUBLIC_APPWRITE_*` build-time variables.
 
+Appwrite Sites expects a single Next.js project at the build root, which a
+pnpm monorepo does not provide. The build therefore runs from the repository
+root and a post-build step restructures the output — see
+[`docs/development/appwrite-sites.md`](./docs/development/appwrite-sites.md)
+for the contract, the pnpm symlink trap and a troubleshooting playbook.
+
 ## Documentation
 
 - [`AGENTS.md`](./AGENTS.md) — engineering rules for agents and contributors

@@ -155,8 +155,20 @@ capabilities. No business modules yet.
       creates each site if missing and uploads the repo root;
       `make deploy-sites` / `make deploy-site-<app>`;
       `.github/workflows/sites-deploy.yml` on `v*` tags or manual dispatch,
-      gated by a `verify` job and the `production` environment. Not yet run
-      against the live project.
+      gated by a `verify` job and the `production` environment.
+- [x] Appwrite Sites deployment proven end-to-end on the live project:
+      `design-system` serves `200` on `/` and `/login`. Required two non-obvious
+      fixes, both documented in `docs/development/appwrite-sites.md`:
+      the output directory must be `.next` (not `.next/standalone`) and pnpm's
+      absolute symlinks must be rewritten as relative before packaging.
+- [ ] Remaining for sites:
+      - proxy rule (`proxy_create_site_rule`) per site domain — not created by
+        the deploy script
+      - wildcard TLS certificate for `*.sites.cdorneles.com.br` (DNS-01 in
+        Traefik/Dokploy); Appwrite's sites router has `tls=true` without a
+        `certresolver`, so it serves Traefik's default certificate
+      - port `/login` to admin/client/customer before deploying them (they
+        redirect to a route that does not exist there)
 - [x] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route
       redirects point to `/auth/login`, which does not exist — actual route is
       `/login` (design-system reference). Carry the `redirect` query param
