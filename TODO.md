@@ -145,6 +145,12 @@ capabilities. No business modules yet.
       (`.github/workflows/release.yml`): a Release PR bumps the version and
       updates `CHANGELOG.md` from Conventional Commits; merging it tags `v*`
       and invokes the functions deploy.
+- [x] Function deploy verified end-to-end against the live Appwrite project:
+      all five functions live (`resolve-grants`, `update-organization-profile`,
+      `send-email`, `get-organization-profile`, `provision-organization`),
+      runtime `go-1.26`, deployments `ready`, both via `make -C functions deploy`
+      and via the CI workflow. Modules pin `go 1.26.5` because the runtime ships
+      1.26.5 with `GOTOOLCHAIN=local`.
 - [x] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route
       redirects point to `/auth/login`, which does not exist — actual route is
       `/login` (design-system reference). Carry the `redirect` query param
