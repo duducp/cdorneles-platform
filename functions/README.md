@@ -164,6 +164,18 @@ per-execution API key arrives as the `x-appwrite-key` request header.
 - A configured project (`appwrite init project`) or CI mode
   (`appwrite client --endpoint ... --key ...`).
 
+### CI/CD
+
+- `.github/workflows/ci.yml` runs the Go gate (`make -C functions build|vet|test`)
+  on every push to `main` and every pull request.
+- `.github/workflows/functions-deploy.yml` deploys to production:
+  - pushing a `v*` tag deploys every function;
+  - a manual run (`workflow_dispatch`) deploys one function or all of them.
+
+  It verifies first, then deploys from the `production` GitHub Environment
+  (which can require reviewers). Secrets: `APPWRITE_ENDPOINT`,
+  `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY`.
+
 ## Adding a function
 
 1. Create the directory and module:

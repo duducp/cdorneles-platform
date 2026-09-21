@@ -137,6 +137,10 @@ capabilities. No business modules yet.
       a client-side Messaging API.
 - [x] CI: confirm `install → lint → typecheck → test → build` stays green on
       every change.
+- [x] CI covers the Go functions too (`.github/workflows/ci.yml` → `functions`
+      job: `make -C functions build|vet|test`). Deploy runs separately in
+      `.github/workflows/functions-deploy.yml` on `v*` tags or manual dispatch,
+      gated by a `verify` job and the `production` environment.
 - [x] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route
       redirects point to `/auth/login`, which does not exist — actual route is
       `/login` (design-system reference). Carry the `redirect` query param

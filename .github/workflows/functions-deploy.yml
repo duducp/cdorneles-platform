@@ -1,0 +1,108 @@
+name: Deploy Functions
+
+# Production deploy of the Appwrite Go functions.
+#
+# Triggers:
+#   - a `v*` tag (release) deploys every function;
+#   - a manual run deploys one function or all of them.
+#
+# The deploy job uses the `production` GitHub Environment, so it can require
+# reviewers. Required secrets:
+#   APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY
+#
+# The Appwrite CLI is installed from npm and configured with
+# `appwrite client --endpoint --project-id --key`, which puts it in
+# non-interactive (CI) mode. This is used instead of the
+# `appwrite/setup-for-appwrite` action because the published tag (`v1`)
+# predates its API-key login support.
+
+on:
+  workflow_dispatch:
+    inputs:
+      function:
+        description: Function to deploy
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - resolve-grants
+          - update-organization-profile
+          - send-email
+          - get-organization-profile
+          - provision-organization
+  push:
+    tags:
+      - "v*"
+
+# Never let two deploys race; a running deploy is allowed to finish.
+concurrency:
+  group: functions-deploy
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: functions/resolve-grants/go.mod
+          cache-dependency-path: functions/*/go.sum
+
+      - name: Build
+        run: make -C functions build
+
+      - name: Vet
+        run: make -C functions vet
+
+      - name: Test
+        run: make -C functions test
+
+  deploy:
+    name: Deploy
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: functions/resolve-grants/go.mod
+          cache-dependency-path: functions/*/go.sum
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Appwrite CLI
+        run: npm install -g appwrite-cli
+
+      - name: Configure Appwrite CLI
+        env:
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+        run: |
+          appwrite client \
+            --endpoint "$APPWRITE_ENDPOINT" \
+            --project-id "$APPWRITE_PROJECT_ID" \
+            --key "$APPWRITE_API_KEY"
+
+      - name: Deploy
+        env:
+          TARGET: ${{ github.event.inputs.function }}
+        run: |
+          if [ -z "$TARGET" ] || [ "$TARGET" = "all" ]; then
+            ./functions/scripts/deploy.sh
+          else
+            ./functions/scripts/deploy.sh "$TARGET"
+          fi

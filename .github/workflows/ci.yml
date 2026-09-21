@@ -42,3 +42,25 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  functions:
+    name: Go functions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: functions/resolve-grants/go.mod
+          cache-dependency-path: functions/*/go.sum
+
+      - name: Build
+        run: make -C functions build
+
+      - name: Vet
+        run: make -C functions vet
+
+      - name: Test
+        run: make -C functions test
