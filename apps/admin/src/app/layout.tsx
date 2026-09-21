@@ -11,7 +11,10 @@ import { OrgBranding } from "@cdorneles/ui/tenant";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Cdorneles Admin",
+  title: {
+    default: "Cdorneles Admin",
+    template: "%s | Cdorneles",
+  },
   icons: { icon: "/brand/favicon.png" },
   description: "Internal Cdorneles administration.",
 };
