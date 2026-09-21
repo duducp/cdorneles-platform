@@ -48,7 +48,7 @@ export function createAppwriteTenantService(
       try {
         const response = await functionsApi.createExecution({
           functionId: "get-organization-profile",
-          body: JSON.stringify({ organizationId }),
+          body: { organizationId },
           method: "POST",
         });
 
@@ -64,7 +64,8 @@ export function createAppwriteTenantService(
           secondaryColor: data.secondaryColor ?? null,
           defaultTheme: data.defaultTheme ?? "light",
         };
-      } catch {
+      } catch (error) {
+        console.warn("getProfile failed for organizationId:", organizationId, error);
         return null;
       }
     },

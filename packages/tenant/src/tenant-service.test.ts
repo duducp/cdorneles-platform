@@ -117,24 +117,25 @@ describe("createAppwriteTenantService", () => {
 
   describe("getProfile", () => {
     it("fetches organization profile", async () => {
-      const mockFunctionsApi = {
-        createExecution: vi.fn().mockResolvedValue({
-          responseBody: JSON.stringify({ displayName: "Test Org", primaryColor: "#ff0000" }),
-        }),
-      };
-      const service = createAppwriteTenantService(createMockTeamsApi(), mockFunctionsApi);
+      const api = createMockFunctionsApi();
+      vi.mocked(api.createExecution).mockResolvedValue({
+        responseBody: JSON.stringify({ displayName: "Test Org", primaryColor: "#ff0000" }),
+      } as never);
+      const service = createAppwriteTenantService(createMockTeamsApi(), api);
       const profile = await service.getProfile("org-123");
       expect(profile?.primaryColor).toBe("#ff0000");
-      expect(mockFunctionsApi.createExecution).toHaveBeenCalledWith(
-        expect.objectContaining({ functionId: "get-organization-profile" }),
+      expect(api.createExecution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          functionId: "get-organization-profile",
+          body: { organizationId: "org-123" },
+        }),
       );
     });
 
     it("returns null on error", async () => {
-      const mockFunctionsApi = {
-        createExecution: vi.fn().mockRejectedValueOnce(new Error("fail")),
-      };
-      const service = createAppwriteTenantService(createMockTeamsApi(), mockFunctionsApi);
+      const api = createMockFunctionsApi();
+      vi.mocked(api.createExecution).mockRejectedValueOnce(new Error("fail"));
+      const service = createAppwriteTenantService(createMockTeamsApi(), api);
       const profile = await service.getProfile("org-123");
       expect(profile).toBeNull();
     });

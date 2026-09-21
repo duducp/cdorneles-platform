@@ -45,7 +45,7 @@ export interface TablesApi {
 export interface FunctionsApi {
   createExecution(input: {
     functionId: string;
-    body?: string;
+    body?: string | Record<string, unknown>;
     path?: string;
     method?: string;
   }): Promise<AppwriteExecution>;
