@@ -382,21 +382,21 @@ func (o *appwriteOps) CreateUserPermission(userID, organizationID, permissionID,
 // live probe before relying on it.
 func (o *appwriteOps) SendWelcomeEmail(to, name, password, callerID string) error {
 	htmlBody := fmt.Sprintf(
-		"<p>Hello %s,</p>"+
-			"<p>An account has been created for you.</p>"+
-			"<p>Sign in with the temporary password <strong>%s</strong> and change it after your first login.</p>",
+		"<p>Olá %s,</p>"+
+			"<p>Uma conta foi criada para você.</p>"+
+			"<p>Entre com a senha temporária <strong>%s</strong> e altere-a após o primeiro acesso.</p>",
 		html.EscapeString(name),
 		password,
 	)
 	textBody := fmt.Sprintf(
-		"Hello %s,\n\nAn account has been created for you.\n\n"+
-			"Sign in with the temporary password %s and change it after your first login.",
+		"Olá %s,\n\nUma conta foi criada para você.\n\n"+
+			"Entre com a senha temporária %s e altere-a após o primeiro acesso.",
 		name,
 		password,
 	)
 	body, err := json.Marshal(map[string]interface{}{
 		"to":       []string{to},
-		"subject":  "Your account has been created",
+		"subject":  "Sua conta foi criada",
 		"htmlBody": htmlBody,
 		"textBody": textBody,
 	})
