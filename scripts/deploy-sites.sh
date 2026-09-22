@@ -118,8 +118,22 @@ proxy_rule_id() {
     | node -e 'let raw="";process.stdin.on("data",c=>raw+=c).on("end",()=>{try{const p=JSON.parse(raw);const rules=p.rules??p;if(Array.isArray(rules)&&rules[0]&&rules[0].$id)process.stdout.write(rules[0].$id)}catch{}})'
 }
 
+# Whether the site already has a configured domain. Appwrite also creates one
+# throwaway proxy rule per deployment (trigger "deployment"); those are not a
+# configured domain, so only manually-created rules (trigger "manual") count.
+site_has_domain() {
+  appwrite proxy list-rules \
+    --filter "deploymentResourceId=$1" \
+    --filter "trigger=manual" \
+    --json 2>/dev/null \
+    | node -e 'let raw="";process.stdin.on("data",c=>raw+=c).on("end",()=>{try{const p=JSON.parse(raw);const rules=p.rules??p;if(Array.isArray(rules)&&rules.length>0)process.stdout.write("yes")}catch{}})'
+}
+
 # A site has no domain by default. Without a proxy rule Traefik has no router
 # for the host and the request never reaches the runtime.
+#
+# The rule is created only when the site has no domain yet: if it already has a
+# domain (the script's own, or one configured by hand), it is left alone.
 ensure_domain() {
   local site="$1" domain="$2" rule_id
 
@@ -127,6 +141,9 @@ ensure_domain() {
 
   if [ -n "$rule_id" ]; then
     echo "==> Domain $domain already exists"
+  elif [ -n "$(site_has_domain "$site")" ]; then
+    echo "==> $site already has a domain; not adding $domain"
+    return 0
   else
     echo "==> Creating domain $domain"
     appwrite proxy create-site-rule \
