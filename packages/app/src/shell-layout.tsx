@@ -2,7 +2,7 @@
 
 import { useAuth } from "@cdorneles/auth";
 import { OrgGuard, useTenant } from "@cdorneles/tenant";
-import { LoadingState } from "@cdorneles/ui";
+import { LoadingScreen } from "@cdorneles/ui";
 import { AppShell, Sidebar, Topbar, type SidebarNavItem } from "@cdorneles/ui/shell";
 
 import { NavPendingIndicator } from "./nav-pending";
@@ -46,7 +46,7 @@ export function createShellLayout({ navItems }: CreateShellLayoutOptions) {
     return (
       <OrgGuard
         onRedirectToSelectOrg={handleRedirectToSelectOrg}
-        fallback={<LoadingState label="Carregando…" />}
+        fallback={<LoadingScreen />}
       >
         <AppShell
           sidebar={
