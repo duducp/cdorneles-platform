@@ -62,7 +62,7 @@ page.
 - Public pages follow the **server page + client component split** (reference: `apps/design-system/src/app/login/`): `page.tsx` stays a Server Component exporting `metadata` (Next 16 forbids `metadata` in `"use client"` files) and renders `<XxxPageClient />` from a co-located `page-client.tsx` that holds the hooks and handlers.
 - Each page exports a **document title** via `metadata`; the root layout provides the `%s | Carlos Dorneles Platform` template.
 - Exactly one `<h1>` per page. Auth forms carry their own `h1`; pages without a form-level heading (e.g. `select-org`) add a visually hidden one (`VisuallyHidden` + `Title order={1}`).
-- Announce transient states to screen readers with a `VisuallyHidden aria-live="polite"` region (reference: login page "Entrando..."); use the shared `LoadingState` (`role="status"`) for full-page loading instead of bare dimmed text.
+- Announce transient states to screen readers with a `VisuallyHidden aria-live="polite"` region (reference: login page "Entrando..."); use the shared `LoadingScreen` (`role="status"`) for full-page loading instead of bare dimmed text.
 - Keep the theme toggle row compact (`p="sm"`) so the `IconButton` stays near the touch target on mobile; links that are not underlined by default must set `underline="always"` (footer legal links) — never color alone.
 
 ## Loading
@@ -90,11 +90,12 @@ Notes:
   and let `loading` show progress; a disabled button hides why it is disabled.
 - `LoadingState` carries `role="status"` and `aria-live="polite"`; prefer it
   over bare dimmed text so the state reaches screen readers.
-- **`LoadingScreen` is the route-level loader** (centred logo + build version,
-  spinner pinned to the footer region); `LoadingState` remains for
-  inline/embedded waits (the `OrgGuard` fallback, the select-org picker).
-  Neither renders a visible caption. `LoadingScreen` adds no `<main>` — it
+- **`LoadingScreen` is the route-level loader**: centred logo + build version,
+  with the spinner in the semantic `<footer>`. It announces its label through
+  `aria-label` without rendering a visible caption, and adds no `<main>` — it
   renders inside `AppShell.Main`, which is already the page's `<main>`.
+- **`LoadingState` stays for the non-route waits** (the `OrgGuard` fallback and
+  the select-org page); it shows its label as visible dimmed text.
 
 ## Feedback: inline vs toast
 

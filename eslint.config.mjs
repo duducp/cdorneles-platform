@@ -11,6 +11,8 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/.next/**",
       "**/.agents/**",
+      "**/.claude/**",
+      "**/.opencode/**",
       "**/dist/**",
       "**/coverage/**",
       "**/*.config.js",

@@ -4,3 +4,6 @@ dist
 coverage
 pnpm-lock.yaml
 *.md
+.agents
+.claude
+.opencode
