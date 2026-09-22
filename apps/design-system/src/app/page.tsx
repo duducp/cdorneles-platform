@@ -85,7 +85,7 @@ export default function DesignSystemPage() {
     <PageContainer size="xl" py="xl">
       <Stack gap="xl">
         <PageHeader
-          title="Cdorneles Design System"
+          title="Carlos Dorneles Design System"
           description="Playground for tokens, components and states. Toggle Light/Dark to verify both themes."
           actions={
             <Group gap="sm">

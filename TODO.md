@@ -176,8 +176,6 @@ capabilities. No business modules yet.
       - confirm TLS is issued for `design-system.sites.cdorneles.com.br` after
         verification (it still served Traefik's default certificate); fall back
         to a wildcard cert via DNS-01 if not
-      - port `/login` to admin/client/customer before deploying them (they
-        redirect to a route that does not exist there)
 - [x] Fix auth redirect target in `apps/*/src/middleware.ts`: protected-route
       redirects point to `/auth/login`, which does not exist — actual route is
       `/login` (design-system reference). Carry the `redirect` query param
@@ -205,6 +203,10 @@ capabilities. No business modules yet.
 - [x] Design system foundation: tokens, theme (light/dark), `@cdorneles/ui`.
 - [x] Architecture docs and ADR-001…ADR-010.
 - [x] Project-scoped Appwrite MCP configuration and `.env` wiring.
+- [x] Auth routes (`login`, `mfa`, `forgot-password`, `reset-password`,
+      `select-org`) exist in `admin` and `client`, and the middleware redirects
+      protected routes to `/login` — the old "port `/login`" item was stale.
+      (The `customer` app was removed.)
 
 ## Conventions
 

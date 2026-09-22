@@ -14,8 +14,8 @@ import { OrgBranding } from "@cdorneles/ui/tenant";
 import { Providers } from "./providers";
 
 export const metadata = createMetadata({
-  title: "Cdorneles Design System",
-  description: "Visual playground for the shared Cdorneles design system.",
+  title: "Carlos Dorneles Design System",
+  description: "Visual playground for the shared Carlos Dorneles design system.",
 });
 
 export default function RootLayout({ children }: { children: ReactNode }) {
