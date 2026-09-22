@@ -18,6 +18,12 @@ export type AuthStatus = "loading" | "authenticated" | "anonymous";
 
 const SESSION_COOKIE = "cdorneles-session";
 
+/**
+ * Screens an anonymous visitor must be able to reach. A stale session cookie
+ * (24h client-side hint) must not bounce them back to `/login` in a circle.
+ */
+const PUBLIC_AUTH_PREFIXES = ["/login", "/mfa", "/forgot-password", "/reset-password"];
+
 /** How often to check session validity (ms). */
 const SESSION_POLL_INTERVAL = 4 * 60 * 1000; // 4 minutes
 
@@ -36,7 +42,10 @@ function clearSessionCookie(): void {
 
 function hasSessionCookie(): boolean {
   if (typeof document === "undefined") return false;
-  return document.cookie.split("; ").some((entry) => entry.startsWith(`${SESSION_COOKIE}=1`));
+  return document.cookie.split("; ").some((entry) => {
+    const [name, value] = entry.split("=");
+    return name === SESSION_COOKIE && value === "1";
+  });
 }
 
 function isExpiringSoon(expiresAt: string): boolean {
@@ -71,7 +80,7 @@ export interface AuthProviderProps {
   children: ReactNode;
   initialUser?: AuthUser | null;
   initialSession?: AuthSession | null;
-  /** Custom redirect URL when session expires. Defaults to /login. */
+  /** Where to send a bootstrap whose session cookie outlived the session. Defaults to /login. */
   loginPath?: string;
   /** Carries a 401 seen by the query client. */
   sessionSignal?: SessionSignal;
@@ -109,6 +118,7 @@ export function AuthProvider({
     if (typeof window === "undefined") return;
     const { pathname } = window.location;
     if (pathname.startsWith(loginPath)) return;
+    if (PUBLIC_AUTH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return;
     window.location.href = `${loginPath}?redirect=${encodeURIComponent(pathname)}`;
   }, [loginPath]);
 
@@ -159,9 +169,17 @@ export function AuthProvider({
     }
   }, [status, refresh]);
 
+  // Read the latest user without making `markExpired` depend on it: the signal
+  // subscription effect must stay stable across renders.
+  const userRef = useRef(user);
+  userRef.current = user;
+
   // The session died while the app was running. Keep the cookie and stay on the
   // page: the dialog restores the session without discarding the React tree.
   const markExpired = useCallback(() => {
+    // A 401 while anonymous is not a dead session: setting `authenticated` here
+    // would fabricate an identity and hide the login form.
+    if (!userRef.current) return;
     setSessionState("expired");
     setStatus("authenticated");
   }, []);
@@ -181,7 +199,13 @@ export function AuthProvider({
     let cancelled = false;
 
     pollRef.current = setInterval(async () => {
-      const nextSession = await service.getSession();
+      let nextSession: AuthSession | null;
+      try {
+        nextSession = await service.getSession();
+      } catch {
+        // A failed check is not a confirmed sign-out. Retry next tick.
+        return;
+      }
       // The effect may have been torn down (unmount, status or service change)
       // while the request was in flight; do not touch state afterwards.
       if (cancelled) return;

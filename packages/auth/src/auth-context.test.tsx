@@ -1,11 +1,18 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthProvider, useAuth } from "./auth-context";
 import { createSessionSignal } from "./session-signal";
 import type { AuthService, AuthSession, AuthUser } from "./types";
+
+// Must match SESSION_POLL_INTERVAL in auth-context.tsx (4 minutes). If the real
+// interval changes, advancing this much stops firing the poll and the fake-timer
+// tests fail loudly instead of passing silently.
+const POLL_INTERVAL_MS = 4 * 60 * 1000;
+
+const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, "location");
 
 // `document.cookie` is shared jsdom state. Clear it before every test so the
 // bootstrap-redirect cases cannot leak into each other or the existing tests.
@@ -15,6 +22,15 @@ beforeEach(() => {
     if (name) {
       document.cookie = `${name}=; path=/; max-age=0`;
     }
+  }
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  if (originalLocationDescriptor) {
+    Object.defineProperty(window, "location", originalLocationDescriptor);
+  } else {
+    Reflect.deleteProperty(window, "location");
   }
 });
 
@@ -216,11 +232,10 @@ describe("AuthProvider", () => {
 
 function stubLocation(pathname: string) {
   let href = "";
-  const assign = vi.fn();
   Object.defineProperty(window, "location", {
     value: {
       pathname,
-      assign,
+      assign: vi.fn(),
       get href(): string {
         return href;
       },
@@ -231,7 +246,14 @@ function stubLocation(pathname: string) {
     writable: true,
     configurable: true,
   });
-  return { assign };
+}
+
+async function flushMicrotasks(): Promise<void> {
+  for (let i = 0; i < 10; i += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
 }
 
 function SessionStateProbe() {
@@ -249,7 +271,7 @@ describe("session state", () => {
       getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
     });
     const signal = createSessionSignal();
-    const location = stubLocation("/dashboard");
+    stubLocation("/dashboard");
 
     render(
       <AuthProvider service={service} sessionSignal={signal}>
@@ -266,10 +288,107 @@ describe("session state", () => {
     await waitFor(() =>
       expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:expired"),
     );
-    // `redirectToLogin` navigates by assigning `location.href`, not `assign()`,
-    // so assert on href to prove no navigation happened.
-    expect(location.assign).not.toHaveBeenCalled();
+    // `redirectToLogin` navigates by assigning `location.href`; this is the real
+    // assertion that no navigation happened.
     expect(window.location.href).toBe("");
+  });
+
+  it("ignores a 401 seen while anonymous", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(null),
+      getCurrentUser: vi.fn().mockResolvedValue(null),
+    });
+    const signal = createSessionSignal();
+    stubLocation("/login");
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
+    );
+
+    await act(async () => {
+      signal.notifyExpired();
+    });
+
+    // A 401 while anonymous must not fabricate an authenticated identity.
+    expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active");
+    expect(window.location.href).toBe("");
+  });
+
+  it("marks the session expired when the poll finds it gone", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValueOnce(createMockSession())
+        .mockResolvedValue(null),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    stubLocation("/dashboard");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await flushMicrotasks();
+    expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:active");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    });
+
+    expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:expired");
+    expect(window.location.href).toBe("");
+  });
+
+  it("ignores a transient poll failure and keeps the session active", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const rejections: unknown[] = [];
+    const onRejection = (reason: unknown) => {
+      rejections.push(reason);
+    };
+    process.on("unhandledRejection", onRejection);
+
+    try {
+      const service = createMockService({
+        getSession: vi
+          .fn()
+          .mockResolvedValueOnce(createMockSession())
+          .mockRejectedValue(new Error("network")),
+        getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      });
+      stubLocation("/dashboard");
+
+      render(
+        <AuthProvider service={service}>
+          <SessionStateProbe />
+        </AuthProvider>,
+      );
+
+      await flushMicrotasks();
+      expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:active");
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+      });
+
+      // Give Node a real turn to surface any unhandled rejection.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:active");
+      expect(rejections).toHaveLength(0);
+    } finally {
+      process.off("unhandledRejection", onRejection);
+    }
   });
 
   it("redirects on bootstrap when a session cookie was present but the session is gone", async () => {
@@ -278,7 +397,7 @@ describe("session state", () => {
       getSession: vi.fn().mockResolvedValue(null),
       getCurrentUser: vi.fn().mockResolvedValue(null),
     });
-    const location = stubLocation("/dashboard");
+    stubLocation("/dashboard");
 
     render(
       <AuthProvider service={service}>
@@ -287,16 +406,14 @@ describe("session state", () => {
     );
 
     await waitFor(() => expect(window.location.href).toContain("/login"));
-    expect(location.assign).not.toHaveBeenCalled();
   });
 
   it("does not redirect a truly anonymous visitor on bootstrap", async () => {
-    document.cookie = "cdorneles-session=; path=/; max-age=0";
     const service = createMockService({
       getSession: vi.fn().mockResolvedValue(null),
       getCurrentUser: vi.fn().mockResolvedValue(null),
     });
-    const location = stubLocation("/forgot-password");
+    stubLocation("/forgot-password");
 
     render(
       <AuthProvider service={service}>
@@ -308,6 +425,25 @@ describe("session state", () => {
       expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
     );
     expect(window.location.href).toBe("");
-    expect(location.assign).not.toHaveBeenCalled();
+  });
+
+  it("does not redirect a stale session away from a public auth route", async () => {
+    document.cookie = "cdorneles-session=1";
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(null),
+      getCurrentUser: vi.fn().mockResolvedValue(null),
+    });
+    stubLocation("/forgot-password");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
+    );
+    expect(window.location.href).toBe("");
   });
 });
