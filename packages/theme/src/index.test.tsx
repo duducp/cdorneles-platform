@@ -41,6 +41,13 @@ describe("createAppTheme", () => {
     const theme = createAppTheme({ branding: { primaryColor: "not-a-color" } });
     expect(theme.colors?.brand).toHaveLength(10);
   });
+
+  it("registers the dark palette from the tokens", () => {
+    const theme = createAppTheme();
+
+    expect(theme.colors?.dark).toHaveLength(10);
+    expect(theme.colors?.dark?.[7]).toBe("#0c0c0c");
+  });
 });
 
 describe("ThemeProvider", () => {
@@ -65,6 +72,8 @@ describe("css variables", () => {
   });
 
   it("paints the dark page with the semantic dark background", () => {
+    // The resolver ignores the theme it is handed; the cast only satisfies the
+    // signature Mantine declares.
     const resolved = cssVariablesResolver({} as MantineTheme);
 
     expect(resolved.dark?.["--mantine-color-body"]).toBe(semanticColors.dark.background);
