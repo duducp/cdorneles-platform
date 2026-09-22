@@ -69,3 +69,52 @@ aparece com a capability.
 O gate é **UX, não segurança** (AGENTS.md): a criação continua rodando no
 cliente (`TeamsApi.createTeam` + `provision-organization`). Mover a criação
 para trás de uma Function é a fronteira real.
+
+## Gerenciamento de usuários
+
+Permissões são chaves `recurso.ação`. No modelo estilo Django, um usuário recebe
+permissões de duas formas: pelos **papéis** (os "grupos") e por **concessões
+diretas**. As permissões **efetivas** são a **união** das chaves dos papéis do
+usuário (`role_permissions`) com as chaves concedidas diretamente a ele (tabela
+`user_permissions`) — a mesma união que o `resolve-grants` devolve. Não há
+negação: a concessão apenas soma.
+
+O **root da plataforma** é membro do time de plataforma (`PLATFORM_TEAM_ID`) e
+tem **todas** as permissões, como o superuser do Django. O modo de plataforma do
+`resolve-grants` (um `organizationId` vazio) devolve todas as chaves da tabela
+`permissions`, concedidas pelo time de plataforma — não por papel de organização.
+As capabilities `users.read`, `users.create` e `users.manage_permissions` também
+são **de plataforma**: vêm do time, e por isso ficam de fora do
+`allPermissionIDs()` do `provision-organization`.
+
+O rótulo `root` é **apenas um marcador**, nunca um grant (AGENTS.md: autorizar
+por capability, nunca por rótulo ou nome de papel). Toda Function reautoriza no
+servidor; o gate da UI é só UX.
+
+## Funções de gerenciamento de usuários
+
+Três Functions fazem o trabalho privilegiado. Todas identificam o chamador pelo
+`x-appwrite-user-id` e negam sem a capability exigida:
+
+- `create-user` — cria o usuário no Appwrite, adiciona a membership na
+  organização com o papel, grava as concessões diretas e envia o e-mail de
+  boas-vindas com a senha temporária. Exige `users.create`; quando a requisição
+  traz `permissions`, exige também `users.manage_permissions`, e o chamador só
+  pode conceder chaves que ele mesmo possui.
+- `update-user-permissions` — reconcilia as concessões diretas de um usuário
+  (`{ userId, organizationId, permissions }`): revoga as que saíram, concede as
+  que faltam e não toca no que não mudou. Exige `users.manage_permissions`
+  (mesma regra de só conceder chaves que o chamador possui).
+- `list-users` — pagina o `users.list` do servidor e devolve
+  `{ users: [{ id, email, name, labels }] }`. Exige `users.read`.
+
+## Página de usuários (admin)
+
+Em `apps/admin` → `/users`, a página lista os usuários e permite criar um novo.
+O gate é **UX, não segurança** (AGENTS.md): a lista aparece com `users.read`, o
+botão "New user" com `users.create`, e a lista de permissões do formulário só
+aparece com `users.manage_permissions`. O formulário pede e-mail, nome,
+organização, papel (`owner|admin|member`) e as permissões diretas.
+
+Está **fora de escopo**: auto-cadastro, negação por usuário, editar o papel ou a
+organização de um usuário depois de criado, e excluir ou desativar usuários.
