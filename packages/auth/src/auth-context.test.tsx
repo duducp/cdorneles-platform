@@ -1,11 +1,22 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthProvider, useAuth } from "./auth-context";
 import { createSessionSignal } from "./session-signal";
 import type { AuthService, AuthSession, AuthUser } from "./types";
+
+// `document.cookie` is shared jsdom state. Clear it before every test so the
+// bootstrap-redirect cases cannot leak into each other or the existing tests.
+beforeEach(() => {
+  for (const entry of document.cookie.split("; ")) {
+    const name = entry.split("=")[0];
+    if (name) {
+      document.cookie = `${name}=; path=/; max-age=0`;
+    }
+  }
+});
 
 const futureDate = new Date(Date.now() + 86400000).toISOString();
 
@@ -203,6 +214,26 @@ describe("AuthProvider", () => {
   });
 });
 
+function stubLocation(pathname: string) {
+  let href = "";
+  const assign = vi.fn();
+  Object.defineProperty(window, "location", {
+    value: {
+      pathname,
+      assign,
+      get href(): string {
+        return href;
+      },
+      set href(value: string) {
+        href = value;
+      },
+    },
+    writable: true,
+    configurable: true,
+  });
+  return { assign };
+}
+
 function SessionStateProbe() {
   const { status, sessionState } = useAuth();
   return <span data-testid="probe">{`${status}:${sessionState}`}</span>;
@@ -218,25 +249,7 @@ describe("session state", () => {
       getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
     });
     const signal = createSessionSignal();
-    const assign = vi.fn();
-    // Track href writes so the assertion proves *no* navigation happened.
-    // `redirectToLogin` navigates by assigning `location.href`, not `assign()`,
-    // so checking `assign` alone would pass even if the code did navigate.
-    let href = "";
-    Object.defineProperty(window, "location", {
-      value: {
-        pathname: "/dashboard",
-        assign,
-        get href(): string {
-          return href;
-        },
-        set href(value: string) {
-          href = value;
-        },
-      },
-      writable: true,
-      configurable: true,
-    });
+    const location = stubLocation("/dashboard");
 
     render(
       <AuthProvider service={service} sessionSignal={signal}>
@@ -253,21 +266,19 @@ describe("session state", () => {
     await waitFor(() =>
       expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:expired"),
     );
-    expect(assign).not.toHaveBeenCalled();
-    expect(href).toBe("");
+    // `redirectToLogin` navigates by assigning `location.href`, not `assign()`,
+    // so assert on href to prove no navigation happened.
+    expect(location.assign).not.toHaveBeenCalled();
+    expect(window.location.href).toBe("");
   });
 
-  it("redirects on bootstrap when there is no session at all", async () => {
+  it("redirects on bootstrap when a session cookie was present but the session is gone", async () => {
+    document.cookie = "cdorneles-session=1";
     const service = createMockService({
       getSession: vi.fn().mockResolvedValue(null),
       getCurrentUser: vi.fn().mockResolvedValue(null),
     });
-    const replace = vi.fn();
-    Object.defineProperty(window, "location", {
-      value: { pathname: "/dashboard", replace, href: "" },
-      writable: true,
-      configurable: true,
-    });
+    const location = stubLocation("/dashboard");
 
     render(
       <AuthProvider service={service}>
@@ -276,6 +287,27 @@ describe("session state", () => {
     );
 
     await waitFor(() => expect(window.location.href).toContain("/login"));
-    expect(replace).not.toHaveBeenCalled();
+    expect(location.assign).not.toHaveBeenCalled();
+  });
+
+  it("does not redirect a truly anonymous visitor on bootstrap", async () => {
+    document.cookie = "cdorneles-session=; path=/; max-age=0";
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(null),
+      getCurrentUser: vi.fn().mockResolvedValue(null),
+    });
+    const location = stubLocation("/forgot-password");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
+    );
+    expect(window.location.href).toBe("");
+    expect(location.assign).not.toHaveBeenCalled();
   });
 });

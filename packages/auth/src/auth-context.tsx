@@ -34,6 +34,11 @@ function clearSessionCookie(): void {
   document.cookie = `${SESSION_COOKIE}=; path=/; SameSite=Lax; max-age=0`;
 }
 
+function hasSessionCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split("; ").some((entry) => entry.startsWith(`${SESSION_COOKIE}=1`));
+}
+
 function isExpiringSoon(expiresAt: string): boolean {
   return new Date(expiresAt).getTime() - Date.now() <= EXPIRY_WARNING_MS;
 }
@@ -78,9 +83,9 @@ export interface AuthProviderProps {
  * - Bootstraps session on mount via `refresh()`
  * - Polls session validity every 4 minutes
  * - Reports `sessionState`: `expiring` within 5 minutes, `expired` once gone
- * - Redirects to `/login` only on bootstrap, when there is no session at all.
- *   A session that dies while the app is running stays on the page and is
- *   reported through `sessionState` instead.
+ * - Redirects to `/login` only on bootstrap, when the session cookie was
+ *   present but the server session is gone. A session that dies while the app
+ *   is running stays on the page and is reported through `sessionState`.
  */
 export function AuthProvider({
   service,
@@ -124,12 +129,19 @@ export function AuthProvider({
           nextSession && isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active",
         );
       } else {
+        // The cookie is a client-side hint with a 24h max-age, so it can outlive
+        // the server session. If it was present, a session was expected and the
+        // fresh load has landed in a shell with no user: send it to /login.
+        // Without it the visitor is genuinely anonymous (e.g. reading
+        // /forgot-password) and must stay put. The catch below is a failed
+        // check (network or server), not a confirmed sign-out, so it does not
+        // navigate.
+        const expected = hasSessionCookie();
         clearSessionCookie();
         setSessionState("active");
-        // A fresh load with no session has no page worth preserving, so it
-        // still goes to /login. The catch below is a failed check (network or
-        // server), not a confirmed sign-out, so it does not navigate.
-        redirectToLogin();
+        if (expected) {
+          redirectToLogin();
+        }
       }
     } catch {
       setSession(null);
