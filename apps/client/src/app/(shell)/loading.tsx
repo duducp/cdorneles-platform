@@ -1,4 +1,4 @@
-import { LoadingState } from "@cdorneles/ui";
+import { LoadingScreen } from "@cdorneles/ui";
 
 /**
  * Shown while a protected route segment is being fetched. With static pages
@@ -6,5 +6,5 @@ import { LoadingState } from "@cdorneles/ui";
  * pages load data on the server.
  */
 export default function Loading() {
-  return <LoadingState label="Carregando…" />;
+  return <LoadingScreen />;
 }
