@@ -8,6 +8,7 @@ import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import type { ReactNode } from "react";
 
 import { createMetadata } from "@cdorneles/app";
+import { inter } from "@cdorneles/app/fonts";
 import { OrgBranding } from "@cdorneles/ui/tenant";
 
 import { Providers } from "./providers";
@@ -19,7 +20,7 @@ export const metadata = createMetadata({
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR" {...mantineHtmlProps}>
+    <html lang="pt-BR" className={inter.variable} {...mantineHtmlProps}>
       <head>
         <ColorSchemeScript defaultColorScheme="auto" localStorageKey={COLOR_SCHEME_STORAGE_KEY} />
       </head>
