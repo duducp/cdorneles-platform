@@ -51,9 +51,7 @@ describe("createAppwriteTenantService", () => {
 
       const service = createAppwriteTenantService(api, createMockFunctionsApi());
 
-      await expect(service.listOrganizations()).resolves.toEqual([
-        { id: "org-1", name: "Acme" },
-      ]);
+      await expect(service.listOrganizations()).resolves.toEqual([{ id: "org-1", name: "Acme" }]);
       vi.unstubAllEnvs();
     });
 

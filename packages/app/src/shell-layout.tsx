@@ -82,10 +82,7 @@ export function createShellLayout({
     }
 
     return (
-      <OrgGuard
-        onRedirectToSelectOrg={handleRedirectToSelectOrg}
-        fallback={<LoadingScreen />}
-      >
+      <OrgGuard onRedirectToSelectOrg={handleRedirectToSelectOrg} fallback={<LoadingScreen />}>
         {shell}
       </OrgGuard>
     );

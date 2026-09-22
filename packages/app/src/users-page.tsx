@@ -253,9 +253,7 @@ export function UsersPage() {
     void functionsApi
       .listUsers()
       .then((result) => setUsers(result.users))
-      .catch((cause) =>
-        setError(cause instanceof Error ? cause.message : "Could not load users."),
-      )
+      .catch((cause) => setError(cause instanceof Error ? cause.message : "Could not load users."))
       .finally(() => setLoading(false));
   }, [functionsApi]);
 
