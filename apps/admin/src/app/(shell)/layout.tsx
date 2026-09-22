@@ -9,7 +9,7 @@ export default createShellLayout({
   requireOrganization: false,
   navItems: [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Customers", href: "/customers", icon: Users },
+    { label: "Clients", href: "/clients", icon: Users },
     { label: "Settings", href: "/settings", icon: Settings },
   ],
 });

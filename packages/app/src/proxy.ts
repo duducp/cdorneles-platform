@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const SESSION_COOKIE = "cdorneles-session";
 
-const protectedPaths = ["/dashboard", "/settings", "/billing"];
+const protectedPaths = ["/dashboard", "/clients", "/settings", "/billing"];
 
 function matchesProtected(pathname: string): boolean {
   return protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -27,5 +27,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/settings/:path*", "/billing/:path*"],
+  matcher: ["/dashboard/:path*", "/clients/:path*", "/settings/:path*", "/billing/:path*"],
 };

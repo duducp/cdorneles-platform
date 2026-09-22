@@ -6,5 +6,5 @@ export { proxy } from "@cdorneles/app/proxy";
  * which routes are protected is this application's own surface.
  */
 export const config = {
-  matcher: ["/dashboard/:path*", "/settings/:path*", "/billing/:path*"],
+  matcher: ["/dashboard/:path*", "/clients/:path*", "/settings/:path*", "/billing/:path*"],
 };

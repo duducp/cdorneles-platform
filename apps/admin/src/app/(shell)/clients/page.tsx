@@ -27,15 +27,15 @@ const columns: LegacyColumnDef<CustomerRow, unknown>[] = [
 
 const MOCK_DATA: CustomerRow[] = [];
 
-export default function CustomersPage() {
+export default function ClientsPage() {
   return (
     <PageContainer py="xl">
       <PageHeader
-        title="Customers"
-        description="Manage your customers."
+        title="Clients"
+        description="Manage your client organizations."
         actions={
           <PermissionGate permission={permissionKey("customers.create")}>
-            <Button leftSection={<Plus size={16} />}>Add Customer</Button>
+            <Button leftSection={<Plus size={16} />}>Add Client</Button>
           </PermissionGate>
         }
       />
@@ -44,15 +44,12 @@ export default function CustomersPage() {
         fallback={
           <EmptyState
             title="Access denied"
-            description="You don't have permission to view customers."
+            description="You don't have permission to view clients."
           />
         }
       >
         {MOCK_DATA.length === 0 ? (
-          <EmptyState
-            title="No customers yet"
-            description="Add your first customer to get started."
-          />
+          <EmptyState title="No clients yet" description="Add your first client to get started." />
         ) : (
           <DataTable data={MOCK_DATA} columns={columns} />
         )}
