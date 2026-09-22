@@ -16,6 +16,12 @@ export type ShellNavItem = SidebarNavItem;
 export interface CreateShellLayoutOptions {
   /** Navigation entries for this application. */
   navItems: ShellNavItem[];
+  /**
+   * Gate the shell on an active organization. The client app is org-scoped; the
+   * admin panel administers clients generally and needs no organization of its
+   * own. Defaults to `true`.
+   */
+  requireOrganization?: boolean;
 }
 
 /**
@@ -26,7 +32,10 @@ export interface CreateShellLayoutOptions {
  * protected routes. Mounted at the root it would also gate /login, /mfa and
  * the recovery screens, which must render for an anonymous visitor.
  */
-export function createShellLayout({ navItems }: CreateShellLayoutOptions) {
+export function createShellLayout({
+  navItems,
+  requireOrganization = true,
+}: CreateShellLayoutOptions) {
   return function ShellLayout({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -43,33 +52,41 @@ export function createShellLayout({ navItems }: CreateShellLayoutOptions) {
       router.replace("/select-org");
     }, [router]);
 
+    const shell = (
+      <AppShell
+        sidebar={
+          <Sidebar
+            items={navItems}
+            activeHref={pathname}
+            collapsed={!opened}
+            linkComponent={Link}
+            pendingComponent={NavPendingIndicator}
+          />
+        }
+        topbar={
+          <Topbar
+            userName={currentOrganization?.name ?? user?.name ?? "User"}
+            userEmail={user?.email}
+            sidebarOpened={opened}
+            onToggleSidebar={() => setOpened((o) => !o)}
+            onLogout={handleLogout}
+          />
+        }
+      >
+        {children}
+      </AppShell>
+    );
+
+    if (!requireOrganization) {
+      return shell;
+    }
+
     return (
       <OrgGuard
         onRedirectToSelectOrg={handleRedirectToSelectOrg}
         fallback={<LoadingScreen />}
       >
-        <AppShell
-          sidebar={
-            <Sidebar
-              items={navItems}
-              activeHref={pathname}
-              collapsed={!opened}
-              linkComponent={Link}
-              pendingComponent={NavPendingIndicator}
-            />
-          }
-          topbar={
-            <Topbar
-              userName={currentOrganization?.name ?? user?.name ?? "User"}
-              userEmail={user?.email}
-              sidebarOpened={opened}
-              onToggleSidebar={() => setOpened((o) => !o)}
-              onLogout={handleLogout}
-            />
-          }
-        >
-          {children}
-        </AppShell>
+        {shell}
       </OrgGuard>
     );
   };

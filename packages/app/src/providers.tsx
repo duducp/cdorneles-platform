@@ -130,7 +130,10 @@ export function createProviders({ applicationId, observability }: CreateProvider
             {children}
           </InnerProviders>
         ) : (
-          children
+          // No Appwrite config (e.g. a build without env): still provide the
+          // access context so `PermissionGate`/`useAccess` render a deny state
+          // instead of throwing.
+          <AccessProvider granted={{ permissions: [], features: [] }}>{children}</AccessProvider>
         )}
       </ThemeBranding>
     );
