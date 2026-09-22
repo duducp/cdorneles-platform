@@ -26,6 +26,7 @@ import { AppNotifications, AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
 import { useState, type ReactNode } from "react";
 
+import { FunctionsApiProvider } from "./functions-api-context";
 import { IdleLockGate } from "./idle-lock-gate";
 import { initObservability } from "./observability";
 import { SessionExpiredGate } from "./session-expired-gate";
@@ -112,23 +113,25 @@ export function createProviders({ applicationId, observability }: CreateProvider
       const services = createAppwriteServices(config);
       return createAppwriteTenantService(services.teams, services.functions);
     });
-    const functionsApi = (() => {
+    const [functionsApi] = useState<FunctionsApi | null>(() => {
       const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
       const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
       if (!endpoint || !projectId) return null;
       const config = resolveApiClientConfig({ endpoint, projectId });
       const services = createAppwriteServices(config);
       return services.functions;
-    })();
+    });
 
     initObservability(observability);
 
     const tenantContent = (
       <ThemeBranding>
         {functionsApi ? (
-          <InnerProviders applicationId={applicationId} functionsApi={functionsApi}>
-            {children}
-          </InnerProviders>
+          <FunctionsApiProvider functionsApi={functionsApi}>
+            <InnerProviders applicationId={applicationId} functionsApi={functionsApi}>
+              {children}
+            </InnerProviders>
+          </FunctionsApiProvider>
         ) : (
           // No Appwrite config (e.g. a build without env): still provide the
           // access context so `PermissionGate`/`useAccess` render a deny state
