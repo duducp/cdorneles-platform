@@ -16,6 +16,7 @@ import { Providers } from "./providers";
 export const metadata = createMetadata({
   title: "Cdorneles Admin",
   description: "Internal Cdorneles administration.",
+  icon: "/brand/favicon-black.png",
 });
 
 export default function RootLayout({ children }: { children: ReactNode }) {
