@@ -5,6 +5,7 @@ import {
   createQueryClient,
   resolveApiClientConfig,
 } from "@cdorneles/api-client";
+import { IdleLockGate } from "@cdorneles/app";
 import {
   AuthProvider,
   createAppwriteAuthService,
@@ -58,6 +59,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <AppProvider queryClient={queryClient} organizationDefault="light">
       <AuthProvider service={authService}>
         <AppNotifications />
+        <IdleLockGate />
         {tenantService ? (
           <TenantBridge tenantService={tenantService}>
             <ThemeBranding>{children}</ThemeBranding>

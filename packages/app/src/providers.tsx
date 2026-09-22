@@ -26,6 +26,7 @@ import { AppNotifications, AppProvider } from "@cdorneles/ui";
 import { AccessProvider } from "@cdorneles/ui/permissions";
 import { useState, type ReactNode } from "react";
 
+import { IdleLockGate } from "./idle-lock-gate";
 import { initObservability } from "./observability";
 import { SessionExpiredGate } from "./session-expired-gate";
 import { SessionExpiryNotice } from "./session-expiry-notice";
@@ -138,6 +139,7 @@ export function createProviders({ applicationId, observability }: CreateProvider
           <AppNotifications />
           <SessionExpiryNotice />
           <SessionExpiredGate />
+          <IdleLockGate />
           {tenantService ? (
             <TenantBridge tenantService={tenantService}>{tenantContent}</TenantBridge>
           ) : (
