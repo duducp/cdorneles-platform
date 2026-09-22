@@ -10,6 +10,8 @@ import { useIdleTimer } from "react-idle-timer";
 
 const DEFAULT_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 const DEFAULT_PROMPT_BEFORE_IDLE_MS = 30 * 1000;
+const MIN_TIMEOUT_MS = 60 * 1000;
+const MAX_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 
 export interface IdleTimings {
   timeoutMs: number;
@@ -23,18 +25,18 @@ function toMs(value: string | undefined, unitMs: number, fallback: number): numb
 
 /**
  * Resolves the idle timings from the raw env values, falling back to the
- * defaults for anything missing or invalid. The prompt is clamped to the
- * timeout so a misconfiguration cannot make the warning outlast the lock.
+ * defaults for anything missing or invalid. The timeout is bounded to
+ * [1 min, 24 h] and the prompt is kept strictly below it, because
+ * `react-idle-timer` throws unless `promptBeforeIdle < timeout`.
  */
 export function resolveIdleTimings(
   timeoutMinutes: string | undefined,
   promptSeconds: string | undefined,
 ): IdleTimings {
-  const timeoutMs = toMs(timeoutMinutes, 60 * 1000, DEFAULT_IDLE_TIMEOUT_MS);
-  const promptBeforeIdleMs = Math.min(
-    toMs(promptSeconds, 1000, DEFAULT_PROMPT_BEFORE_IDLE_MS),
-    timeoutMs,
-  );
+  const rawTimeoutMs = toMs(timeoutMinutes, 60 * 1000, DEFAULT_IDLE_TIMEOUT_MS);
+  const timeoutMs = Math.min(Math.max(rawTimeoutMs, MIN_TIMEOUT_MS), MAX_TIMEOUT_MS);
+  const promptMs = toMs(promptSeconds, 1000, DEFAULT_PROMPT_BEFORE_IDLE_MS);
+  const promptBeforeIdleMs = Math.min(promptMs, timeoutMs - 1000);
   return { timeoutMs, promptBeforeIdleMs };
 }
 

@@ -145,6 +145,13 @@ describe("IdleLockGate", () => {
 
     expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument();
   });
+
+  it("feeds the resolved defaults to the idle timer", () => {
+    renderGate();
+
+    expect(idleCallbacks.current.timeout).toBe(15 * 60 * 1000);
+    expect(idleCallbacks.current.promptBeforeIdle).toBe(30 * 1000);
+  });
 });
 
 describe("resolveIdleTimings", () => {
@@ -169,7 +176,12 @@ describe("resolveIdleTimings", () => {
     });
   });
 
-  it("never lets the prompt outlast the timeout", () => {
-    expect(resolveIdleTimings("1", "600").promptBeforeIdleMs).toBe(60 * 1000);
+  it("keeps the prompt strictly below the timeout", () => {
+    const timings = resolveIdleTimings("1", "600");
+    expect(timings.promptBeforeIdleMs).toBeLessThan(timings.timeoutMs);
+  });
+
+  it("bounds an absurd timeout", () => {
+    expect(resolveIdleTimings("100000", undefined).timeoutMs).toBe(24 * 60 * 60 * 1000);
   });
 });
