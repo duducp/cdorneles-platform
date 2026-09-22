@@ -39,4 +39,16 @@ describe("LoadingScreen", () => {
 
     expect(screen.queryByRole("main")).not.toBeInTheDocument();
   });
+
+  it("lets the caller override the minimum height", () => {
+    render(
+      <ThemeProvider>
+        <LoadingScreen minHeight="10rem" />
+      </ThemeProvider>,
+    );
+
+    const footer = screen.getByRole("status").closest("footer");
+    const screenRoot = footer?.parentElement as HTMLElement;
+    expect(screenRoot.style.minHeight).toBe("10rem");
+  });
 });

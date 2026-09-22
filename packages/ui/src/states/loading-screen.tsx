@@ -10,7 +10,16 @@ export interface LoadingScreenProps {
   label?: string;
   /** Brand name used as the logo alt text. */
   alt?: string;
+  /**
+   * Minimum height. Defaults to the shell content area (`100dvh` minus the
+   * AppShell header offset and padding). Pass a smaller value to preview it
+   * outside the shell, e.g. in the design-system gallery.
+   */
+  minHeight?: string;
 }
+
+const DEFAULT_MIN_HEIGHT =
+  "calc(100dvh - var(--app-shell-header-offset, 0rem) - 2 * var(--app-shell-padding, 0rem))";
 
 /**
  * Route-level loading screen: the brand logo and build version sit centred, and
@@ -22,13 +31,13 @@ export interface LoadingScreenProps {
  * AppShell header offset and padding are subtracted) instead of forcing
  * `100dvh`, which would overflow by the header height.
  */
-export function LoadingScreen({ label = "Carregando", alt = "Cdorneles" }: LoadingScreenProps) {
+export function LoadingScreen({
+  label = "Carregando",
+  alt = "Cdorneles",
+  minHeight = DEFAULT_MIN_HEIGHT,
+}: LoadingScreenProps) {
   return (
-    <Flex
-      direction="column"
-      mih="calc(100dvh - var(--app-shell-header-offset, 0rem) - 2 * var(--app-shell-padding, 0rem))"
-      p="xl"
-    >
+    <Flex direction="column" mih={minHeight} p="xl">
       <Flex align="center" justify="center" flex={1}>
         <Stack align="center" gap="sm">
           <Logo alt={alt} variant="horizontal" height={40} />

@@ -2,7 +2,7 @@
 
 import { useAuth } from "@cdorneles/auth";
 import { useTenant } from "@cdorneles/tenant";
-import { Button, LoadingState, Logo, ThemeToggle } from "@cdorneles/ui";
+import { Button, LoadingScreen, Logo, ThemeToggle } from "@cdorneles/ui";
 import { CreateOrganizationForm, OrgPicker } from "@cdorneles/ui/tenant";
 import { Flex, Modal, Stack, Title, VisuallyHidden } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -34,11 +34,7 @@ export default function SelectOrgPage() {
   }
 
   if (status !== "authenticated") {
-    return (
-      <Flex direction="column" mih="100dvh" align="center" justify="center">
-        <LoadingState label="Carregando..." minHeight={0} />
-      </Flex>
-    );
+    return <LoadingScreen />;
   }
 
   return (

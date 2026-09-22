@@ -16,6 +16,7 @@ import {
   EmptyState,
   ErrorState,
   IconButton,
+  LoadingScreen,
   LoadingState,
   notifyError,
   notifyInfo,
@@ -310,6 +311,9 @@ export default function DesignSystemPage() {
           <ResponsiveGrid columns={{ base: 1, md: 3 }}>
             <Card padding={0}>
               <LoadingState label="Loading data" />
+            </Card>
+            <Card padding={0}>
+              <LoadingScreen minHeight="220px" />
             </Card>
             <Card padding={0}>
               <EmptyState
