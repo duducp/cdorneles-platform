@@ -53,6 +53,17 @@ export function IdleLockGate() {
     },
   });
 
+  // When the session actually expires, the session-expired gate owns the dialog.
+  // Drop our own lock so it does not reappear after a successful reauth.
+  useEffect(() => {
+    if (sessionState === "expired") {
+      setLocked(false);
+      setPrompted(false);
+      setStep("password");
+      setChallengeId(null);
+    }
+  }, [sessionState]);
+
   const reset = useCallback(async () => {
     setLocked(false);
     setPrompted(false);

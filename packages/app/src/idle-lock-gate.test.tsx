@@ -30,13 +30,17 @@ vi.mock("react-idle-timer", () => ({
 
 const { IdleLockGate } = await import("./idle-lock-gate");
 
-function renderGate() {
-  return render(
+function gateTree() {
+  return (
     <MantineProvider>
       <div data-testid="page">rascunho do usuário</div>
       <IdleLockGate />
-    </MantineProvider>,
+    </MantineProvider>
   );
+}
+
+function renderGate() {
+  return render(gateTree());
 }
 
 describe("IdleLockGate", () => {
@@ -96,6 +100,33 @@ describe("IdleLockGate", () => {
     await userEvent.click(screen.getByRole("button", { name: /continuar trabalhando/i }));
 
     expect(activateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not re-lock after the session expires and is restored", async () => {
+    const authed = {
+      status: "authenticated",
+      sessionState: "active",
+      user: { id: "u1", email: "a@b.c", name: "A", emailVerified: true, mfaEnabled: false },
+      reauthenticate: vi.fn(),
+      completeReauthMfa: vi.fn(),
+      logout: vi.fn(),
+      service: { createMfaChallenge: vi.fn() },
+    };
+    useAuthMock.mockReturnValue(authed);
+    const { rerender } = renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    // The session dies: the session-expired gate takes over, the lock yields.
+    useAuthMock.mockReturnValue({ ...authed, sessionState: "expired" });
+    rerender(gateTree());
+    expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument();
+
+    // Reauthenticated: back to active, and the lock must NOT reappear.
+    useAuthMock.mockReturnValue({ ...authed, sessionState: "active" });
+    rerender(gateTree());
+    expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument();
   });
 
   it("does nothing while anonymous", () => {
