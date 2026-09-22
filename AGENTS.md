@@ -34,7 +34,6 @@ This file defines mandatory engineering rules for AI agents working on the Cdorn
 apps/
 ├── admin/
 ├── client/
-├── customer/
 └── design-system/
 
 packages/

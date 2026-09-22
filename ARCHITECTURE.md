@@ -2,16 +2,16 @@
 
 ## 1. Overview
 
-Cdorneles Platform is a multi-tenant SaaS/ERP platform with three user-facing applications and a shared design system.
+Cdorneles Platform is a multi-tenant SaaS/ERP platform with two user-facing applications and a shared design system.
 
 ```text
                          Cloudflare
                              │
-             ┌───────────────┼────────────────┐
-             │               │                │
-           admin            client         customer
-             │               │                │
-             └───────────────┼────────────────┘
+                      ┌──────┼──────┐
+                      │             │
+                    admin         client
+                      │             │
+                      └──────┼──────┘
                              │
                     @cdorneles/*
                              │
@@ -32,13 +32,11 @@ Cdorneles Platform is a multi-tenant SaaS/ERP platform with three user-facing ap
 ```text
 apps/admin
 apps/client
-apps/customer
 apps/design-system
 ```
 
 - `admin`: internal Cdorneles administration.
 - `client`: organization/tenant administration and operational panel.
-- `customer`: end-customer experience.
 - `design-system`: visual playground/documentation for shared UI.
 
 ## 3. Shared Packages

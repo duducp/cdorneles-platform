@@ -11,7 +11,6 @@
   "scripts": {
     "dev:admin": "pnpm --filter @cdorneles/admin dev",
     "dev:client": "pnpm --filter @cdorneles/client dev",
-    "dev:customer": "pnpm --filter @cdorneles/customer dev",
     "dev:design-system": "pnpm --filter @cdorneles/design-system dev",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

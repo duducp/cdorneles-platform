@@ -2,7 +2,7 @@
 #
 # The Go Appwrite Functions have their own Makefile at functions/Makefile.
 
-SITES := admin client customer design-system
+SITES := admin client design-system
 DEPLOY_SITE_TARGETS := $(addprefix deploy-site-,$(SITES))
 
 .PHONY: deploy-sites $(DEPLOY_SITE_TARGETS)

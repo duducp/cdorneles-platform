@@ -32,7 +32,7 @@ AI agents should search existing implementations before adding new abstractions 
 ## Commands
 
 ```text
-pnpm dev:admin | dev:client | dev:customer | dev:design-system
+pnpm dev:admin | dev:client | dev:design-system
 pnpm lint
 pnpm typecheck
 pnpm test
@@ -49,8 +49,8 @@ the browser. Appwrite server keys and Sentry auth tokens are server-side only.
 ## Testing
 
 Unit tests use Vitest with jsdom and Testing Library. Tests live next to the
-source as `*.test.ts(x)` under `packages/*/src` and run from the repository
-root via `pnpm test`.
+source as `*.test.ts(x)` under `packages/*/src` and `apps/*/src` and run from
+the repository root via `pnpm test`.
 
 ## Intentionally deferred
 

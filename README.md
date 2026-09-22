@@ -8,7 +8,7 @@
 
 # Cdorneles Platform
 
-Multi-tenant SaaS/ERP platform: three user-facing applications, a shared design
+Multi-tenant SaaS/ERP platform: two user-facing applications, a shared design
 system and an Appwrite backend.
 
 [![CI](https://github.com/duducp/cdorneles-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/duducp/cdorneles-platform/actions/workflows/ci.yml)
@@ -18,7 +18,6 @@ system and an Appwrite backend.
 ```text
 admin      internal Cdorneles administration
 client     organization/tenant administration and operations
-customer   end-customer experience
 design-system  visual playground for the shared UI
 ```
 
@@ -46,7 +45,7 @@ Appwrite.
 
 ```text
 apps/
-  admin/ client/ customer/     # Next.js applications
+  admin/ client/               # Next.js applications
   design-system/               # UI playground
 packages/
   app/                         # composition layer shared by the apps
@@ -103,7 +102,6 @@ pnpm dev:design-system        # http://localhost:3004
 | ------------- | ----------------------- | ---- |
 | admin         | `pnpm dev:admin`        | 3001 |
 | client        | `pnpm dev:client`       | 3002 |
-| customer      | `pnpm dev:customer`     | 3003 |
 | design-system | `pnpm dev:design-system`| 3004 |
 
 ## Environment variables

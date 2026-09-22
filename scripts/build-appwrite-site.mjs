@@ -24,7 +24,6 @@ import process from "node:process";
 const APPS = {
   admin: "@cdorneles/admin",
   client: "@cdorneles/client",
-  customer: "@cdorneles/customer",
   "design-system": "@cdorneles/design-system",
 };
 

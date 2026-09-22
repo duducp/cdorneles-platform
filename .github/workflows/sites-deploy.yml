@@ -34,7 +34,6 @@ on:
           - all
           - admin
           - client
-          - customer
           - design-system
   workflow_call:
     inputs:

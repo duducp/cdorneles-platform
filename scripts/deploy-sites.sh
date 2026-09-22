@@ -4,7 +4,7 @@
 # Usage:
 #   ./scripts/deploy-sites.sh                  # every site
 #   ./scripts/deploy-sites.sh admin            # one site
-#   ./scripts/deploy-sites.sh admin customer
+#   ./scripts/deploy-sites.sh admin client
 #
 # Two deployment modes, chosen per site:
 #
@@ -67,7 +67,7 @@ DOMAIN_SUFFIX="${SITE_DOMAIN_SUFFIX:-sites.cdorneles.com.br}"
 # Explicit deployments (create-vcs-deployment) are unaffected.
 NO_AUTODEPLOY_PATTERN="${SITE_NO_AUTODEPLOY_PATTERN:-__no-autodeploy__}"
 
-ALL_SITES=(admin client customer design-system)
+ALL_SITES=(admin client design-system)
 
 is_known() {
   local candidate="$1" known
