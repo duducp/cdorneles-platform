@@ -3,7 +3,7 @@
 import { Box, Image } from "@mantine/core";
 
 export interface LogoProps {
-  /** `default` (2:1 lockup), `horizontal` (wide lockup) or `symbol` (mark only). */
+  /** `default` (1.7:1 lockup), `horizontal` (wide lockup) or `symbol` (mark only). */
   variant?: "default" | "horizontal" | "symbol";
   lightSrc?: string;
   darkSrc?: string;
@@ -31,7 +31,8 @@ const DEFAULT_ASPECT = {
  * always rendered; CSS (`lightHidden`/`darkHidden`) picks the active one from
  * the pre-hydration `data-mantine-color-scheme` attribute, so server and client
  * HTML stay identical during hydration. The `symbol` variant instead renders a
- * single image (its own opaque background makes it mode-independent).
+ * single image (its own opaque background makes it mode-independent); it uses
+ * only `lightSrc`, and `darkSrc` is ignored.
  *
  * Each app ships its own brand assets under `/public/brand/`; the `horizontal`
  * variant requires the `-h` files to exist in the consuming app.
