@@ -5,6 +5,7 @@ import { permissionKey } from "@cdorneles/permissions";
 import { AccessProvider } from "@cdorneles/ui/permissions";
 import { MantineProvider } from "@mantine/core";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,6 +25,7 @@ vi.mock("@cdorneles/ui", () => ({
     </button>
   ),
   LoadingScreen: () => <div data-testid="loading-screen" />,
+  Card: ({ children }: { children?: ReactNode }) => <div data-testid="card">{children}</div>,
   Logo: () => <div data-testid="logo" />,
   ThemeToggle: () => <div data-testid="theme-toggle" />,
 }));
@@ -67,7 +69,7 @@ function renderPage(granted: GrantedAccess) {
 describe("SelectOrgPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useAuthMock.mockReturnValue({ status: "authenticated" });
+    useAuthMock.mockReturnValue({ status: "authenticated", logout: vi.fn() });
   });
 
   it("explains an empty organization list", () => {
@@ -123,5 +125,18 @@ describe("SelectOrgPage", () => {
 
     expect(screen.getByTestId("org-picker")).toBeInTheDocument();
     expect(screen.queryByText(NO_ORGS_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it("offers a logout button", async () => {
+    const logout = vi.fn().mockResolvedValue(undefined);
+    useAuthMock.mockReturnValue({ status: "authenticated", logout });
+    useTenantMock.mockReturnValue(tenantState());
+    Object.defineProperty(window, "location", { value: { href: "" }, writable: true });
+
+    renderPage(DENIED);
+
+    await userEvent.click(screen.getByRole("button", { name: /sair/i }));
+
+    expect(logout).toHaveBeenCalled();
   });
 });

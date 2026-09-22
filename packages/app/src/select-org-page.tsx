@@ -3,7 +3,7 @@
 import { useAuth } from "@cdorneles/auth";
 import { permissionKey } from "@cdorneles/permissions";
 import { useTenant } from "@cdorneles/tenant";
-import { Button, LoadingScreen, Logo, ThemeToggle } from "@cdorneles/ui";
+import { Button, Card, LoadingScreen, Logo, ThemeToggle } from "@cdorneles/ui";
 import { PermissionGate } from "@cdorneles/ui/permissions";
 import { CreateOrganizationForm, OrgPicker } from "@cdorneles/ui/tenant";
 import { Flex, Modal, Stack, Text, Title, VisuallyHidden } from "@mantine/core";
@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function SelectOrgPage() {
-  const { status } = useAuth();
+  const { status, logout } = useAuth();
   const { organizations, currentOrganization, ready, switchOrganization, createOrganization } =
     useTenant();
   const router = useRouter();
@@ -36,14 +36,23 @@ export function SelectOrgPage() {
     router.push("/");
   }
 
+  function handleLogout() {
+    void logout().finally(() => {
+      window.location.href = "/login";
+    });
+  }
+
   if (status !== "authenticated" || !ready) {
     return <LoadingScreen />;
   }
 
   return (
     <Flex direction="column" mih="100dvh">
-      <Flex justify="flex-end" p="sm">
+      <Flex justify="flex-end" gap="sm" p="sm">
         <ThemeToggle />
+        <Button variant="subtle" onClick={handleLogout}>
+          Sair
+        </Button>
       </Flex>
 
       <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
@@ -51,24 +60,28 @@ export function SelectOrgPage() {
           <VisuallyHidden>
             <Title order={1}>Selecionar organização</Title>
           </VisuallyHidden>
-          {organizations.length === 0 ? (
-            <Text c="dimmed" ta="center">
-              Nenhuma organização vinculada. Fale com um administrador.
-            </Text>
-          ) : (
-            <OrgPicker
-              organizations={organizations}
-              currentOrganizationId={currentOrganization?.id}
-              onSelect={handleSelect}
-              loading={loading}
-            />
-          )}
+          <Card>
+            <Stack gap="md">
+              {organizations.length === 0 ? (
+                <Text c="dimmed" ta="center">
+                  Nenhuma organização vinculada. Fale com um administrador.
+                </Text>
+              ) : (
+                <OrgPicker
+                  organizations={organizations}
+                  currentOrganizationId={currentOrganization?.id}
+                  onSelect={handleSelect}
+                  loading={loading}
+                />
+              )}
 
-          <PermissionGate permission={permissionKey("organizations.create")}>
-            <Button variant="subtle" onClick={openCreate}>
-              Create organization
-            </Button>
-          </PermissionGate>
+              <PermissionGate permission={permissionKey("organizations.create")}>
+                <Button variant="subtle" onClick={openCreate}>
+                  Create organization
+                </Button>
+              </PermissionGate>
+            </Stack>
+          </Card>
 
           <Modal opened={createOpened} onClose={closeCreate} title="New organization" centered>
             <CreateOrganizationForm onCreate={handleCreate} onCancel={closeCreate} />
