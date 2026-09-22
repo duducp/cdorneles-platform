@@ -5,7 +5,7 @@
 # `shared/` and are materialised into each function's `internal/` by
 # `scripts/prepare.sh` before building, testing, or deploying.
 
-FUNCTIONS := resolve-grants update-organization-profile send-email get-organization-profile provision-organization create-user update-user-permissions
+FUNCTIONS := resolve-grants update-organization-profile send-email get-organization-profile provision-organization create-user update-user-permissions list-users
 DEPLOY_TARGETS := $(addprefix deploy-,$(FUNCTIONS))
 
 .PHONY: prepare test vet fmt clean deploy $(FUNCTIONS) $(DEPLOY_TARGETS)
