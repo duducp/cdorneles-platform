@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import type { MantineTheme } from "@mantine/core";
-import { semanticColors } from "@cdorneles/tokens";
+import { fontWeights, semanticColors } from "@cdorneles/tokens";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
@@ -47,6 +47,13 @@ describe("createAppTheme", () => {
 
     expect(theme.colors?.dark).toHaveLength(10);
     expect(theme.colors?.dark?.[7]).toBe("#0c0c0c");
+  });
+
+  it("renders headings at the guide's bold weight", () => {
+    const theme = createAppTheme();
+
+    expect(theme.headings?.fontWeight).toBe(String(fontWeights.bold));
+    expect(theme.headings?.fontWeight).not.toBe(String(fontWeights.semibold));
   });
 });
 
