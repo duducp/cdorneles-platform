@@ -51,16 +51,40 @@ apps is the reliable fix. Revisit only if the font moves off `next/font/google`.
 Copy `.env.example` to `.env.local` per app. Only `NEXT_PUBLIC_*` values reach
 the browser. Appwrite server keys and Sentry auth tokens are server-side only.
 
+## Observability
+
+`@cdorneles/observability` is the provider-agnostic facade (ADR-009). Sentry is
+the initial provider, but the package stays framework-agnostic: each app owns the
+`@sentry/nextjs` dependency and injects the module (`SentryLike`) into
+`createProviders` / `initObservability`. The Sentry provider is installed only
+when both the injected SDK and `NEXT_PUBLIC_SENTRY_DSN` are present; otherwise
+the noop provider is used.
+
+- `@sentry/cli`'s build script is disabled (`allowBuilds` in
+  `pnpm-workspace.yaml`), so no source maps are uploaded.
+- **Sentry is not initialized yet.** There is no `instrumentation-client.ts`,
+  `sentry.server.config.ts` or `withSentryConfig`, so the SDK is a no-op even
+  when a DSN is set. Add those to start reporting.
+
 ## Testing
 
 Unit tests use Vitest with jsdom and Testing Library. Tests live next to the
 source as `*.test.ts(x)` under `packages/*/src` and `apps/*/src` and run from
 the repository root via `pnpm test`.
 
+Mantine gotchas:
+
+- Style props (`mih`, `w`, `p`, …) convert numeric and `px` values to `rem`:
+  `mih="240px"` renders `min-height: calc(15rem * var(--mantine-scale))`. Assert
+  on `element.style.minHeight` with a `rem` value — `toHaveStyle({ minHeight:
+  "240px" })` will not match.
+- `container.firstChild` is Mantine's injected `<style data-mantine-styles>`
+  element, not the component under test. Query the component by role or test id.
+
 ## Intentionally deferred
 
 The Foundation deliberately stops short of these, pending explicit approval:
 
-- the Sentry provider for `@cdorneles/observability`;
+- the Sentry `init` wiring (instrumentation files + `withSentryConfig`);
 - Appwrite project ids, endpoints, domains and production roles/permissions;
 - all business modules.

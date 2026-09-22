@@ -96,6 +96,11 @@ Notes:
   renders inside `AppShell.Main`, which is already the page's `<main>`.
 - **`LoadingState` stays for the non-route waits** (the `OrgGuard` fallback and
   the select-org page); it shows its label as visible dimmed text.
+- **Live regions announce content changes, not their accessible name.** A
+  `role="status"` region that carries only `aria-label` and no text node may not
+  be announced on mount. When the message must reach screen readers, render it as
+  visually hidden text (`VisuallyHidden`), as the login page does; `LoadingScreen`
+  deliberately uses `aria-label` to keep the caption out of the DOM.
 
 ## Feedback: inline vs toast
 

@@ -121,12 +121,19 @@ container.
 for the host and the request never reaches the runtime — it returns `404`
 immediately, or `500`/`408` when Appwrite tries to screenshot the deployment.
 
-`scripts/deploy-sites.sh` creates it automatically after each deploy:
+`scripts/deploy-sites.sh` creates it after a deploy **only when the site has no
+domain yet**:
 
 ```bash
 appwrite proxy create-site-rule --site-id <site> --domain <site>.<suffix>
 appwrite proxy update-rule-status --rule-id <id>   # triggers verification
 ```
+
+It skips creation when the site already has a configured domain — a proxy rule
+with `trigger=manual`, whether the script's own or one added by hand. Appwrite
+also creates one throwaway rule per deployment (`trigger=deployment`, e.g.
+`<deploymentId>.<suffix>`); those are not a configured domain and do not block
+creation. When the exact domain already exists, its verification is re-triggered.
 
 The suffix comes from `SITE_DOMAIN_SUFFIX` (default `sites.cdorneles.com.br`);
 set it empty to skip domain management. `update-rule-status` starts DNS

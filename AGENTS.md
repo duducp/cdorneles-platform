@@ -26,7 +26,7 @@ This file defines mandatory engineering rules for AI agents working on the Cdorn
 - Zod owns validation schemas.
 - Zustand is allowed only for genuinely client/global state.
 - TanStack Table is used for complex data tables.
-- Sentry is the initial observability provider behind `@cdorneles/observability`.
+- Sentry is the initial observability provider behind `@cdorneles/observability`; apps own `@sentry/nextjs` and inject it (see `docs/development/README.md`).
 
 ## Monorepo
 
