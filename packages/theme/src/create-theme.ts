@@ -64,7 +64,7 @@ export function createAppTheme(options: CreateAppThemeOptions = {}): MantineThem
     fontSizes: mantineFontSizes,
     headings: {
       fontFamily: fontFamily.sans,
-      fontWeight: String(fontWeights.semibold),
+      fontWeight: String(fontWeights.bold),
       sizes: {
         h1: { fontSize: "28px", lineHeight: String(lineHeights.tight) },
         h2: { fontSize: "22px", lineHeight: String(lineHeights.tight) },

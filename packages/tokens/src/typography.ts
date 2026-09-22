@@ -2,7 +2,7 @@
  * Typography tokens. Default UI size is 14px (ARCHITECTURE §13).
  */
 export const fontFamily = {
-  sans: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  sans: 'var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
 } as const;
 
@@ -29,6 +29,7 @@ export const fontWeights = {
   medium: 500,
   semibold: 600,
   bold: 700,
+  extrabold: 800,
 } as const;
 
 export const mantineFontSizes = {
