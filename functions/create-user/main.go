@@ -56,12 +56,13 @@ type createUserResponse struct {
 type operations interface {
 	IsPlatformMember(userID string) (bool, error)
 	EffectivePermissions(organizationID, userID string) ([]string, error)
+	RoleExists(organizationID, role string) (bool, error)
 	CreateUser(email, password, name string) (string, error)
 	SetLabels(userID string, labels []string) error
 	AddMembership(teamID string, roles []string, email string) error
 	PermissionIDForKey(key string) (string, error)
 	CreateUserPermission(userID, organizationID, permissionID, grantedBy string) error
-	SendWelcomeEmail(to, name, password string) error
+	SendWelcomeEmail(to, name, password, callerID string) error
 }
 
 // Main is the function entrypoint.
@@ -88,6 +89,17 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 		return httpx.BadRequest(ctx, "email, name, organizationId and role are required")
 	}
 
+	// The role must be one of the target organization's roles, so a typo or a
+	// foreign role cannot silently create a member with no grants.
+	roleExists, err := ops.RoleExists(body.OrganizationID, body.Role)
+	if err != nil {
+		ctx.Error(err)
+		return internalError(ctx)
+	}
+	if !roleExists {
+		return httpx.BadRequest(ctx, "unknown role: "+body.Role)
+	}
+
 	// A member of the platform team (the root) holds every permission. A stale
 	// or invalid platform team must not break ordinary traffic, so a failed
 	// lookup is treated as "not a platform member" and falls through to the
@@ -106,8 +118,17 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 		if !contains(permissions, permissionUsersCreate) {
 			return httpx.Forbidden(ctx, "missing permission: "+permissionUsersCreate)
 		}
-		if len(body.Permissions) > 0 && !contains(permissions, permissionUsersManagePermissions) {
-			return httpx.Forbidden(ctx, "missing permission: "+permissionUsersManagePermissions)
+		if len(body.Permissions) > 0 {
+			if !contains(permissions, permissionUsersManagePermissions) {
+				return httpx.Forbidden(ctx, "missing permission: "+permissionUsersManagePermissions)
+			}
+			// A caller can only grant permissions they themselves hold: direct
+			// grants are additive, and this blocks privilege escalation.
+			for _, key := range body.Permissions {
+				if !contains(permissions, key) {
+					return httpx.Forbidden(ctx, "cannot grant permission: "+key)
+				}
+			}
 		}
 	}
 
@@ -153,7 +174,7 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 
 	// The user already exists, so a failed welcome email must not fail the
 	// request (a retry would collide). Log it for follow-up instead.
-	if err := ops.SendWelcomeEmail(body.Email, body.Name, password); err != nil {
+	if err := ops.SendWelcomeEmail(body.Email, body.Name, password, callerID); err != nil {
 		ctx.Log("welcome email failed", "error", err.Error())
 	}
 
@@ -322,6 +343,20 @@ func (o *appwriteOps) PermissionIDForKey(key string) (string, error) {
 	return row.Id, nil
 }
 
+// RoleExists reports whether the role name is one of the organization's roles.
+func (o *appwriteOps) RoleExists(organizationID, role string) (bool, error) {
+	row, err := appwrite.FindOne(
+		o.tables,
+		"roles",
+		query.Equal("organizationId", organizationID),
+		query.Equal("name", role),
+	)
+	if err != nil {
+		return false, err
+	}
+	return row != nil, nil
+}
+
 // CreateUserPermission writes one direct user_permissions row.
 func (o *appwriteOps) CreateUserPermission(userID, organizationID, permissionID, grantedBy string) error {
 	_, err := appwrite.CreateRow(o.tables, "user_permissions", id.Unique(), map[string]interface{}{
@@ -334,8 +369,18 @@ func (o *appwriteOps) CreateUserPermission(userID, organizationID, permissionID,
 }
 
 // SendWelcomeEmail invokes the send-email function with the temporary
-// password and set-password instructions.
-func (o *appwriteOps) SendWelcomeEmail(to, name, password string) error {
+// password and set-password instructions. It forwards the caller's identity
+// so the target function's authentication check passes: a server-key
+// execution has no authenticated user, and send-email rejects a missing
+// x-appwrite-user-id header. CreateExecution returns the execution object even
+// when the target fails, so the status is inspected and a non-completed run is
+// surfaced as an error (the caller logs it).
+//
+// If Appwrite strips the reserved identity header from the forwarded headers,
+// this invocation would 401; the fallback is to call the Messaging API
+// directly (as send-email itself does). Confirm the header forwarding with the
+// live probe before relying on it.
+func (o *appwriteOps) SendWelcomeEmail(to, name, password, callerID string) error {
 	htmlBody := fmt.Sprintf(
 		"<p>Hello %s,</p>"+
 			"<p>An account has been created for you.</p>"+
@@ -358,11 +403,20 @@ func (o *appwriteOps) SendWelcomeEmail(to, name, password string) error {
 	if err != nil {
 		return err
 	}
-	_, err = o.functions.CreateExecution(
+	execution, err := o.functions.CreateExecution(
 		"send-email",
 		o.functions.WithCreateExecutionBody(string(body)),
+		o.functions.WithCreateExecutionHeaders(map[string]string{
+			"x-appwrite-user-id": callerID,
+		}),
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	if execution.Status != "completed" {
+		return fmt.Errorf("send-email execution status %q: %s", execution.Status, execution.Errors)
+	}
+	return nil
 }
 
 // isTeamMember reports whether the user belongs to the team, paging through

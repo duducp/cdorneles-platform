@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -19,6 +20,11 @@ type fakeOps struct {
 
 	effective    []string
 	effectiveErr error
+
+	// roleMissing makes RoleExists report "not found"; the zero value keeps the
+	// default-true behavior so unrelated tests do not need to set it.
+	roleMissing bool
+	roleErr     error
 
 	permissionIDs map[string]string
 	permissionErr error
@@ -44,6 +50,7 @@ type fakeOps struct {
 	emailTo       string
 	emailName     string
 	emailPassword string
+	emailCallerID string
 	emailErr      error
 }
 
@@ -60,6 +67,13 @@ func (f *fakeOps) IsPlatformMember(userID string) (bool, error) {
 
 func (f *fakeOps) EffectivePermissions(organizationID, userID string) ([]string, error) {
 	return f.effective, f.effectiveErr
+}
+
+func (f *fakeOps) RoleExists(organizationID, role string) (bool, error) {
+	if f.roleErr != nil {
+		return false, f.roleErr
+	}
+	return !f.roleMissing, nil
 }
 
 func (f *fakeOps) CreateUser(email, password, name string) (string, error) {
@@ -94,10 +108,11 @@ func (f *fakeOps) CreateUserPermission(userID, organizationID, permissionID, gra
 	return f.grantErr
 }
 
-func (f *fakeOps) SendWelcomeEmail(to, name, password string) error {
+func (f *fakeOps) SendWelcomeEmail(to, name, password, callerID string) error {
 	f.emailTo = to
 	f.emailName = name
 	f.emailPassword = password
+	f.emailCallerID = callerID
 	return f.emailErr
 }
 
@@ -164,7 +179,7 @@ func TestMainDoesNotRequireManagePermissionsWithoutDirectPermissions(t *testing.
 
 func TestMainCreatesUserWithRoleAndDirectPermissions(t *testing.T) {
 	ops := &fakeOps{
-		effective:     []string{"users.create", "users.manage_permissions"},
+		effective:     []string{"users.create", "users.manage_permissions", "products.read"},
 		createdUserID: "user-1",
 		permissionIDs: map[string]string{"products.read": "perm_products_read"},
 	}
@@ -221,6 +236,9 @@ func TestMainCreatesUserWithRoleAndDirectPermissions(t *testing.T) {
 	if ops.emailPassword != ops.createdPass {
 		t.Fatal("welcome email must carry the same temporary password that was set")
 	}
+	if ops.emailCallerID != "caller-1" {
+		t.Fatalf("welcome email must forward the caller identity, got %q", ops.emailCallerID)
+	}
 }
 
 func TestMainPlatformMemberBypassesPermissionLookup(t *testing.T) {
@@ -243,14 +261,47 @@ func TestMainPlatformMemberBypassesPermissionLookup(t *testing.T) {
 
 func TestMainRejectsUnknownPermission(t *testing.T) {
 	ops := &fakeOps{
-		effective:     []string{"users.create", "users.manage_permissions"},
-		createdUserID: "user-1",
-		permissionIDs: map[string]string{},
+		platformMember: true,
+		createdUserID:  "user-1",
+		permissionIDs:  map[string]string{},
 	}
 	body := `{"email":"new@example.com","name":"New User","organizationId":"org-1","role":"admin","permissions":["ghost.read"]}`
 	ctx := newContext(body, map[string]string{"x-appwrite-user-id": "u1"})
 	resp := handle(ctx, ops)
 	assertError(t, resp, 400, "bad_request", "unknown permission: ghost.read")
+}
+
+func TestMainRejectsUnknownRole(t *testing.T) {
+	ops := &fakeOps{platformMember: true, roleMissing: true}
+	body := `{"email":"new@example.com","name":"New User","organizationId":"org-1","role":"ghost"}`
+	ctx := newContext(body, map[string]string{"x-appwrite-user-id": "u1"})
+	resp := handle(ctx, ops)
+	assertError(t, resp, 400, "bad_request", "unknown role: ghost")
+}
+
+func TestMainDeniesGrantingAPermissionTheCallerLacks(t *testing.T) {
+	ops := &fakeOps{
+		effective:     []string{"users.create", "users.manage_permissions"},
+		createdUserID: "user-1",
+		permissionIDs: map[string]string{"products.read": "perm_products_read"},
+	}
+	body := `{"email":"new@example.com","name":"New User","organizationId":"org-1","role":"admin","permissions":["products.read"]}`
+	ctx := newContext(body, map[string]string{"x-appwrite-user-id": "u1"})
+	resp := handle(ctx, ops)
+	assertError(t, resp, 403, "forbidden", "cannot grant permission: products.read")
+}
+
+func TestMainSucceedsWhenWelcomeEmailFails(t *testing.T) {
+	ops := &fakeOps{
+		effective:     []string{"users.create"},
+		createdUserID: "user-1",
+		emailErr:      errors.New("send-email failed"),
+	}
+	ctx := newContext(validBody, map[string]string{"x-appwrite-user-id": "u1"})
+	resp := handle(ctx, ops)
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 despite the email failure, got %d (%s)", resp.StatusCode, resp.Body)
+	}
 }
 
 func assertError(t *testing.T, resp openruntimes.Response, status int, kind, reason string) {
