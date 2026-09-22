@@ -53,13 +53,14 @@ page.
 
 ## Theme and contrast
 
-- **Mantine 9 resolves the primary color at the fixed main shade (index 5)** — there is no index 10, and `primaryShade` does not change which swatch filled buttons use. The theme pins `primaryShade: 5` so rendered UI matches `tokens.<palette>[5]`; contrast must always be computed against index 5, never against the old `{ light: 6, dark: 4 }` assumption.
+- **Mantine 9 resolves the primary color at the fixed main shade (index 5)** — there is no index 10, and `primaryShade` does not change which swatch filled buttons use. The theme pins `primaryShade: 5` so rendered UI matches `tokens.<palette>[5]`; contrast must always be computed against index 5 (`brand[5]`, the CDorneles Orange `#F45D22`), never against the old `{ light: 6, dark: 4 }` assumption.
 - **`autoContrast: true`** is set platform-wide: filled components pick black/white text from the background luminance (threshold 0.3). Never hardcode text color on filled buttons/variants; to improve contrast of a primary action, adjust or re-map the palette token instead of overriding text color.
+- **Brand palette** follows the CDorneles visual identity guide (setembro/2026): primary `brand[5] = #F45D22` (CDorneles Orange); neutral grays `#FAFAFA` / `#E5E5E5` / `#737373` / `#171717`; dark surfaces `#0C0C0C` / `#141414` / `#292929`. The typeface is **Inter**, loaded with `next/font/google` and exposed as `--font-inter` (referenced at the head of the `@cdorneles/tokens` sans stack).
 
 ## Page structure (Next.js App Router)
 
 - Public pages follow the **server page + client component split** (reference: `apps/design-system/src/app/login/`): `page.tsx` stays a Server Component exporting `metadata` (Next 16 forbids `metadata` in `"use client"` files) and renders `<XxxPageClient />` from a co-located `page-client.tsx` that holds the hooks and handlers.
-- Each page exports a **document title** via `metadata`; the root layout provides the `%s | Cdorneles Design System` template.
+- Each page exports a **document title** via `metadata`; the root layout provides the `%s | Carlos Dorneles Platform` template.
 - Exactly one `<h1>` per page. Auth forms carry their own `h1`; pages without a form-level heading (e.g. `select-org`) add a visually hidden one (`VisuallyHidden` + `Title order={1}`).
 - Announce transient states to screen readers with a `VisuallyHidden aria-live="polite"` region (reference: login page "Entrando..."); use the shared `LoadingState` (`role="status"`) for full-page loading instead of bare dimmed text.
 - Keep the theme toggle row compact (`p="sm"`) so the `IconButton` stays near the touch target on mobile; links that are not underlined by default must set `underline="always"` (footer legal links) — never color alone.
@@ -144,10 +145,10 @@ than importing a router). Next-specific wiring belongs in the application or in
 
 ## Branding assets
 
-- **Platform brand** (default logo + favicon) lives in the repo at `apps/<app>/public/brand/` (`logo-light.png`, `logo-dark.png`, `favicon.png`) and is served by Next. Keep it optimized (small PNG/SVG); it is versioned with the app. It is **not** stored in Appwrite Storage.
+- **Platform brand** (logos + favicon) lives in the repo at `apps/<app>/public/brand/` and is served by Next. Files: `logo-light.png` / `logo-dark.png` (lockup, height 160), `logo-light-h.png` / `logo-dark-h.png` (horizontal lockup, height 128), `favicon.png` (orange) and `favicon-black.png` (admin panel only). Keep them optimized (PNG8; logos ≤ ~10 KB, favicons ≤ ~40 KB); they are versioned with the app and are **not** stored in Appwrite Storage. The high-resolution source exports live in `apps/design-system/brand-original/` (outside `public/`, never served) — regenerate the served PNGs from there with ImageMagick (`magick … -strip PNG8:<out>`).
 - **Organization brand** (white-label) is per tenant: the files go in the Appwrite Storage `branding-logos` bucket and the URLs are stored on `organization_profiles.logoLight` / `logoDark` / `favicon` (see `brandingSchema`). The login page is pre-auth, so it shows the platform brand.
 - The shared `Logo` component (`@cdorneles/ui`) picks light/dark from the theme and accepts `lightSrc`/`darkSrc` overrides for the organization case.
-- **Variants:** `default` (square lockup, 2:1) and `horizontal` (wide lockup). The horizontal variant expects `logo-light-h.png` / `logo-dark-h.png` in the consuming app's `public/brand/` and uses a wider aspect ratio (≈5.6:1) as its default width. If an app has not shipped the `-h` assets yet, keep using the default variant.
+- **Variants:** `default` (lockup, ≈1.7:1), `horizontal` (wide lockup, ≈4.8:1) and `symbol` (the `[C D]` mark only, 1:1, uses `/brand/favicon.png`). The `-h` assets must exist in the consuming app's `public/brand/`. The collapsed sidebar renders the `symbol` variant.
 
 ## Icons
 
