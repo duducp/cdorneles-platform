@@ -10,6 +10,7 @@ import (
 
 	sdk "github.com/appwrite/sdk-for-go/v7/appwrite"
 	"github.com/appwrite/sdk-for-go/v7/id"
+	"github.com/appwrite/sdk-for-go/v7/models"
 	"github.com/appwrite/sdk-for-go/v7/query"
 	"github.com/appwrite/sdk-for-go/v7/tablesdb"
 	"github.com/appwrite/sdk-for-go/v7/teams"
@@ -96,6 +97,11 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 		}
 		// A caller can only grant permissions they themselves hold: direct
 		// grants are additive, and this blocks privilege escalation.
+		//
+		// This constraint is deliberately asymmetric — it guards grants, not
+		// revokes. A caller holding users.manage_permissions may remove a direct
+		// grant they do not themselves hold (the additive model has no deny, and
+		// the capability already authorizes managing the target's permissions).
 		for _, key := range body.Permissions {
 			if !contains(permissions, key) {
 				return httpx.Forbidden(ctx, "cannot grant permission: "+key)
@@ -233,23 +239,56 @@ func (o *appwriteOps) EffectivePermissions(organizationID, userID string) ([]str
 	return collectPermissionKeys(roleKeys, directKeys), nil
 }
 
+// listUserPermissionRows reads every user_permissions row for (organizationID,
+// userID), paging so a user with more direct permissions than one Appwrite page
+// (25 by default) is fully seen. Without this, a permission on a later page
+// would never be revoked.
+func (o *appwriteOps) listUserPermissionRows(organizationID, userID string) ([]models.Row, error) {
+	return pageAll(func(offset int) ([]models.Row, error) {
+		result, err := o.tables.ListRows(
+			appwrite.DatabaseID,
+			"user_permissions",
+			o.tables.WithListRowsQueries([]string{
+				query.Limit(pageSize),
+				query.Offset(offset),
+				query.Equal("organizationId", organizationID),
+				query.Equal("userId", userID),
+			}),
+		)
+		if err != nil {
+			return nil, err
+		}
+		return result.Rows, nil
+	})
+}
+
+// pageAll calls fetch with increasing offsets until it returns a short page,
+// accumulating every row. It is the same paging contract as resolve-grants's
+// allKeys, factored out so the loop itself is unit-testable.
+func pageAll(fetch func(offset int) ([]models.Row, error)) ([]models.Row, error) {
+	var rows []models.Row
+	for offset := 0; ; offset += pageSize {
+		page, err := fetch(offset)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, page...)
+		if len(page) < pageSize {
+			return rows, nil
+		}
+	}
+}
+
 // directPermissionKeys resolves the permission keys granted directly to a user
 // within an organization (the Django-style user_permissions table).
 func (o *appwriteOps) directPermissionKeys(organizationID, userID string) ([]string, error) {
-	rows, err := o.tables.ListRows(
-		appwrite.DatabaseID,
-		"user_permissions",
-		o.tables.WithListRowsQueries([]string{
-			query.Equal("organizationId", organizationID),
-			query.Equal("userId", userID),
-		}),
-	)
+	rows, err := o.listUserPermissionRows(organizationID, userID)
 	if err != nil {
 		return nil, err
 	}
-	keys := make([]string, 0, len(rows.Rows))
-	for i := range rows.Rows {
-		data, err := appwrite.RowData(&rows.Rows[i])
+	keys := make([]string, 0, len(rows))
+	for i := range rows {
+		data, err := appwrite.RowData(&rows[i])
 		if err != nil {
 			return nil, err
 		}
@@ -285,27 +324,21 @@ func (o *appwriteOps) PermissionIDForKey(key string) (string, error) {
 }
 
 // ListUserPermissions returns the target user's existing direct permission rows
-// within an organization, with the row id needed to delete each one.
+// within an organization, with the row id needed to delete each one. Every page
+// is read so a permission beyond the first page is still reconciled.
 func (o *appwriteOps) ListUserPermissions(userID, organizationID string) ([]userPermission, error) {
-	rows, err := o.tables.ListRows(
-		appwrite.DatabaseID,
-		"user_permissions",
-		o.tables.WithListRowsQueries([]string{
-			query.Equal("organizationId", organizationID),
-			query.Equal("userId", userID),
-		}),
-	)
+	rows, err := o.listUserPermissionRows(organizationID, userID)
 	if err != nil {
 		return nil, err
 	}
-	existing := make([]userPermission, 0, len(rows.Rows))
-	for i := range rows.Rows {
-		data, err := appwrite.RowData(&rows.Rows[i])
+	existing := make([]userPermission, 0, len(rows))
+	for i := range rows {
+		data, err := appwrite.RowData(&rows[i])
 		if err != nil {
 			return nil, err
 		}
 		existing = append(existing, userPermission{
-			RowID:        rows.Rows[i].Id,
+			RowID:        rows[i].Id,
 			PermissionID: appwrite.StringField(data, "permissionId"),
 		})
 	}

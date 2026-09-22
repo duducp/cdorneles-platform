@@ -3,9 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/appwrite/sdk-for-go/v7/models"
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
 	"openruntimes/handler/internal/httpx"
@@ -20,6 +22,9 @@ type fakeOps struct {
 
 	effective    []string
 	effectiveErr error
+	// effectiveCalls counts EffectivePermissions invocations so a test can
+	// assert the platform bypass never resolves organization permissions.
+	effectiveCalls int
 
 	permissionIDs map[string]string
 	permissionErr error
@@ -46,6 +51,7 @@ func (f *fakeOps) IsPlatformMember(userID string) (bool, error) {
 }
 
 func (f *fakeOps) EffectivePermissions(organizationID, userID string) ([]string, error) {
+	f.effectiveCalls++
 	return f.effective, f.effectiveErr
 }
 
@@ -125,8 +131,8 @@ func TestMainPlatformMemberBypassesPermissionLookup(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Fatalf("expected 200, got %d (%s)", resp.StatusCode, resp.Body)
 	}
-	if ops.effective != nil {
-		t.Fatalf("platform member must not need organization permissions, got %v", ops.effective)
+	if ops.effectiveCalls != 0 {
+		t.Fatalf("platform member must not resolve organization permissions, got %d call(s)", ops.effectiveCalls)
 	}
 	if len(ops.granted) != 1 {
 		t.Fatalf("expected one grant, got %v", ops.granted)
@@ -300,6 +306,42 @@ func TestMainReturns500WhenTheGrantFails(t *testing.T) {
 	resp := handle(ctx, ops)
 	if resp.StatusCode != 500 {
 		t.Fatalf("expected 500, got %d (%s)", resp.StatusCode, resp.Body)
+	}
+}
+
+func TestPageAllReadsEveryPage(t *testing.T) {
+	total := pageSize + 5
+	var offsets []int
+	rows, err := pageAll(func(offset int) ([]models.Row, error) {
+		offsets = append(offsets, offset)
+		count := total - offset
+		if count > pageSize {
+			count = pageSize
+		}
+		page := make([]models.Row, count)
+		for i := range page {
+			page[i] = models.Row{Id: fmt.Sprintf("row-%d", offset+i)}
+		}
+		return page, nil
+	})
+	if err != nil {
+		t.Fatalf("pageAll returned error: %v", err)
+	}
+	if len(rows) != total {
+		t.Fatalf("expected %d rows across pages, got %d", total, len(rows))
+	}
+	if !reflect.DeepEqual(offsets, []int{0, pageSize}) {
+		t.Fatalf("expected offsets [0 %d], got %v", pageSize, offsets)
+	}
+}
+
+func TestPageAllPropagatesFetchError(t *testing.T) {
+	wantErr := errors.New("boom")
+	_, err := pageAll(func(offset int) ([]models.Row, error) {
+		return nil, wantErr
+	})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("expected the fetch error to propagate, got %v", err)
 	}
 }
 
