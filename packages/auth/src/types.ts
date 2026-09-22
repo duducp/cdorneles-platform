@@ -32,6 +32,13 @@ export interface LoginInput {
   password: string;
 }
 
+export interface OAuthLoginInput {
+  /** Where the provider returns on success (same-origin absolute URL). */
+  successUrl: string;
+  /** Where the provider returns when the user cancels or it fails. */
+  failureUrl: string;
+}
+
 export interface CompleteMfaInput {
   challengeId: string;
   code: string;
@@ -65,6 +72,8 @@ export interface CreateMfaChallengeInput {
  */
 export interface AuthService {
   login(input: LoginInput): Promise<AuthSession>;
+  /** Starts the Google OAuth sign-in. A full-page redirect; does not return. */
+  loginWithGoogle(input: OAuthLoginInput): void;
   completeMfa(input: CompleteMfaInput): Promise<AuthSession>;
   listMfaFactors(): Promise<MfaFactors>;
   createMfaChallenge(input: CreateMfaChallengeInput): Promise<MfaChallenge>;

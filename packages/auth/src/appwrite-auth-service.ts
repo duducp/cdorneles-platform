@@ -36,6 +36,14 @@ export function createAppwriteAuthService(accountApi: AccountApi): AuthService {
       }
     },
 
+    loginWithGoogle(input) {
+      accountApi.createOAuth2Session({
+        provider: "google",
+        success: input.successUrl,
+        failure: input.failureUrl,
+      });
+    },
+
     async completeMfa(input) {
       const session = await accountApi.updateMfaChallenge({
         challengeId: input.challengeId,

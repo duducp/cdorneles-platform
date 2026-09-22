@@ -14,7 +14,14 @@ import {
 import { isUnauthorized } from "@cdorneles/api-client";
 
 import type { SessionSignal } from "./session-signal";
-import type { AuthService, AuthSession, AuthUser, CompleteMfaInput, LoginInput } from "./types";
+import type {
+  AuthService,
+  AuthSession,
+  AuthUser,
+  CompleteMfaInput,
+  LoginInput,
+  OAuthLoginInput,
+} from "./types";
 
 export type AuthStatus = "loading" | "authenticated" | "anonymous";
 
@@ -70,6 +77,8 @@ export interface AuthContextValue {
   status: AuthStatus;
   sessionState: SessionState;
   login: (input: LoginInput) => Promise<AuthSession>;
+  /** Starts the Google OAuth sign-in (a full-page redirect). */
+  loginWithGoogle: (input: OAuthLoginInput) => void;
   completeMfa: (input: CompleteMfaInput) => Promise<AuthSession>;
   /** Re-authenticates after the session died, in place, without navigating. */
   reauthenticate: (input: LoginInput) => Promise<AuthSession>;
@@ -272,6 +281,13 @@ export function AuthProvider({
     [service, applyAuthenticatedSession],
   );
 
+  const loginWithGoogle = useCallback(
+    (input: OAuthLoginInput) => {
+      service.loginWithGoogle(input);
+    },
+    [service],
+  );
+
   const completeMfa = useCallback(
     async (input: CompleteMfaInput) => {
       const nextSession = await service.completeMfa(input);
@@ -342,6 +358,7 @@ export function AuthProvider({
       status,
       sessionState,
       login,
+      loginWithGoogle,
       completeMfa,
       reauthenticate,
       completeReauthMfa,
@@ -356,6 +373,7 @@ export function AuthProvider({
       status,
       sessionState,
       login,
+      loginWithGoogle,
       completeMfa,
       reauthenticate,
       completeReauthMfa,

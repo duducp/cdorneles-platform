@@ -12,6 +12,7 @@ const services: AppwriteServices = {
     updateSession: vi.fn(),
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
+    createOAuth2Session: vi.fn(),
     deleteSession: vi.fn(),
     createRecovery: vi.fn(),
     updateRecovery: vi.fn(),

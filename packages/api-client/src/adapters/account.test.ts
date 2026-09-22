@@ -1,4 +1,4 @@
-import { AppwriteException, type Client } from "appwrite";
+import { AppwriteException, OAuthProvider, type Client } from "appwrite";
 import type * as Appwrite from "appwrite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
     updateSession: vi.fn(),
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
+    createOAuth2Session: vi.fn(),
     deleteSession: vi.fn(),
     createRecovery: vi.fn(),
     updateRecovery: vi.fn(),
@@ -38,6 +39,22 @@ beforeEach(() => {
 });
 
 describe("createAccountApi", () => {
+  it("starts the Google OAuth redirect with the given URLs", () => {
+    const api = createAccountApi(client);
+
+    api.createOAuth2Session({
+      provider: "google",
+      success: "https://app.test/",
+      failure: "https://app.test/login?error=google",
+    });
+
+    expect(mocks.account.createOAuth2Session).toHaveBeenCalledWith({
+      provider: OAuthProvider.Google,
+      success: "https://app.test/",
+      failure: "https://app.test/login?error=google",
+    });
+  });
+
   it("maps the current user", async () => {
     mocks.account.get.mockResolvedValue({
       $id: "u1",

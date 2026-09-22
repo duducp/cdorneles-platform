@@ -2,12 +2,15 @@ import "@testing-library/jest-dom/vitest";
 
 import { ThemeProvider } from "@cdorneles/theme";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+const { loginWithGoogleMock } = vi.hoisted(() => ({ loginWithGoogleMock: vi.fn() }));
+
 vi.mock("@cdorneles/auth", () => ({
-  useAuth: () => ({ login: vi.fn() }),
+  useAuth: () => ({ login: vi.fn(), loginWithGoogle: loginWithGoogleMock }),
   useRedirectIfAuthenticated: () => true,
-  resolvePostAuthRedirect: () => "/",
+  resolvePostAuthRedirect: () => "/dashboard",
   MfaRequiredError: class MfaRequiredError extends Error {},
 }));
 
@@ -28,6 +31,8 @@ function renderPage() {
 describe("LoginPage", () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.clearAllMocks();
+    window.history.replaceState({}, "", "/login");
   });
 
   it("shows 'Bem vindo' when there is no previous login", () => {
@@ -62,5 +67,25 @@ describe("LoginPage", () => {
     renderPage();
 
     expect(screen.queryByText(/Termos de Uso/)).not.toBeInTheDocument();
+  });
+
+  it("starts the Google OAuth flow with the success and failure URLs", async () => {
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar com Google" }));
+
+    expect(loginWithGoogleMock).toHaveBeenCalledWith({
+      successUrl: `${window.location.origin}/dashboard`,
+      failureUrl: `${window.location.origin}/login?error=google`,
+    });
+  });
+
+  it("shows an error when the provider returns with ?error=google", async () => {
+    window.history.replaceState({}, "", "/login?error=google");
+    renderPage();
+
+    expect(
+      await screen.findByText("Não foi possível entrar com o Google. Tente novamente."),
+    ).toBeInTheDocument();
   });
 });

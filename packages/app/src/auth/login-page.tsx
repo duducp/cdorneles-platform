@@ -12,7 +12,7 @@ import {
 import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
 import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const LAST_METHOD_KEY = "cdorneles-last-login-method";
 type LoginMethod = "email" | "google";
@@ -27,7 +27,7 @@ export interface LoginPageProps {
 }
 
 export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
   const goToApp = useCallback(() => {
     router.replace(resolvePostAuthRedirect(window.location.search));
@@ -59,6 +59,21 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
 
   const handleGoogleClick = useCallback(() => {
     localStorage.setItem(LAST_METHOD_KEY, "google");
+    // A full-page redirect: Appwrite sends the browser to Google and back to
+    // `successUrl` (which restores the session on load) or `failureUrl`.
+    const origin = window.location.origin;
+    loginWithGoogle({
+      successUrl: `${origin}${resolvePostAuthRedirect(window.location.search)}`,
+      failureUrl: `${origin}/login?error=google`,
+    });
+  }, [loginWithGoogle]);
+
+  // The provider redirects here with `?error=google` when the user cancels or
+  // the exchange fails; surface it after mount to avoid a hydration mismatch.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "google") {
+      setError("Não foi possível entrar com o Google. Tente novamente.");
+    }
   }, []);
 
   async function handleSubmit(credentials: { email: string; password: string }) {

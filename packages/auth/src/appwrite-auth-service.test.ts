@@ -10,6 +10,7 @@ function createMockAccountApi(): AccountApi {
     updateSession: vi.fn(),
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
+    createOAuth2Session: vi.fn(),
     deleteSession: vi.fn(),
     createRecovery: vi.fn(),
     updateRecovery: vi.fn(),
@@ -71,6 +72,24 @@ describe("createAppwriteAuthService", () => {
       await expect(service.login({ email: "a@b.com", password: "pass" })).rejects.toBeInstanceOf(
         MfaRequiredError,
       );
+    });
+  });
+
+  describe("loginWithGoogle", () => {
+    it("starts the OAuth flow with the given success and failure URLs", () => {
+      const api = createMockAccountApi();
+      const service = createAppwriteAuthService(api);
+
+      service.loginWithGoogle({
+        successUrl: "https://app.test/",
+        failureUrl: "https://app.test/login?error=google",
+      });
+
+      expect(api.createOAuth2Session).toHaveBeenCalledWith({
+        provider: "google",
+        success: "https://app.test/",
+        failure: "https://app.test/login?error=google",
+      });
     });
   });
 

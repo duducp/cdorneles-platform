@@ -1,4 +1,4 @@
-import { Account, type AuthenticationFactor } from "appwrite";
+import { Account, OAuthProvider, type AuthenticationFactor } from "appwrite";
 import type { Client } from "appwrite";
 
 import type { AccountApi } from "../client";
@@ -12,6 +12,8 @@ import { mapAppwriteError } from "./map-error";
 
 export function createAccountApi(client: Client): AccountApi {
   const account = new Account(client);
+  // Appwrite models the provider as an enum; the contract uses string keys.
+  const oauthProvider: Record<"google", OAuthProvider> = { google: OAuthProvider.Google };
 
   return {
     async getCurrentUser(): Promise<AppwriteAccount> {
@@ -71,6 +73,15 @@ export function createAccountApi(client: Client): AccountApi {
       } catch (error) {
         throw mapAppwriteError(error);
       }
+    },
+
+    createOAuth2Session(input): void {
+      // Redirects the browser to the provider; no promise to await.
+      account.createOAuth2Session({
+        provider: oauthProvider[input.provider],
+        success: input.success,
+        failure: input.failure,
+      });
     },
 
     async deleteSession(sessionId): Promise<void> {

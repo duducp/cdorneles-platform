@@ -17,6 +17,8 @@ export interface AccountApi {
   updateSession(input: { sessionId: string }): Promise<AppwriteSession>;
   listSessions(): Promise<AppwriteSession[]>;
   createEmailPasswordSession(input: { email: string; password: string }): Promise<AppwriteSession>;
+  /** Starts an OAuth2 sign-in: a full-page redirect to the provider. */
+  createOAuth2Session(input: { provider: "google"; success: string; failure: string }): void;
   deleteSession(sessionId?: string): Promise<void>;
   createRecovery(input: { email: string; url: string }): Promise<void>;
   updateRecovery(input: { userId: string; secret: string; password: string }): Promise<void>;
