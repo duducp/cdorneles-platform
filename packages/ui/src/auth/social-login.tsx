@@ -6,10 +6,11 @@ import { GoogleIcon } from "./google-icon";
 export interface SocialLoginProps {
   onGoogleClick?: () => void;
   disabled?: boolean;
+  label?: string;
 }
 
 /** Social sign-in entry points. Google only for now (visual). */
-export function SocialLogin({ onGoogleClick, disabled }: SocialLoginProps) {
+export function SocialLogin({ onGoogleClick, disabled, label = "Entrar com Google" }: SocialLoginProps) {
   return (
     <Button
       type="button"
@@ -19,7 +20,7 @@ export function SocialLogin({ onGoogleClick, disabled }: SocialLoginProps) {
       onClick={onGoogleClick}
       leftSection={<GoogleIcon size={18} />}
     >
-      Entrar com Google
+      {label}
     </Button>
   );
 }
