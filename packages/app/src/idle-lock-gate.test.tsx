@@ -28,7 +28,7 @@ vi.mock("react-idle-timer", () => ({
   },
 }));
 
-const { IdleLockGate } = await import("./idle-lock-gate");
+const { IdleLockGate, resolveIdleTimings } = await import("./idle-lock-gate");
 
 function gateTree() {
   return (
@@ -144,5 +144,32 @@ describe("IdleLockGate", () => {
     idleCallbacks.current.onIdle?.();
 
     expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument();
+  });
+});
+
+describe("resolveIdleTimings", () => {
+  it("falls back to the defaults when unset", () => {
+    expect(resolveIdleTimings(undefined, undefined)).toEqual({
+      timeoutMs: 15 * 60 * 1000,
+      promptBeforeIdleMs: 30 * 1000,
+    });
+  });
+
+  it("parses minutes and seconds", () => {
+    expect(resolveIdleTimings("5", "10")).toEqual({
+      timeoutMs: 5 * 60 * 1000,
+      promptBeforeIdleMs: 10 * 1000,
+    });
+  });
+
+  it("ignores invalid values", () => {
+    expect(resolveIdleTimings("nope", "-1")).toEqual({
+      timeoutMs: 15 * 60 * 1000,
+      promptBeforeIdleMs: 30 * 1000,
+    });
+  });
+
+  it("never lets the prompt outlast the timeout", () => {
+    expect(resolveIdleTimings("1", "600").promptBeforeIdleMs).toBe(60 * 1000);
   });
 });

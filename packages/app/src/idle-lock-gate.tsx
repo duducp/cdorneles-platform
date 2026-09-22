@@ -8,10 +8,40 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useIdleTimer } from "react-idle-timer";
 
-/** Total inactivity before the lock (ms). */
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
-/** How long before the lock the warning appears (ms). */
-const PROMPT_BEFORE_IDLE_MS = 30 * 1000;
+const DEFAULT_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+const DEFAULT_PROMPT_BEFORE_IDLE_MS = 30 * 1000;
+
+export interface IdleTimings {
+  timeoutMs: number;
+  promptBeforeIdleMs: number;
+}
+
+function toMs(value: string | undefined, unitMs: number, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n * unitMs : fallback;
+}
+
+/**
+ * Resolves the idle timings from the raw env values, falling back to the
+ * defaults for anything missing or invalid. The prompt is clamped to the
+ * timeout so a misconfiguration cannot make the warning outlast the lock.
+ */
+export function resolveIdleTimings(
+  timeoutMinutes: string | undefined,
+  promptSeconds: string | undefined,
+): IdleTimings {
+  const timeoutMs = toMs(timeoutMinutes, 60 * 1000, DEFAULT_IDLE_TIMEOUT_MS);
+  const promptBeforeIdleMs = Math.min(
+    toMs(promptSeconds, 1000, DEFAULT_PROMPT_BEFORE_IDLE_MS),
+    timeoutMs,
+  );
+  return { timeoutMs, promptBeforeIdleMs };
+}
+
+const { timeoutMs: IDLE_TIMEOUT_MS, promptBeforeIdleMs: PROMPT_BEFORE_IDLE_MS } = resolveIdleTimings(
+  process.env.NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES,
+  process.env.NEXT_PUBLIC_IDLE_PROMPT_SECONDS,
+);
 /** Routes that must never lock (they have no session to protect). */
 const PUBLIC_PREFIXES = ["/login", "/mfa", "/forgot-password", "/reset-password", "/select-org"];
 
