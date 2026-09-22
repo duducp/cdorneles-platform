@@ -41,6 +41,11 @@ pnpm format
 pnpm format:check
 ```
 
+`pnpm build` builds the workspace **serially** (`--workspace-concurrency=1`).
+Concurrent `next build` runs race while resolving `next/font/google` and fail
+with `next/font/google queries have exactly one entry`; serializing the three
+apps is the reliable fix. Revisit only if the font moves off `next/font/google`.
+
 ## Environment variables
 
 Copy `.env.example` to `.env.local` per app. Only `NEXT_PUBLIC_*` values reach
