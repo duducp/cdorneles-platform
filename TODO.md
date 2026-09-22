@@ -1,4 +1,4 @@
-# TODO — Cdorneles Platform
+# TODO — Carlos Dorneles Platform
 
 Living backlog for the platform. Keep it ordered, small and honest: an item is
 done only when it satisfies [`DEFINITION_OF_DONE.md`](./DEFINITION_OF_DONE.md).

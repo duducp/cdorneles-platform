@@ -1,6 +1,6 @@
 # Functions
 
-Appwrite Functions for the Cdorneles Platform. These are the **security
+Appwrite Functions for the Carlos Dorneles Platform. These are the **security
 boundary** for business operations (ADR-005, ADR-011): every sensitive
 operation validates authentication, membership, organization status,
 application access, permission and feature flags server-side. Deny-by-default.

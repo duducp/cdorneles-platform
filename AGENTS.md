@@ -1,8 +1,8 @@
-# AGENTS.md — Cdorneles Platform
+# AGENTS.md — Carlos Dorneles Platform
 
 ## Purpose
 
-This file defines mandatory engineering rules for AI agents working on the Cdorneles Platform monorepo.
+This file defines mandatory engineering rules for AI agents working on the Carlos Dorneles Platform monorepo.
 
 ## Architecture
 

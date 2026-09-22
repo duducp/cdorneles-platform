@@ -2,11 +2,11 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./apps/design-system/public/brand/logo-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="./apps/design-system/public/brand/logo-light.png">
-    <img alt="Cdorneles Platform" src="./apps/design-system/public/brand/logo-light.png" width="320">
+    <img alt="Carlos Dorneles Platform" src="./apps/design-system/public/brand/logo-light.png" width="320">
   </picture>
 </p>
 
-# Cdorneles Platform
+# Carlos Dorneles Platform
 
 Multi-tenant SaaS/ERP platform: two user-facing applications, a shared design
 system and an Appwrite backend.

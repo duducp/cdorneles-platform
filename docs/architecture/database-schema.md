@@ -1,4 +1,4 @@
-# Database Schema — Cdorneles Platform
+# Database Schema — Carlos Dorneles Platform
 
 Database: `cdorneles_platform` (Appwrite TablesDB)
 

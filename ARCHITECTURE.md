@@ -1,8 +1,8 @@
-# Cdorneles Platform Architecture
+# Carlos Dorneles Platform Architecture
 
 ## 1. Overview
 
-Cdorneles Platform is a multi-tenant SaaS/ERP platform with two user-facing applications and a shared design system.
+Carlos Dorneles Platform is a multi-tenant SaaS/ERP platform with two user-facing applications and a shared design system.
 
 ```text
                          Cloudflare

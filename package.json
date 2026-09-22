@@ -2,7 +2,7 @@
   "name": "cdorneles-platform",
   "version": "1.1.1",
   "private": true,
-  "description": "Cdorneles Platform monorepo — multi-tenant SaaS/ERP foundation.",
+  "description": "Carlos Dorneles Platform monorepo — multi-tenant SaaS/ERP foundation.",
   "packageManager": "pnpm@11.20.0",
   "engines": {
     "node": ">=22",
