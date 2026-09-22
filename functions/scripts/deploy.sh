@@ -80,14 +80,27 @@ done
 make prepare
 
 for fn in "${FUNCTIONS[@]}"; do
+  scope_args=()
+  for scope in $(scopes_for "$fn"); do
+    scope_args+=(--scopes "$scope")
+  done
+
   if function_exists "$fn"; then
-    echo "==> $fn already exists"
+    # Keep an existing function's configuration in sync (name, runtime,
+    # entrypoint, execute roles and scopes). `functions update` resets the
+    # array fields it is not given — notably scopes and execute — so every
+    # managed field is passed explicitly.
+    echo "==> Updating $fn"
+    appwrite functions update \
+      --function-id "$fn" \
+      --name "$fn" \
+      --runtime "$RUNTIME" \
+      --execute "$EXECUTE" \
+      --entrypoint "$ENTRYPOINT" \
+      --force \
+      ${scope_args[@]+"${scope_args[@]}"}
   else
     echo "==> Creating $fn"
-    scope_args=()
-    for scope in $(scopes_for "$fn"); do
-      scope_args+=(--scopes "$scope")
-    done
     appwrite functions create \
       --function-id "$fn" \
       --name "$fn" \
