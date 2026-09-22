@@ -57,6 +57,7 @@ functions/
 ├── send-email/
 ├── get-organization-profile/
 ├── provision-organization/
+├── create-user/
 ├── scripts/
 │   ├── prepare.sh             # copies shared/ into each function's internal/
 │   └── deploy.sh              # prepares and deploys every function
@@ -75,6 +76,7 @@ The generated directories are gitignored.
 | `send-email` | Sends transactional email via Appwrite Messaging | Authenticated |
 | `get-organization-profile` | Returns an organization's branding profile | Authenticated; membership required |
 | `provision-organization` | Idempotently bootstraps an organization's profile, roles, mappings and features | Authenticated; membership required |
+| `create-user` | Creates a user, adds them to an organization with a role, grants direct permissions and emails a temporary password | Authenticated; `users.create` (platform team or organization role), plus `users.manage_permissions` when direct permissions are requested |
 
 ## Requirements
 
@@ -159,6 +161,7 @@ Per-function scopes for the per-execution API key:
 | `send-email` | `messages.write` |
 | `get-organization-profile` | `teams.read rows.read` |
 | `provision-organization` | `teams.read rows.read rows.write` |
+| `create-user` | `users.write teams.read teams.write rows.read rows.write executions.write` |
 
 Appwrite compiles the uploaded source. The runtime's environment provides
 `APPWRITE_FUNCTION_API_ENDPOINT` and `APPWRITE_FUNCTION_PROJECT_ID`, and the

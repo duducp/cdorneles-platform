@@ -31,6 +31,7 @@ ALL_FUNCTIONS=(
   send-email
   get-organization-profile
   provision-organization
+  create-user
 )
 
 # API key scopes the function's per-execution key needs.
@@ -41,6 +42,7 @@ scopes_for() {
     send-email)                  echo "messages.write" ;;
     get-organization-profile)    echo "teams.read rows.read" ;;
     provision-organization)      echo "teams.read rows.read rows.write" ;;
+    create-user)                 echo "users.write teams.read teams.write rows.read rows.write executions.write" ;;
     *)                           echo "" ;;
   esac
 }
