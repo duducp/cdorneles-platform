@@ -35,6 +35,6 @@ describe("Sidebar", () => {
     renderSidebar(false);
 
     expect(screen.getAllByAltText("Logo")).toHaveLength(2);
-    expect(screen.getAllByAltText("Logo")[0]).toHaveAttribute("src", "/brand/logo-light-h.png");
+    expect(screen.getAllByAltText("Logo")[0]).toHaveAttribute("src", "/brand/logo-light-h.webp");
   });
 });

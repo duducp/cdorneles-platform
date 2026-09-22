@@ -25,13 +25,13 @@ describe("Logo", () => {
   it("defaults to the platform brand paths", () => {
     renderLogo({ alt: "Cdorneles" });
 
-    expect(sources()).toEqual(["/brand/logo-light.png", "/brand/logo-dark.png"]);
+    expect(sources()).toEqual(["/brand/logo-light.webp", "/brand/logo-dark.webp"]);
   });
 
   it("defaults to the horizontal brand paths for the horizontal variant", () => {
     renderLogo({ alt: "Cdorneles", variant: "horizontal" });
 
-    expect(sources()).toEqual(["/brand/logo-light-h.png", "/brand/logo-dark-h.png"]);
+    expect(sources()).toEqual(["/brand/logo-light-h.webp", "/brand/logo-dark-h.webp"]);
   });
 
   it("uses a wider default aspect ratio for the horizontal variant", () => {

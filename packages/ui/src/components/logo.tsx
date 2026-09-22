@@ -14,8 +14,8 @@ export interface LogoProps {
 }
 
 const BRAND_SRC = {
-  default: { light: "/brand/logo-light.png", dark: "/brand/logo-dark.png" },
-  horizontal: { light: "/brand/logo-light-h.png", dark: "/brand/logo-dark-h.png" },
+  default: { light: "/brand/logo-light.webp", dark: "/brand/logo-dark.webp" },
+  horizontal: { light: "/brand/logo-light-h.webp", dark: "/brand/logo-dark-h.webp" },
   symbol: { light: "/brand/favicon.png", dark: "/brand/favicon.png" },
 } as const;
 
