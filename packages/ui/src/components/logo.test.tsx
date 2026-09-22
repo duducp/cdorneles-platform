@@ -47,6 +47,12 @@ describe("Logo", () => {
     expect(rem(horizontalWidth)).toBeGreaterThan(rem(defaultWidth));
   });
 
+  it("renders the symbol-only mark for the symbol variant", () => {
+    renderLogo({ alt: "Cdorneles", variant: "symbol" });
+
+    expect(sources()).toEqual(["/brand/favicon.png"]);
+  });
+
   it("lets explicit sources override the variant defaults", () => {
     renderLogo({
       alt: "Cdorneles",

@@ -33,7 +33,7 @@ export function Sidebar({
   return (
     <Stack gap="xs" p="md" h="100%">
       <Box px="xs" py="sm">
-        <Logo variant={collapsed ? "default" : "horizontal"} alt="Logo" />
+        <Logo variant={collapsed ? "symbol" : "horizontal"} alt="Logo" />
       </Box>
 
       <ScrollArea flex={1}>
