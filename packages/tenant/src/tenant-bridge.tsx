@@ -57,34 +57,42 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
     let cancelled = false;
 
     async function load() {
-      const [orgs, memberships] = await Promise.all([
-        tenantService.listOrganizations(),
-        tenantService.listMemberships(user!.id),
-      ]);
+      try {
+        const [orgs, memberships] = await Promise.all([
+          tenantService.listOrganizations(),
+          tenantService.listMemberships(user!.id),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      const preferred = getPreferredOrganizationId();
-      const resolved = resolveActiveOrganization({
-        organizations: orgs,
-        memberships,
-        preferredOrganizationId: preferred,
-      });
+        const preferred = getPreferredOrganizationId();
+        const resolved = resolveActiveOrganization({
+          organizations: orgs,
+          memberships,
+          preferredOrganizationId: preferred,
+        });
 
-      setOrganizations(orgs);
+        setOrganizations(orgs);
 
-      if (resolved) {
-        setCurrentOrganizationId(resolved.id);
-        persistOrganizationId(resolved.id);
-      } else if (orgs.length === 1) {
-        setCurrentOrganizationId(orgs[0].id);
-        persistOrganizationId(orgs[0].id);
-      } else {
-        setCurrentOrganizationId(null);
+        if (resolved) {
+          setCurrentOrganizationId(resolved.id);
+          persistOrganizationId(resolved.id);
+        } else if (orgs.length === 1) {
+          setCurrentOrganizationId(orgs[0].id);
+          persistOrganizationId(orgs[0].id);
+        } else {
+          setCurrentOrganizationId(null);
+        }
+      } catch {
+        // A failed fetch must not hang the guard on its loading fallback: mark
+        // the bridge ready with no organizations so the guard sends the user to
+        // /select-org instead of spinning forever.
+      } finally {
+        if (!cancelled) {
+          bootstrapped.current = true;
+          setReady(true);
+        }
       }
-
-      bootstrapped.current = true;
-      setReady(true);
     }
 
     load();
