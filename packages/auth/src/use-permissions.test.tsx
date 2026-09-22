@@ -20,6 +20,9 @@ function createMockFunctionsApi(responseBody: string): FunctionsApi {
       status: "completed",
       responseBody,
     }),
+    createUser: vi.fn(),
+    updateUserPermissions: vi.fn(),
+    listUsers: vi.fn(),
   };
 }
 

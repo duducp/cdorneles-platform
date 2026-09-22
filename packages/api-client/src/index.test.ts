@@ -22,7 +22,12 @@ const services: AppwriteServices = {
   },
   teams: { listTeams: vi.fn(), listMemberships: vi.fn(), createTeam: vi.fn() },
   tables: { listRows: vi.fn(), getRow: vi.fn() },
-  functions: { createExecution: vi.fn() },
+  functions: {
+    createExecution: vi.fn(),
+    createUser: vi.fn(),
+    updateUserPermissions: vi.fn(),
+    listUsers: vi.fn(),
+  },
   storage: {
     getFilePreviewUrl: vi.fn(() => "https://example.com/preview"),
     uploadFile: vi.fn(),

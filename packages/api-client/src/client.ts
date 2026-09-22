@@ -49,6 +49,22 @@ export interface FunctionsApi {
     path?: string;
     method?: string;
   }): Promise<AppwriteExecution>;
+  createUser(input: {
+    email: string;
+    name: string;
+    organizationId: string;
+    role: string;
+    permissions?: string[];
+    labels?: string[];
+  }): Promise<{ userId: string }>;
+  updateUserPermissions(input: {
+    userId: string;
+    organizationId: string;
+    permissions: string[];
+  }): Promise<void>;
+  listUsers(): Promise<{
+    users: { id: string; email: string; name: string; labels: string[] }[];
+  }>;
 }
 
 export interface StorageApi {

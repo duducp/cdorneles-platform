@@ -14,6 +14,9 @@ function createMockTeamsApi(): TeamsApi {
 function createMockFunctionsApi(): FunctionsApi {
   return {
     createExecution: vi.fn(),
+    createUser: vi.fn(),
+    updateUserPermissions: vi.fn(),
+    listUsers: vi.fn(),
   };
 }
 
