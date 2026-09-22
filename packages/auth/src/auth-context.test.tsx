@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "@cdorneles/api-client";
+
 import { AuthProvider, useAuth } from "./auth-context";
+import { MfaRequiredError } from "./errors";
 import { createSessionSignal } from "./session-signal";
 import type { AuthService, AuthSession, AuthUser } from "./types";
 
@@ -114,11 +117,7 @@ function TestConsumer() {
 }
 
 function renderWithAuth(service: AuthService, children?: ReactNode) {
-  return render(
-    <AuthProvider service={service}>
-      {children ?? <TestConsumer />}
-    </AuthProvider>,
-  );
+  return render(<AuthProvider service={service}>{children ?? <TestConsumer />}</AuthProvider>);
 }
 
 describe("AuthProvider", () => {
@@ -153,7 +152,11 @@ describe("AuthProvider", () => {
     const service = createMockService();
 
     render(
-      <AuthProvider service={service} initialUser={createMockUser()} initialSession={createMockSession()}>
+      <AuthProvider
+        service={service}
+        initialUser={createMockUser()}
+        initialSession={createMockSession()}
+      >
         <TestConsumer />
       </AuthProvider>,
     );
@@ -284,13 +287,27 @@ function SessionStateProbe() {
   return <span data-testid="probe">{`${status}:${sessionState}`}</span>;
 }
 
+/**
+ * Captures the auth context value from inside the provider. `current` is a
+ * function rather than a plain variable so TypeScript does not narrow the
+ * closure-assigned value to `never`, and so every call reads the latest value.
+ */
+function captureAuth() {
+  let value: ReturnType<typeof useAuth> | null = null;
+  function Capture() {
+    value = useAuth();
+    return null;
+  }
+  return {
+    Capture,
+    current: () => value as ReturnType<typeof useAuth>,
+  };
+}
+
 describe("session state", () => {
   it("does not navigate when the session dies while running", async () => {
     const service = createMockService({
-      getSession: vi
-        .fn()
-        .mockResolvedValueOnce(createMockSession())
-        .mockResolvedValue(null),
+      getSession: vi.fn().mockResolvedValueOnce(createMockSession()).mockResolvedValue(null),
       getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
     });
     const signal = createSessionSignal();
@@ -330,9 +347,7 @@ describe("session state", () => {
       </AuthProvider>,
     );
 
-    await waitFor(() =>
-      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
-    );
+    await waitFor(() => expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"));
 
     await act(async () => {
       signal.notifyExpired();
@@ -346,10 +361,7 @@ describe("session state", () => {
   it("marks the session expired when the poll finds it gone", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
     const service = createMockService({
-      getSession: vi
-        .fn()
-        .mockResolvedValueOnce(createMockSession())
-        .mockResolvedValue(null),
+      getSession: vi.fn().mockResolvedValueOnce(createMockSession()).mockResolvedValue(null),
       getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
     });
     stubLocation("/dashboard");
@@ -444,9 +456,7 @@ describe("session state", () => {
       </AuthProvider>,
     );
 
-    await waitFor(() =>
-      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
-    );
+    await waitFor(() => expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"));
     expect(window.location.href).toBe("");
   });
 
@@ -464,9 +474,183 @@ describe("session state", () => {
       </AuthProvider>,
     );
 
-    await waitFor(() =>
-      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
-    );
+    await waitFor(() => expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"));
     expect(window.location.href).toBe("");
+  });
+});
+
+describe("reauthentication", () => {
+  it("returns to active after reauthenticating", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      login: vi.fn().mockResolvedValue(createMockSession({ id: "s2" })),
+    });
+    const signal = createSessionSignal();
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("authenticated"));
+
+    signal.notifyExpired();
+    await waitFor(() => expect(current().sessionState).toBe("expired"));
+
+    await act(async () => {
+      await current().reauthenticate({ email: "user@example.com", password: "pw" });
+    });
+
+    expect(current().sessionState).toBe("active");
+    expect(current().status).toBe("authenticated");
+    expect(current().session?.id).toBe("s2");
+  });
+
+  it("returns to active after completing the reauthentication MFA step", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      completeMfa: vi.fn().mockResolvedValue(createMockSession({ id: "s3" })),
+    });
+    const signal = createSessionSignal();
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("authenticated"));
+
+    signal.notifyExpired();
+    await waitFor(() => expect(current().sessionState).toBe("expired"));
+
+    await act(async () => {
+      await current().completeReauthMfa({ challengeId: "c1", code: "123456" });
+    });
+
+    expect(current().sessionState).toBe("active");
+    expect(current().status).toBe("authenticated");
+    expect(current().session?.id).toBe("s3");
+  });
+
+  it("propagates MfaRequiredError without marking the session active or navigating", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      login: vi.fn().mockRejectedValue(new MfaRequiredError()),
+    });
+    const signal = createSessionSignal();
+    stubLocation("/dashboard");
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("authenticated"));
+
+    signal.notifyExpired();
+    await waitFor(() => expect(current().sessionState).toBe("expired"));
+
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await current().reauthenticate({ email: "user@example.com", password: "pw" });
+      } catch (error) {
+        caught = error;
+      }
+    });
+
+    // The dialog switches to its MFA step in place; the provider must not
+    // navigate (which would discard the page this flow exists to preserve).
+    expect(caught).toBeInstanceOf(MfaRequiredError);
+    expect(current().sessionState).toBe("expired");
+    expect(current().status).toBe("authenticated");
+    expect(window.location.href).toBe("");
+  });
+});
+
+describe("renewSession failure", () => {
+  it("marks the session expired when a dead session is renewed and no rejection leaks", async () => {
+    const rejections: unknown[] = [];
+    const onRejection = (reason: unknown) => {
+      rejections.push(reason);
+    };
+    process.on("unhandledRejection", onRejection);
+
+    try {
+      const error = new ApiError("no", { status: 401 });
+      const service = createMockService({
+        getSession: vi.fn().mockResolvedValue(createMockSession()),
+        getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+        renewSession: vi.fn().mockRejectedValue(error),
+      });
+      stubLocation("/dashboard");
+      const { Capture, current } = captureAuth();
+
+      render(
+        <AuthProvider service={service}>
+          <Capture />
+        </AuthProvider>,
+      );
+      await waitFor(() => expect(current().status).toBe("authenticated"));
+
+      let caught: unknown;
+      await act(async () => {
+        try {
+          await current().renewSession();
+        } catch (renewError) {
+          caught = renewError;
+        }
+      });
+
+      // The failure is rethrown for the caller, but the dead session must also
+      // move the provider to "expired" so the dialog can open.
+      expect(caught).toBe(error);
+      expect(current().sessionState).toBe("expired");
+      expect(window.location.href).toBe("");
+
+      // Give Node a real turn to surface any unhandled rejection.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+      expect(rejections).toHaveLength(0);
+    } finally {
+      process.off("unhandledRejection", onRejection);
+    }
+  });
+
+  it("rethrows a non-401 failure without touching the session state", async () => {
+    const error = new ApiError("boom", { status: 500 });
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      renewSession: vi.fn().mockRejectedValue(error),
+    });
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("authenticated"));
+
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await current().renewSession();
+      } catch (renewError) {
+        caught = renewError;
+      }
+    });
+
+    expect(caught).toBe(error);
+    expect(current().sessionState).toBe("active");
+    expect(current().status).toBe("authenticated");
   });
 });

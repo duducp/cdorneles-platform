@@ -11,6 +11,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { isUnauthorized } from "@cdorneles/api-client";
+
 import type { SessionSignal } from "./session-signal";
 import type { AuthService, AuthSession, AuthUser, CompleteMfaInput, LoginInput } from "./types";
 
@@ -69,6 +71,10 @@ export interface AuthContextValue {
   sessionState: SessionState;
   login: (input: LoginInput) => Promise<AuthSession>;
   completeMfa: (input: CompleteMfaInput) => Promise<AuthSession>;
+  /** Re-authenticates after the session died, in place, without navigating. */
+  reauthenticate: (input: LoginInput) => Promise<AuthSession>;
+  /** Completes the MFA step of a re-authentication, in place. */
+  completeReauthMfa: (input: CompleteMfaInput) => Promise<AuthSession>;
   logout: (sessionId?: string) => Promise<void>;
   refresh: () => Promise<void>;
   renewSession: () => Promise<AuthSession>;
@@ -255,12 +261,53 @@ export function AuthProvider({
     [service],
   );
 
+  // Re-authentication after the session died. Deliberately NOT the login page's
+  // flow: that one navigates to /mfa on MfaRequiredError, which would discard
+  // the very page this exists to preserve. Here the error propagates so the
+  // dialog can switch to its MFA step in place.
+  const reauthenticate = useCallback(
+    async (input: LoginInput) => {
+      const nextSession = await service.login(input);
+      const nextUser = await service.getCurrentUser();
+      setSession(nextSession);
+      setUser(nextUser);
+      setStatus(nextUser ? "authenticated" : "anonymous");
+      setSessionState("active");
+      if (nextUser) setSessionCookie();
+      return nextSession;
+    },
+    [service],
+  );
+
+  const completeReauthMfa = useCallback(
+    async (input: CompleteMfaInput) => {
+      const nextSession = await service.completeMfa(input);
+      const nextUser = await service.getCurrentUser();
+      setSession(nextSession);
+      setUser(nextUser);
+      setStatus(nextUser ? "authenticated" : "anonymous");
+      setSessionState("active");
+      if (nextUser) setSessionCookie();
+      return nextSession;
+    },
+    [service],
+  );
+
   const renewSession = useCallback(async () => {
-    const nextSession = await service.renewSession();
-    setSession(nextSession);
-    setSessionState(isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active");
-    return nextSession;
-  }, [service]);
+    try {
+      const nextSession = await service.renewSession();
+      setSession(nextSession);
+      setSessionState(isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active");
+      return nextSession;
+    } catch (error) {
+      // A dead session cannot be extended. Move the provider to "expired" so the
+      // re-authentication dialog opens, then rethrow for the caller.
+      if (isUnauthorized(error)) {
+        markExpired();
+      }
+      throw error;
+    }
+  }, [service, markExpired]);
 
   const logout = useCallback(
     async (sessionId?: string) => {
@@ -283,11 +330,26 @@ export function AuthProvider({
       sessionState,
       login,
       completeMfa,
+      reauthenticate,
+      completeReauthMfa,
       logout,
       refresh,
       renewSession,
     }),
-    [service, user, session, status, sessionState, login, completeMfa, logout, refresh, renewSession],
+    [
+      service,
+      user,
+      session,
+      status,
+      sessionState,
+      login,
+      completeMfa,
+      reauthenticate,
+      completeReauthMfa,
+      logout,
+      refresh,
+      renewSession,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
