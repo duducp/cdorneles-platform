@@ -27,13 +27,13 @@ describe("createSessionSignal", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it("still notifies the other listeners when one unsubscribes mid-notify", () => {
+  it("survives a listener that unsubscribes during notification", () => {
     const signal = createSessionSignal();
     const second = vi.fn();
     signal.subscribe(() => signal.unsubscribeAll());
     signal.subscribe(second);
 
-    expect(() => signal.notifyExpired()).not.toThrow();
+    signal.notifyExpired();
     expect(second).toHaveBeenCalledTimes(1);
   });
 });
