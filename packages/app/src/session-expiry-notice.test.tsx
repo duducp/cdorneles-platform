@@ -19,9 +19,9 @@ const { SessionExpiryNotice } = await import("./session-expiry-notice");
 
 const NOTICE_ID = "session-expiring";
 
-function authState(overrides: Partial<Record<"sessionExpiring" | "status", unknown>> = {}) {
+function authState(overrides: Partial<Record<"sessionState" | "status", unknown>> = {}) {
   return {
-    sessionExpiring: false,
+    sessionState: "active",
     status: "authenticated",
     refresh: vi.fn(),
     ...overrides,
@@ -34,7 +34,7 @@ describe("SessionExpiryNotice", () => {
   });
 
   it("warns, without auto-closing, while the session is expiring", () => {
-    useAuthMock.mockReturnValue(authState({ sessionExpiring: true }));
+    useAuthMock.mockReturnValue(authState({ sessionState: "expiring" }));
 
     render(<SessionExpiryNotice />);
 
@@ -56,7 +56,7 @@ describe("SessionExpiryNotice", () => {
   });
 
   it("does not warn an anonymous visitor", () => {
-    useAuthMock.mockReturnValue(authState({ sessionExpiring: true, status: "anonymous" }));
+    useAuthMock.mockReturnValue(authState({ sessionState: "expiring", status: "anonymous" }));
 
     render(<SessionExpiryNotice />);
 
@@ -64,7 +64,7 @@ describe("SessionExpiryNotice", () => {
   });
 
   it("clears the warning once the session is renewed", () => {
-    useAuthMock.mockReturnValue(authState({ sessionExpiring: true }));
+    useAuthMock.mockReturnValue(authState({ sessionState: "expiring" }));
     const { rerender } = render(<SessionExpiryNotice />);
     expect(notifyInfoMock).toHaveBeenCalledTimes(1);
 

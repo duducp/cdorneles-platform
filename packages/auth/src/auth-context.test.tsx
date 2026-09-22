@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AuthProvider, useAuth } from "./auth-context";
+import { createSessionSignal } from "./session-signal";
 import type { AuthService, AuthSession, AuthUser } from "./types";
 
 const futureDate = new Date(Date.now() + 86400000).toISOString();
@@ -199,5 +200,82 @@ describe("AuthProvider", () => {
 
     expect(() => render(<BadConsumer />)).toThrow("useAuth must be used within <AuthProvider>");
     spy.mockRestore();
+  });
+});
+
+function SessionStateProbe() {
+  const { status, sessionState } = useAuth();
+  return <span data-testid="probe">{`${status}:${sessionState}`}</span>;
+}
+
+describe("session state", () => {
+  it("does not navigate when the session dies while running", async () => {
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValueOnce(createMockSession())
+        .mockResolvedValue(null),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    const signal = createSessionSignal();
+    const assign = vi.fn();
+    // Track href writes so the assertion proves *no* navigation happened.
+    // `redirectToLogin` navigates by assigning `location.href`, not `assign()`,
+    // so checking `assign` alone would pass even if the code did navigate.
+    let href = "";
+    Object.defineProperty(window, "location", {
+      value: {
+        pathname: "/dashboard",
+        assign,
+        get href(): string {
+          return href;
+        },
+        set href(value: string) {
+          href = value;
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:active"),
+    );
+
+    signal.notifyExpired();
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:expired"),
+    );
+    expect(assign).not.toHaveBeenCalled();
+    expect(href).toBe("");
+  });
+
+  it("redirects on bootstrap when there is no session at all", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(null),
+      getCurrentUser: vi.fn().mockResolvedValue(null),
+    });
+    const replace = vi.fn();
+    Object.defineProperty(window, "location", {
+      value: { pathname: "/dashboard", replace, href: "" },
+      writable: true,
+      configurable: true,
+    });
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(window.location.href).toContain("/login"));
+    expect(replace).not.toHaveBeenCalled();
   });
 });

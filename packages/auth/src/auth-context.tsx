@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
+import type { SessionSignal } from "./session-signal";
 import type { AuthService, AuthSession, AuthUser, CompleteMfaInput, LoginInput } from "./types";
 
 export type AuthStatus = "loading" | "authenticated" | "anonymous";
@@ -33,21 +34,25 @@ function clearSessionCookie(): void {
   document.cookie = `${SESSION_COOKIE}=; path=/; SameSite=Lax; max-age=0`;
 }
 
-function isExpired(expiresAt: string): boolean {
-  return new Date(expiresAt).getTime() <= Date.now();
-}
-
 function isExpiringSoon(expiresAt: string): boolean {
   return new Date(expiresAt).getTime() - Date.now() <= EXPIRY_WARNING_MS;
 }
+
+/**
+ * Where the session stands.
+ *
+ * - `active`   — valid
+ * - `expiring` — still valid, dies within five minutes; the toast warns
+ * - `expired`  — gone while the app was running; the dialog asks for the password
+ */
+export type SessionState = "active" | "expiring" | "expired";
 
 export interface AuthContextValue {
   service: AuthService;
   user: AuthUser | null;
   session: AuthSession | null;
   status: AuthStatus;
-  /** True when the session is valid but will expire within 5 minutes. */
-  sessionExpiring: boolean;
+  sessionState: SessionState;
   login: (input: LoginInput) => Promise<AuthSession>;
   completeMfa: (input: CompleteMfaInput) => Promise<AuthSession>;
   logout: (sessionId?: string) => Promise<void>;
@@ -63,6 +68,8 @@ export interface AuthProviderProps {
   initialSession?: AuthSession | null;
   /** Custom redirect URL when session expires. Defaults to /login. */
   loginPath?: string;
+  /** Carries a 401 seen by the query client. */
+  sessionSignal?: SessionSignal;
 }
 
 /**
@@ -70,8 +77,10 @@ export interface AuthProviderProps {
  *
  * - Bootstraps session on mount via `refresh()`
  * - Polls session validity every 4 minutes
- * - Sets `sessionExpiring` flag when expiry is within 5 minutes
- * - Redirects to `/login` when session expires or is invalid
+ * - Reports `sessionState`: `expiring` within 5 minutes, `expired` once gone
+ * - Redirects to `/login` only on bootstrap, when there is no session at all.
+ *   A session that dies while the app is running stays on the page and is
+ *   reported through `sessionState` instead.
  */
 export function AuthProvider({
   service,
@@ -79,6 +88,7 @@ export function AuthProvider({
   initialUser = null,
   initialSession = null,
   loginPath = "/login",
+  sessionSignal,
 }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(initialUser);
   const [session, setSession] = useState<AuthSession | null>(initialSession);
@@ -87,7 +97,7 @@ export function AuthProvider({
   // existing Appwrite session was never restored and the app behaved as if
   // signed out after every reload.
   const [status, setStatus] = useState<AuthStatus>(initialUser ? "authenticated" : "loading");
-  const [sessionExpiring, setSessionExpiring] = useState(false);
+  const [sessionState, setSessionState] = useState<SessionState>("active");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const redirectToLogin = useCallback(() => {
@@ -110,19 +120,25 @@ export function AuthProvider({
       setStatus(isAuth ? "authenticated" : "anonymous");
       if (isAuth) {
         setSessionCookie();
-        setSessionExpiring(nextSession ? isExpiringSoon(nextSession.expiresAt) : false);
+        setSessionState(
+          nextSession && isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active",
+        );
       } else {
         clearSessionCookie();
-        setSessionExpiring(false);
+        setSessionState("active");
+        // A fresh load with no session has no page worth preserving, so it
+        // still goes to /login. The catch below is a failed check (network or
+        // server), not a confirmed sign-out, so it does not navigate.
+        redirectToLogin();
       }
     } catch {
       setSession(null);
       setUser(null);
       setStatus("anonymous");
-      setSessionExpiring(false);
+      setSessionState("active");
       clearSessionCookie();
     }
-  }, [service]);
+  }, [service, redirectToLogin]);
 
   // Bootstrap session on mount
   useEffect(() => {
@@ -131,36 +147,48 @@ export function AuthProvider({
     }
   }, [status, refresh]);
 
-  // Poll session validity
+  // The session died while the app was running. Keep the cookie and stay on the
+  // page: the dialog restores the session without discarding the React tree.
+  const markExpired = useCallback(() => {
+    setSessionState("expired");
+    setStatus("authenticated");
+  }, []);
+
+  // A 401 from any request reaches the query client, not the auth state.
+  useEffect(() => {
+    if (!sessionSignal) return;
+    return sessionSignal.subscribe(markExpired);
+  }, [sessionSignal, markExpired]);
+
+  // Poll session validity. The check goes to the server rather than comparing
+  // the stored expiry locally: a session can be revoked (password changed,
+  // signed out elsewhere) long before its timestamp says so.
   useEffect(() => {
     if (status !== "authenticated") return;
 
-    pollRef.current = setInterval(() => {
-      const currentSession = session;
-      if (!currentSession) return;
+    let cancelled = false;
 
-      if (isExpired(currentSession.expiresAt)) {
-        clearInterval(pollRef.current!);
-        setSession(null);
-        setUser(null);
-        setStatus("anonymous");
-        setSessionExpiring(false);
-        clearSessionCookie();
-        redirectToLogin();
+    pollRef.current = setInterval(async () => {
+      const nextSession = await service.getSession();
+      // The effect may have been torn down (unmount, status or service change)
+      // while the request was in flight; do not touch state afterwards.
+      if (cancelled) return;
+      if (!nextSession) {
+        markExpired();
         return;
       }
-
-      if (isExpiringSoon(currentSession.expiresAt)) {
-        setSessionExpiring(true);
-      }
+      setSession(nextSession);
+      setSessionState(isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active");
     }, SESSION_POLL_INTERVAL);
 
     return () => {
+      cancelled = true;
       if (pollRef.current) {
         clearInterval(pollRef.current);
+        pollRef.current = null;
       }
     };
-  }, [status, session, redirectToLogin]);
+  }, [status, service, markExpired]);
 
   const login = useCallback(
     async (input: LoginInput) => {
@@ -169,7 +197,7 @@ export function AuthProvider({
       setSession(nextSession);
       setUser(nextUser);
       setStatus(nextUser ? "authenticated" : "anonymous");
-      setSessionExpiring(false);
+      setSessionState("active");
       if (nextUser) setSessionCookie();
       return nextSession;
     },
@@ -183,7 +211,7 @@ export function AuthProvider({
       setSession(nextSession);
       setUser(nextUser);
       setStatus(nextUser ? "authenticated" : "anonymous");
-      setSessionExpiring(false);
+      setSessionState("active");
       if (nextUser) setSessionCookie();
       return nextSession;
     },
@@ -196,7 +224,7 @@ export function AuthProvider({
       setSession(null);
       setUser(null);
       setStatus("anonymous");
-      setSessionExpiring(false);
+      setSessionState("active");
       clearSessionCookie();
     },
     [service],
@@ -208,13 +236,13 @@ export function AuthProvider({
       user,
       session,
       status,
-      sessionExpiring,
+      sessionState,
       login,
       completeMfa,
       logout,
       refresh,
     }),
-    [service, user, session, status, sessionExpiring, login, completeMfa, logout, refresh],
+    [service, user, session, status, sessionState, login, completeMfa, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
