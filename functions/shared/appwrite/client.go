@@ -19,6 +19,11 @@ import (
 // DatabaseID is the platform's TablesDB database.
 const DatabaseID = "cdorneles_platform"
 
+// Locale sent as the `X-Appwrite-Locale` header on every request. Appwrite
+// picks its built-in email templates (recovery, verification, invites) from
+// this value, so Brazilian Portuguese users get Portuguese emails.
+const Locale = "pt-br"
+
 // NewTablesDB builds a TablesDB service from a client.
 func NewTablesDB(clt client.Client) *tablesdb.TablesDB {
 	return sdk.NewTablesDB(clt)
@@ -75,6 +80,7 @@ func NewClient(apiKey string) client.Client {
 		sdk.WithEndpoint(os.Getenv("APPWRITE_FUNCTION_API_ENDPOINT")),
 		sdk.WithProject(os.Getenv("APPWRITE_FUNCTION_PROJECT_ID")),
 		sdk.WithKey(apiKey),
+		sdk.WithLocale(Locale),
 	)
 }
 
