@@ -9,6 +9,7 @@ import {
 import {
   AuthProvider,
   createAppwriteAuthService,
+  createSessionSignal,
   createUnconfiguredAuthService,
   usePermissions,
 } from "@cdorneles/auth";
@@ -25,6 +26,7 @@ import { AccessProvider } from "@cdorneles/ui/permissions";
 import { useState, type ReactNode } from "react";
 
 import { initObservability } from "./observability";
+import { SessionExpiredGate } from "./session-expired-gate";
 import { SessionExpiryNotice } from "./session-expiry-notice";
 
 function ThemeBranding({ children }: { children: ReactNode }) {
@@ -80,7 +82,10 @@ export interface CreateProvidersOptions {
  */
 export function createProviders({ applicationId }: CreateProvidersOptions) {
   return function Providers({ children }: { children: ReactNode }) {
-    const [queryClient] = useState(() => createQueryClient());
+    const [sessionSignal] = useState(() => createSessionSignal());
+    const [queryClient] = useState(() =>
+      createQueryClient({ onUnauthorized: () => sessionSignal.notifyExpired() }),
+    );
     const [authService] = useState(() => {
       const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
       const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
@@ -122,9 +127,10 @@ export function createProviders({ applicationId }: CreateProvidersOptions) {
 
     return (
       <AppProvider queryClient={queryClient} organizationDefault="light">
-        <AuthProvider service={authService}>
+        <AuthProvider service={authService} sessionSignal={sessionSignal}>
           <AppNotifications />
           <SessionExpiryNotice />
+          <SessionExpiredGate />
           {tenantService ? (
             <TenantBridge tenantService={tenantService}>{tenantContent}</TenantBridge>
           ) : (

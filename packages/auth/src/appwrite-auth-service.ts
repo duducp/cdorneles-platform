@@ -75,6 +75,11 @@ export function createAppwriteAuthService(accountApi: AccountApi): AuthService {
       }
     },
 
+    async renewSession() {
+      const session = await accountApi.updateSession({ sessionId: "current" });
+      return mapSession(session);
+    },
+
     async getCurrentUser() {
       const user = await accountApi.getCurrentUser();
       return mapUser(user);

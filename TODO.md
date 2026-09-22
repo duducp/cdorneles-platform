@@ -104,9 +104,13 @@ capabilities. No business modules yet.
 - [x] Mirror session state to `cdorneles-session` cookie for middleware.
 - [x] Wire `usePermissions()` into all 4 app providers (replaces empty grants).
 - [x] Add Next.js middleware for cookie-based route protection.
-- [x] Session expiry handling: AuthProvider polls session validity every 4 min,
-      sets `sessionExpiring` flag within 5 min of expiry, and redirects to
-      `/login` when session expires.
+- [x] Session expiry handling: AuthProvider polls session validity every 4 min
+      against the server and reports `sessionState`
+      (`active`/`expiring`/`expired`); a session that dies while the app is
+      running keeps the page (no navigation). A bootstrap that finds the session
+      cookie present but no server session redirects to `/login`, except on
+      public auth routes (`/login`, `/mfa`, `/forgot-password`,
+      `/reset-password`).
 - [x] Go is the standard language for Appwrite Functions (ADR-011). Ported
       `resolve-grants`, `update-organization-profile` and `send-email` to Go;
       removed `@cdorneles/authz` and the TypeScript functions. Each function is

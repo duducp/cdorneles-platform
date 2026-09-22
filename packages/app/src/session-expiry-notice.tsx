@@ -1,7 +1,8 @@
 "use client";
 
+import { isUnauthorized } from "@cdorneles/api-client";
 import { useAuth } from "@cdorneles/auth";
-import { notifyHide, notifyInfo } from "@cdorneles/ui";
+import { notifyError, notifyHide, notifyInfo } from "@cdorneles/ui";
 import { Button } from "@mantine/core";
 import { useEffect, useRef } from "react";
 
@@ -10,20 +11,21 @@ const NOTICE_ID = "session-expiring";
 /**
  * Warns that the session is about to expire, with a way to renew it.
  *
- * `AuthProvider` has always computed `sessionExpiring` (five minutes before the
- * session dies) but nothing consumed it, so the user was signed out with no
- * warning at all. This is the notice it was meant for.
+ * `AuthProvider` reports the session as `expiring` five minutes before it dies,
+ * but nothing consumed it, so the user was signed out with no warning at all.
+ * This is the notice it was meant for.
  *
- * The toast is keyed by a stable id and cleared as soon as the flag drops, so
- * renewing the session removes it and repeated renders cannot stack duplicates.
+ * The toast is keyed by a stable id and cleared as soon as the state leaves
+ * `expiring`, so renewing the session removes it and repeated renders cannot
+ * stack duplicates.
  */
 export function SessionExpiryNotice() {
-  const { sessionExpiring, status, refresh } = useAuth();
-  const refreshRef = useRef(refresh);
-  refreshRef.current = refresh;
+  const { sessionState, status, renewSession } = useAuth();
+  const renewSessionRef = useRef(renewSession);
+  renewSessionRef.current = renewSession;
 
   useEffect(() => {
-    if (!sessionExpiring || status !== "authenticated") {
+    if (sessionState !== "expiring" || status !== "authenticated") {
       notifyHide(NOTICE_ID);
       return;
     }
@@ -37,14 +39,19 @@ export function SessionExpiryNotice() {
           size="compact-xs"
           variant="light"
           onClick={() => {
-            void refreshRef.current();
+            void renewSessionRef.current().catch((error: unknown) => {
+              // A dead session already moved the provider to "expired" and
+              // opened the dialog; anything else is a real failure to surface.
+              if (isUnauthorized(error)) return;
+              notifyError("Não foi possível renovar a sessão. Tente novamente.");
+            });
           }}
         >
           Renovar sessão
         </Button>
       ),
     });
-  }, [sessionExpiring, status]);
+  }, [sessionState, status]);
 
   return null;
 }

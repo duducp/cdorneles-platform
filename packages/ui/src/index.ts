@@ -5,6 +5,7 @@ export * from "./auth/google-icon";
 export * from "./auth/login-form";
 export * from "./auth/mfa-challenge-form";
 export * from "./auth/reset-password-form";
+export * from "./auth/session-expired-dialog";
 export * from "./auth/social-login";
 export * from "./components/data-table";
 export * from "./components/app-version";

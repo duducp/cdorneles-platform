@@ -24,6 +24,7 @@ export function createUnconfiguredAuthService(): AuthService {
     createMfaChallenge: fail("createMfaChallenge"),
     logout: fail("logout"),
     getSession: fail("getSession"),
+    renewSession: fail("renewSession"),
     getCurrentUser: fail("getCurrentUser"),
     requestPasswordRecovery: fail("requestPasswordRecovery"),
     confirmPasswordRecovery: fail("confirmPasswordRecovery"),

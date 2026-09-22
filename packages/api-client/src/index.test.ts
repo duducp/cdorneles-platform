@@ -9,6 +9,7 @@ const services: AppwriteServices = {
   account: {
     getCurrentUser: vi.fn(),
     getCurrentSession: vi.fn(),
+    updateSession: vi.fn(),
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     deleteSession: vi.fn(),

@@ -1,6 +1,6 @@
 "use client";
 
-import { isApiError } from "@cdorneles/api-client";
+import { isApiError, isUnauthorized } from "@cdorneles/api-client";
 import {
   AuthNotConfiguredError,
   describeAuthError,
@@ -58,10 +58,7 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
         if (cancelled) return;
         if (err instanceof AuthNotConfiguredError) {
           setError("Autenticação não configurada neste ambiente.");
-        } else if (
-          isApiError(err) &&
-          (err.status === 401 || err.code === "general_unauthorized_scope")
-        ) {
+        } else if (isApiError(err) && isUnauthorized(err)) {
           setError(
             "Sessão não encontrada. Faça login novamente para iniciar a verificação em duas etapas.",
           );

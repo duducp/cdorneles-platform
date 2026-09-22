@@ -31,3 +31,18 @@ export function toApiError(error: unknown, fallbackCode = "unknown"): ApiError {
   }
   return new ApiError(String(error), { code: fallbackCode });
 }
+
+/** Appwrite codes that mean the session is gone, not that access was denied. */
+const UNAUTHORIZED_CODES = new Set(["user_unauthorized", "general_unauthorized_scope"]);
+
+/**
+ * True when the error means the session is dead and the user must authenticate
+ * again. A `403` is deliberately excluded: it is authorization, not identity,
+ * and re-authenticating would not change the answer.
+ */
+export function isUnauthorized(error: unknown): boolean {
+  if (!isApiError(error)) {
+    return false;
+  }
+  return error.status === 401 || UNAUTHORIZED_CODES.has(error.code);
+}

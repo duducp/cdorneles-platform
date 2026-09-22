@@ -4,6 +4,7 @@ export * from "./describe-error";
 export * from "./errors";
 export * from "./provider";
 export * from "./safe-redirect";
+export * from "./session-signal";
 export * from "./types";
 export * from "./use-permissions";
 export * from "./use-redirect-if-authenticated";

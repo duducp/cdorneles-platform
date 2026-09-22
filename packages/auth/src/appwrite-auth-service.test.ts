@@ -7,6 +7,7 @@ function createMockAccountApi(): AccountApi {
   return {
     getCurrentUser: vi.fn(),
     getCurrentSession: vi.fn(),
+    updateSession: vi.fn(),
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     deleteSession: vi.fn(),
@@ -135,6 +136,35 @@ describe("createAppwriteAuthService", () => {
       const service = createAppwriteAuthService(api);
 
       await expect(service.getSession()).rejects.toThrow("Server error");
+    });
+  });
+
+  describe("renewSession", () => {
+    it("extends the current session and returns the mapped AuthSession", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.updateSession).mockResolvedValue({
+        $id: "s1",
+        userId: "u1",
+        expire: futureDate,
+      });
+
+      const service = createAppwriteAuthService(api);
+      const session = await service.renewSession();
+
+      expect(api.updateSession).toHaveBeenCalledWith({ sessionId: "current" });
+      expect(session).toEqual({
+        id: "s1",
+        userId: "u1",
+        expiresAt: futureDate,
+      });
+    });
+
+    it("propagates SDK errors", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.updateSession).mockRejectedValue(new Error("user_unauthorized"));
+
+      const service = createAppwriteAuthService(api);
+      await expect(service.renewSession()).rejects.toThrow("user_unauthorized");
     });
   });
 
