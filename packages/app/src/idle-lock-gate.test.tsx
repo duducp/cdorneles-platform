@@ -1,18 +1,20 @@
 import "@testing-library/jest-dom/vitest";
 
+import type * as AuthModule from "@cdorneles/auth";
 import { MantineProvider } from "@mantine/core";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { useAuthMock, invalidateMock, idleCallbacks } = vi.hoisted(() => ({
+const { useAuthMock, invalidateMock, idleCallbacks, activateMock } = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   invalidateMock: vi.fn(),
   idleCallbacks: { current: {} as Record<string, () => void> },
+  activateMock: vi.fn(),
 }));
 
 vi.mock("@cdorneles/auth", async () => {
-  const actual = await vi.importActual<typeof import("@cdorneles/auth")>("@cdorneles/auth");
+  const actual = await vi.importActual<typeof AuthModule>("@cdorneles/auth");
   return { ...actual, useAuth: useAuthMock };
 });
 vi.mock("@tanstack/react-query", () => ({
@@ -22,7 +24,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard" }));
 vi.mock("react-idle-timer", () => ({
   useIdleTimer: (options: Record<string, unknown>) => {
     idleCallbacks.current = options as Record<string, () => void>;
-    return { activate: vi.fn(), getRemainingTime: () => 30_000 };
+    return { activate: activateMock, getRemainingTime: () => 30_000 };
   },
 }));
 
@@ -83,6 +85,17 @@ describe("IdleLockGate", () => {
     await waitFor(() => expect(reauthenticate).toHaveBeenCalledWith({ email: "a@b.c", password: "segredo123" }));
     expect(invalidateMock).toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument());
+  });
+
+  it("resets the idle timer when the user continues", async () => {
+    renderGate();
+
+    idleCallbacks.current.onPrompt();
+    await screen.findByText(/será bloqueada em/i);
+
+    await userEvent.click(screen.getByRole("button", { name: /continuar trabalhando/i }));
+
+    expect(activateMock).toHaveBeenCalledTimes(1);
   });
 
   it("does nothing while anonymous", () => {

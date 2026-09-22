@@ -40,7 +40,7 @@ export function IdleLockGate() {
     !!user &&
     !PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
-  useIdleTimer({
+  const { activate } = useIdleTimer({
     timeout: IDLE_TIMEOUT_MS,
     promptBeforeIdle: PROMPT_BEFORE_IDLE_MS,
     crossTab: true,
@@ -103,7 +103,7 @@ export function IdleLockGate() {
     }
     return <LockScreen email={user.email} onSubmit={handlePassword} onSignOut={handleSignOut} />;
   }
-  return prompted ? <IdlePrompt onContinue={() => setPrompted(false)} /> : null;
+  return prompted ? <IdlePrompt onContinue={activate} /> : null;
 }
 
 function IdlePrompt({ onContinue }: { onContinue: () => void }) {
