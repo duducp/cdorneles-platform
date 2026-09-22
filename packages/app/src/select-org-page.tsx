@@ -49,8 +49,8 @@ export function SelectOrgPage() {
   return (
     <Flex direction="column" mih="100dvh">
       <Flex justify="flex-end" gap="sm" p="sm">
-        <ThemeToggle />
-        <Button variant="subtle" onClick={handleLogout}>
+        <ThemeToggle size="lg" />
+        <Button variant="subtle" size="compact-lg" onClick={handleLogout}>
           Sair
         </Button>
       </Flex>

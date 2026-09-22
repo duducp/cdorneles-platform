@@ -1,13 +1,15 @@
 "use client";
 
 import { useAppColorScheme } from "@cdorneles/theme";
-import { Box } from "@mantine/core";
+import { Box, type ActionIconProps } from "@mantine/core";
 import { Moon, Sun } from "lucide-react";
 
 import { IconButton, type IconButtonIcon } from "./icon-button";
 
 export interface ThemeToggleProps {
   className?: string;
+  /** ActionIcon size; defaults to `md`. */
+  size?: ActionIconProps["size"];
 }
 
 /**
@@ -28,12 +30,13 @@ const ThemeToggleIcon: IconButtonIcon = ({ size = 18, ...rest }) => (
 );
 
 /** Light/Dark toggle. There is no "System" option (AGENTS.md). */
-export function ThemeToggle({ className }: ThemeToggleProps) {
+export function ThemeToggle({ className, size = "md" }: ThemeToggleProps) {
   const { colorScheme, setColorScheme } = useAppColorScheme();
 
   return (
     <IconButton
       className={className}
+      size={size}
       icon={ThemeToggleIcon}
       label="Alternar tema claro/escuro"
       variant="default"
