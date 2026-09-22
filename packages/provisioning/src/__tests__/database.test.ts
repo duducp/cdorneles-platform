@@ -55,6 +55,7 @@ vi.mock("node-appwrite", () => {
 });
 
 import { createDatabase } from "../database.js";
+import { TABLES } from "../config.js";
 
 describe("createDatabase", () => {
   const config = {
@@ -77,10 +78,10 @@ describe("createDatabase", () => {
     expect(mockCreate).toHaveBeenCalledWith("cdorneles_platform", "Cdorneles Platform");
   });
 
-  it("creates all 11 tables", async () => {
+  it("creates a table for every configured table", async () => {
     await createDatabase(config);
 
-    expect(mockCreateTable).toHaveBeenCalledTimes(11);
+    expect(mockCreateTable).toHaveBeenCalledTimes(TABLES.length);
   });
 
   it("creates indexes for each table", async () => {

@@ -70,6 +70,9 @@ describe("seedData", () => {
     const permCalls = mockCreateRow.mock.calls.filter((call: any[]) => call[1] === "permissions");
     expect(permCalls).toHaveLength(SEED_PERMISSIONS.length);
     expect(permCalls.map((call: any[]) => call[3].key)).toContain("organizations.create");
+    expect(permCalls.map((call: any[]) => call[3].key)).toContain("users.read");
+    expect(permCalls.map((call: any[]) => call[3].key)).toContain("users.create");
+    expect(permCalls.map((call: any[]) => call[3].key)).toContain("users.manage_permissions");
   });
 
   it("inserts 8 features", async () => {
