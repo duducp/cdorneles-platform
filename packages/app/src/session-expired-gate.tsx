@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  describeAuthError,
-  MfaRequiredError,
-  useAuth,
-} from "@cdorneles/auth";
+import { describeAuthError, MfaRequiredError, useAuth } from "@cdorneles/auth";
 import { SessionExpiredDialog, SessionExpiredMfaDialog } from "@cdorneles/ui";
 import type { MfaChallengeFormValues } from "@cdorneles/ui";
 import { useQueryClient } from "@tanstack/react-query";

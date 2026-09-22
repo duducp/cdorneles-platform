@@ -13,10 +13,7 @@ export interface DataTableProps<TData extends RowData> {
   columns: LegacyColumnDef<TData, unknown>[];
 }
 
-export function DataTable<TData extends RowData>({
-  data,
-  columns,
-}: DataTableProps<TData>) {
+export function DataTable<TData extends RowData>({ data, columns }: DataTableProps<TData>) {
   const table = useLegacyTable({
     data,
     columns,
@@ -33,10 +30,7 @@ export function DataTable<TData extends RowData>({
                 <Table.Th key={header.id}>
                   {header.isPlaceholder
                     ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </Table.Th>
               ))}
             </Table.Tr>
@@ -47,10 +41,7 @@ export function DataTable<TData extends RowData>({
             <Table.Tr key={row.id}>
               {row.getVisibleCells().map((cell) => (
                 <Table.Td key={cell.id}>
-                  {flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  )}
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </Table.Td>
               ))}
             </Table.Tr>

@@ -1,16 +1,7 @@
 "use client";
 
 import type { Branding } from "@cdorneles/types";
-import {
-  Button,
-  Card,
-  Flex,
-  Image,
-  Stack,
-  Text,
-  Title,
-  rgba,
-} from "@mantine/core";
+import { Button, Card, Flex, Image, Stack, Text, Title, rgba } from "@mantine/core";
 import { Building2, Check } from "lucide-react";
 
 export interface OrgPickerOrganization {
@@ -80,13 +71,7 @@ export function OrgPicker({
               >
                 <Flex align="center" gap="sm">
                   {branding?.logoLight ? (
-                    <Image
-                      src={branding.logoLight}
-                      alt={org.name}
-                      h={24}
-                      w="auto"
-                      fit="contain"
-                    />
+                    <Image src={branding.logoLight} alt={org.name} h={24} w="auto" fit="contain" />
                   ) : (
                     <Building2 aria-hidden size={18} />
                   )}

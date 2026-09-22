@@ -90,18 +90,15 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
     [challengeId, completeMfa, router],
   );
 
-  const handleResend = useCallback(
-    async () => {
-      if (!factor) return;
-      try {
-        const challenge = await service.createMfaChallenge({ factor });
-        setChallengeId(challenge.challengeId);
-      } catch {
-        setError("Erro ao reenviar código. Tente novamente.");
-      }
-    },
-    [service, factor],
-  );
+  const handleResend = useCallback(async () => {
+    if (!factor) return;
+    try {
+      const challenge = await service.createMfaChallenge({ factor });
+      setChallengeId(challenge.challengeId);
+    } catch {
+      setError("Erro ao reenviar código. Tente novamente.");
+    }
+  }, [service, factor]);
 
   if (!canRender) {
     return null;
@@ -113,13 +110,7 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
         <ThemeToggle />
       </Flex>
 
-      <Flex
-        component="main"
-        align="center"
-        justify="center"
-        p="md"
-        style={{ flex: 1 }}
-      >
+      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
         <Stack w="100%" maw={920} gap="xl">
           <AuthCard
             form={

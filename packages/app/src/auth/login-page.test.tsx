@@ -53,7 +53,9 @@ describe("LoginPage", () => {
     localStorage.setItem("cdorneles-last-login-method", "google");
     renderPage();
 
-    expect(screen.getByRole("button", { name: "Continuar com Google novamente" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continuar com Google novamente" }),
+    ).toBeInTheDocument();
   });
 
   it("does not render the terms footer text", () => {

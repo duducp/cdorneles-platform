@@ -111,14 +111,10 @@ describe("resolveActiveOrganization", () => {
   });
 
   it("returns null when there are no organizations", () => {
-    expect(
-      resolveActiveOrganization({ organizations: [], memberships: [] }),
-    ).toBeNull();
+    expect(resolveActiveOrganization({ organizations: [], memberships: [] })).toBeNull();
   });
 
   it("returns null when the user has no memberships", () => {
-    expect(
-      resolveActiveOrganization({ organizations: [orgA, orgB], memberships: [] }),
-    ).toBeNull();
+    expect(resolveActiveOrganization({ organizations: [orgA, orgB], memberships: [] })).toBeNull();
   });
 });

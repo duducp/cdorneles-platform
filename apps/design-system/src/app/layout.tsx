@@ -21,10 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" {...mantineHtmlProps}>
       <head>
-        <ColorSchemeScript
-          defaultColorScheme="auto"
-          localStorageKey={COLOR_SCHEME_STORAGE_KEY}
-        />
+        <ColorSchemeScript defaultColorScheme="auto" localStorageKey={COLOR_SCHEME_STORAGE_KEY} />
       </head>
       <body>
         <OrgBranding />

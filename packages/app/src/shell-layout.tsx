@@ -49,13 +49,15 @@ export function createShellLayout({ navItems }: CreateShellLayoutOptions) {
         fallback={<LoadingState label="Carregando…" />}
       >
         <AppShell
-          sidebar={<Sidebar
-            items={navItems}
-            activeHref={pathname}
-            collapsed={!opened}
-            linkComponent={Link}
-            pendingComponent={NavPendingIndicator}
-          />}
+          sidebar={
+            <Sidebar
+              items={navItems}
+              activeHref={pathname}
+              collapsed={!opened}
+              linkComponent={Link}
+              pendingComponent={NavPendingIndicator}
+            />
+          }
           topbar={
             <Topbar
               userName={currentOrganization?.name ?? user?.name ?? "User"}

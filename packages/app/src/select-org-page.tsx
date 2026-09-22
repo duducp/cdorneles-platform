@@ -48,13 +48,7 @@ export function SelectOrgPage() {
         <ThemeToggle />
       </Flex>
 
-      <Flex
-        component="main"
-        align="center"
-        justify="center"
-        p="md"
-        style={{ flex: 1 }}
-      >
+      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
         <Stack w="100%" maw={480} gap="xl">
           <VisuallyHidden>
             <Title order={1}>Selecionar organização</Title>
@@ -70,12 +64,7 @@ export function SelectOrgPage() {
             Create organization
           </Button>
 
-          <Modal
-            opened={createOpened}
-            onClose={closeCreate}
-            title="New organization"
-            centered
-          >
+          <Modal opened={createOpened} onClose={closeCreate} title="New organization" centered>
             <CreateOrganizationForm onCreate={handleCreate} onCancel={closeCreate} />
           </Modal>
 

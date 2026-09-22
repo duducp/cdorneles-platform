@@ -100,14 +100,7 @@ export function TenantProvider({
       switchOrganization,
       createOrganization,
     }),
-    [
-      currentOrganization,
-      organizations,
-      branding,
-      ready,
-      switchOrganization,
-      createOrganization,
-    ],
+    [currentOrganization, organizations, branding, ready, switchOrganization, createOrganization],
   );
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;

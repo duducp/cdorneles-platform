@@ -19,11 +19,20 @@ function createFakeService(): AuthService {
   return {
     login: vi.fn(async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" })),
     completeMfa: vi.fn(async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" })),
-    listMfaFactors: vi.fn(async () => ({ totp: false, phone: false, email: false, recoveryCode: false })),
+    listMfaFactors: vi.fn(async () => ({
+      totp: false,
+      phone: false,
+      email: false,
+      recoveryCode: false,
+    })),
     createMfaChallenge: vi.fn(async () => ({ challengeId: "c1", factor: "email" as const })),
     logout: vi.fn(async () => undefined),
     getSession: vi.fn(async () => null),
-    renewSession: vi.fn(async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" })),
+    renewSession: vi.fn(async () => ({
+      id: "s1",
+      userId: "u1",
+      expiresAt: "2030-01-01T00:00:00Z",
+    })),
     getCurrentUser: vi.fn(async () => user),
     requestPasswordRecovery: vi.fn(async () => undefined),
     confirmPasswordRecovery: vi.fn(async () => undefined),

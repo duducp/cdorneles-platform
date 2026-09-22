@@ -11,11 +11,7 @@ export interface AppShellProps {
 
 export function AppShell({ sidebar, topbar, children }: AppShellProps) {
   return (
-    <MantineAppShell
-      header={{ height: 60 }}
-      navbar={{ width: 260, breakpoint: "md" }}
-      padding="md"
-    >
+    <MantineAppShell header={{ height: 60 }} navbar={{ width: 260, breakpoint: "md" }} padding="md">
       <MantineAppShell.Header>{topbar}</MantineAppShell.Header>
       <MantineAppShell.Navbar>{sidebar}</MantineAppShell.Navbar>
       <MantineAppShell.Main>{children}</MantineAppShell.Main>

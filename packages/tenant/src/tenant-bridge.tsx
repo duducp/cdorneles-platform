@@ -105,7 +105,9 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
       if (!cancelled) setBranding(result);
     });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [currentOrganizationId, tenantService]);
 
   const handleOrganizationChange = useCallback((organization: Organization) => {

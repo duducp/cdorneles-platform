@@ -4,7 +4,10 @@ import { Alert, type AlertProps } from "@mantine/core";
 import { AlertCircle } from "lucide-react";
 import type { ReactNode } from "react";
 
-export interface FormErrorProps extends Omit<AlertProps, "children" | "color" | "variant" | "icon"> {
+export interface FormErrorProps extends Omit<
+  AlertProps,
+  "children" | "color" | "variant" | "icon"
+> {
   /** The error message. When null/undefined the alert is not rendered. */
   children?: ReactNode;
 }

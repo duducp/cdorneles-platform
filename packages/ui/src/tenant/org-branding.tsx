@@ -15,9 +15,7 @@ export function OrgBranding() {
   useEffect(() => {
     if (!branding?.favicon) return;
 
-    const link = document.querySelector(
-      "link[rel~='icon']",
-    ) as HTMLLinkElement | null;
+    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
     if (link) {
       link.href = branding.favicon;
     } else {

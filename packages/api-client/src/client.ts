@@ -19,11 +19,7 @@ export interface AccountApi {
   createEmailPasswordSession(input: { email: string; password: string }): Promise<AppwriteSession>;
   deleteSession(sessionId?: string): Promise<void>;
   createRecovery(input: { email: string; url: string }): Promise<void>;
-  updateRecovery(input: {
-    userId: string;
-    secret: string;
-    password: string;
-  }): Promise<void>;
+  updateRecovery(input: { userId: string; secret: string; password: string }): Promise<void>;
   listMfaFactors(): Promise<AppwriteMfaFactors>;
   createMfaChallenge(input: { factor: "totp" | "email" }): Promise<AppwriteMfaChallenge>;
   updateMfaChallenge(input: { challengeId: string; otp: string }): Promise<AppwriteSession>;
@@ -66,22 +62,10 @@ export interface StorageApi {
     file: File;
     permissions?: string[];
   }): Promise<AppwriteFile>;
-  deleteFile(input: {
-    bucketId: string;
-    fileId: string;
-  }): Promise<void>;
-  listFiles(input: {
-    bucketId: string;
-    queries?: string[];
-  }): Promise<AppwriteFile[]>;
-  getFileDownloadUrl(input: {
-    bucketId: string;
-    fileId: string;
-  }): string;
-  getFileViewUrl(input: {
-    bucketId: string;
-    fileId: string;
-  }): string;
+  deleteFile(input: { bucketId: string; fileId: string }): Promise<void>;
+  listFiles(input: { bucketId: string; queries?: string[] }): Promise<AppwriteFile[]>;
+  getFileDownloadUrl(input: { bucketId: string; fileId: string }): string;
+  getFileViewUrl(input: { bucketId: string; fileId: string }): string;
 }
 
 /** Concrete Appwrite-backed services. Built by `createAppwriteServices`. */

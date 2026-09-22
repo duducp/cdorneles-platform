@@ -67,7 +67,9 @@ export function ForgotPasswordForm({ onSubmit, initialEmail = "" }: ForgotPasswo
       noValidate
       aria-busy={status === "submitting" || undefined}
     >
-      <FormError id="forgot-password-form-error" mb="md">{error}</FormError>
+      <FormError id="forgot-password-form-error" mb="md">
+        {error}
+      </FormError>
 
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">

@@ -19,7 +19,13 @@ async function createColumn(
 ): Promise<void> {
   switch (attr.type) {
     case "string":
-      await tablesDb.createStringColumn(DATABASE_ID, tableId, attr.key, attr.size ?? 255, attr.required);
+      await tablesDb.createStringColumn(
+        DATABASE_ID,
+        tableId,
+        attr.key,
+        attr.size ?? 255,
+        attr.required,
+      );
       break;
     case "integer":
       await tablesDb.createIntegerColumn(DATABASE_ID, tableId, attr.key, attr.required);
@@ -31,7 +37,13 @@ async function createColumn(
       await tablesDb.createDatetimeColumn(DATABASE_ID, tableId, attr.key, attr.required);
       break;
     case "enum":
-      await tablesDb.createEnumColumn(DATABASE_ID, tableId, attr.key, attr.elements ?? [], attr.required);
+      await tablesDb.createEnumColumn(
+        DATABASE_ID,
+        tableId,
+        attr.key,
+        attr.elements ?? [],
+        attr.required,
+      );
       break;
   }
 }
@@ -102,7 +114,9 @@ export async function createDatabase(config: AppwriteConfig): Promise<void> {
     for (const index of table.indexes) {
       try {
         await createIndex(tablesDb, table.id, index);
-        console.log(`[provisioning]   + index ${index.key} (${index.type} on ${index.columns.join(", ")})`);
+        console.log(
+          `[provisioning]   + index ${index.key} (${index.type} on ${index.columns.join(", ")})`,
+        );
       } catch (error: unknown) {
         const code = (error as { code?: number }).code;
         if (code === 409) {

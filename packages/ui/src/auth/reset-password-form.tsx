@@ -62,7 +62,9 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
       noValidate
       aria-busy={status === "submitting" || undefined}
     >
-      <FormError id="reset-password-form-error" mb="md">{error}</FormError>
+      <FormError id="reset-password-form-error" mb="md">
+        {error}
+      </FormError>
 
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
@@ -94,9 +96,13 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           autoComplete="new-password"
           leftSection={<LockIcon size={16} aria-hidden />}
           visibilityToggleFocusable
-          visibilityToggleButtonProps={{ "aria-label": "Alternar visibilidade da confirmação de senha" }}
+          visibilityToggleButtonProps={{
+            "aria-label": "Alternar visibilidade da confirmação de senha",
+          }}
           aria-invalid={form.errors.passwordConfirmation ? true : undefined}
-          aria-describedby={form.errors.passwordConfirmation ? "reset-password-form-error" : undefined}
+          aria-describedby={
+            form.errors.passwordConfirmation ? "reset-password-form-error" : undefined
+          }
           {...form.getInputProps("passwordConfirmation")}
         />
 

@@ -135,9 +135,7 @@ describe("createStorageApi", () => {
   });
 
   it("wraps upload failures in ApiError", async () => {
-    mocks.storage.createFile.mockRejectedValue(
-      new AppwriteException("nope", 400, "file_invalid"),
-    );
+    mocks.storage.createFile.mockRejectedValue(new AppwriteException("nope", 400, "file_invalid"));
 
     const api = createStorageApi(client);
 

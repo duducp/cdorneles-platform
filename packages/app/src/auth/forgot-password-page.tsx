@@ -1,7 +1,14 @@
 "use client";
 
 import { useAuth, useRedirectIfAuthenticated } from "@cdorneles/auth";
-import { AppVersion, AuthCard, AuthVisual, ForgotPasswordForm, Logo, ThemeToggle } from "@cdorneles/ui";
+import {
+  AppVersion,
+  AuthCard,
+  AuthVisual,
+  ForgotPasswordForm,
+  Logo,
+  ThemeToggle,
+} from "@cdorneles/ui";
 import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,13 +51,7 @@ export function ForgotPasswordPage({
         <ThemeToggle />
       </Flex>
 
-      <Flex
-        component="main"
-        align="center"
-        justify="center"
-        p="md"
-        style={{ flex: 1 }}
-      >
+      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
         <Stack w="100%" maw={920} gap="xl">
           <AuthCard
             form={

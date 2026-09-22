@@ -21,12 +21,7 @@ export function Topbar({
 }: TopbarProps) {
   return (
     <Group h="100%" px="md" justify="space-between">
-      <Burger
-        opened={sidebarOpened}
-        onClick={onToggleSidebar}
-        hiddenFrom="md"
-        size="sm"
-      />
+      <Burger opened={sidebarOpened} onClick={onToggleSidebar} hiddenFrom="md" size="sm" />
       <Box flex={1} />
       <Group gap="sm">
         <ThemeToggle />

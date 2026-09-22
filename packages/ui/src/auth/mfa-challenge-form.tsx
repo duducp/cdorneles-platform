@@ -87,7 +87,9 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
       noValidate
       aria-busy={status === "submitting" || undefined}
     >
-      <FormError id="mfa-form-error" mb="md">{error}</FormError>
+      <FormError id="mfa-form-error" mb="md">
+        {error}
+      </FormError>
 
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">

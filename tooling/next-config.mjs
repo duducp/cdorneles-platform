@@ -11,9 +11,7 @@ const repoRoot = path.resolve(currentDir, "..");
  * baking it in here means the value travels with the bundle and needs no
  * Appwrite variable to be configured per site.
  */
-const appVersion = JSON.parse(
-  readFileSync(path.join(repoRoot, "package.json"), "utf8"),
-).version;
+const appVersion = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8")).version;
 
 /**
  * Every shared package is consumed as TypeScript source, so Next.js must

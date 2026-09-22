@@ -14,9 +14,7 @@ describe("resolvePostAuthRedirect", () => {
   });
 
   it("keeps the query string of the target path", () => {
-    expect(resolvePostAuthRedirect("?redirect=%2Fcustomers%3Fpage%3D2")).toBe(
-      "/customers?page=2",
-    );
+    expect(resolvePostAuthRedirect("?redirect=%2Fcustomers%3Fpage%3D2")).toBe("/customers?page=2");
   });
 
   it("rejects an absolute URL", () => {

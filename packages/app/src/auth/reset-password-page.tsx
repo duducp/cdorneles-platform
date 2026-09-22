@@ -53,13 +53,7 @@ function ResetPasswordContent() {
   return (
     <Stack gap="md">
       <ResetPasswordForm onSubmit={handleSubmit} />
-      <Anchor
-        component={Link}
-        href="/login"
-        underline="always"
-        display="block"
-        ta="center"
-      >
+      <Anchor component={Link} href="/login" underline="always" display="block" ta="center">
         Voltar para o login
       </Anchor>
     </Stack>
@@ -71,9 +65,7 @@ export interface ResetPasswordPageProps {
   redirectWhenAuthenticated?: boolean;
 }
 
-export function ResetPasswordPage({
-  redirectWhenAuthenticated = true,
-}: ResetPasswordPageProps) {
+export function ResetPasswordPage({ redirectWhenAuthenticated = true }: ResetPasswordPageProps) {
   const router = useRouter();
   const goToApp = useCallback(() => router.replace("/"), [router]);
   const canRender = useRedirectIfAuthenticated(redirectWhenAuthenticated, goToApp);
@@ -88,19 +80,10 @@ export function ResetPasswordPage({
         <ThemeToggle />
       </Flex>
 
-      <Flex
-        component="main"
-        align="center"
-        justify="center"
-        p="md"
-        style={{ flex: 1 }}
-      >
+      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
         <Stack w="100%" maw={920} gap="xl">
           <Suspense>
-            <AuthCard
-              form={<ResetPasswordContent />}
-              visual={<AuthVisual />}
-            />
+            <AuthCard form={<ResetPasswordContent />} visual={<AuthVisual />} />
           </Suspense>
 
           <Stack component="footer" align="center" gap="sm">

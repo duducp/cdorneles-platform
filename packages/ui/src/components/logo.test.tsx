@@ -13,8 +13,7 @@ const renderLogo = (props: Parameters<typeof Logo>[0]) =>
     </ThemeProvider>,
   );
 
-const sources = () =>
-  screen.getAllByAltText("Cdorneles").map((img) => img.getAttribute("src"));
+const sources = () => screen.getAllByAltText("Cdorneles").map((img) => img.getAttribute("src"));
 
 describe("Logo", () => {
   it("renders both light and dark sources so CSS can pick one", () => {

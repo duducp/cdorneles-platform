@@ -211,7 +211,10 @@ export default function DesignSystemPage() {
             <Button variant="primary" onClick={() => notifySuccess("Organização atualizada.")}>
               Success
             </Button>
-            <Button variant="secondary" onClick={() => notifyInfo("Sua sessão expira em alguns minutos.")}>
+            <Button
+              variant="secondary"
+              onClick={() => notifyInfo("Sua sessão expira em alguns minutos.")}
+            >
               Info
             </Button>
             <Button variant="danger" onClick={() => notifyError("Não foi possível salvar.")}>

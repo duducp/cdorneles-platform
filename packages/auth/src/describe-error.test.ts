@@ -43,9 +43,7 @@ describe("describeAuthError", () => {
   });
 
   it("falls back for an unknown error", () => {
-    expect(describeAuthError(new Error("boom"))).toBe(
-      "Não foi possível entrar. Tente novamente.",
-    );
+    expect(describeAuthError(new Error("boom"))).toBe("Não foi possível entrar. Tente novamente.");
     expect(describeAuthError(new ApiError("odd", { code: "weird_thing", status: 500 }))).toBe(
       "Não foi possível entrar. Tente novamente.",
     );

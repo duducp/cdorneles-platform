@@ -74,10 +74,7 @@ describe("createDatabase", () => {
   it("creates database with correct ID and name", async () => {
     await createDatabase(config);
 
-    expect(mockCreate).toHaveBeenCalledWith(
-      "cdorneles_platform",
-      "Cdorneles Platform",
-    );
+    expect(mockCreate).toHaveBeenCalledWith("cdorneles_platform", "Cdorneles Platform");
   });
 
   it("creates all 10 tables", async () => {

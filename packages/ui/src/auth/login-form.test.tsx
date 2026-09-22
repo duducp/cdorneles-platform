@@ -110,10 +110,7 @@ describe("LoginForm", () => {
     renderForm({ onSubmit: vi.fn() });
 
     expect(screen.getByLabelText("E-mail")).toHaveAttribute("autocomplete", "email");
-    expect(screen.getByLabelText("Senha")).toHaveAttribute(
-      "autocomplete",
-      "current-password",
-    );
+    expect(screen.getByLabelText("Senha")).toHaveAttribute("autocomplete", "current-password");
   });
 
   it("hides the sign-up link by default", () => {
@@ -143,7 +140,9 @@ describe("LoginForm", () => {
   it("passes googleLabel to SocialLogin", () => {
     renderForm({ onSubmit: vi.fn(), googleLabel: "Continuar com Google novamente" });
 
-    expect(screen.getByRole("button", { name: "Continuar com Google novamente" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continuar com Google novamente" }),
+    ).toBeInTheDocument();
   });
 
   it("aligns 'Esqueci minha senha' to the left", () => {

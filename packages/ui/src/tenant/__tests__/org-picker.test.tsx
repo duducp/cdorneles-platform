@@ -52,10 +52,7 @@ describe("OrgPicker", () => {
 
   it("falls back to Building2 icon when no logoLight", () => {
     renderWithTheme(
-      <OrgPicker
-        organizations={[{ id: "org-1", name: "Test" }]}
-        onSelect={vi.fn()}
-      />,
+      <OrgPicker organizations={[{ id: "org-1", name: "Test" }]} onSelect={vi.fn()} />,
     );
 
     expect(screen.queryByRole("img", { name: "Test" })).not.toBeInTheDocument();

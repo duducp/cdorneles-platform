@@ -26,9 +26,7 @@ export async function createBuckets(config: AppwriteConfig): Promise<void> {
     } catch (error: unknown) {
       const code = (error as { code?: number }).code;
       if (code === 409) {
-        console.log(
-          `[provisioning] Bucket ${bucket.id} already exists, skipping.`,
-        );
+        console.log(`[provisioning] Bucket ${bucket.id} already exists, skipping.`);
       } else {
         throw error;
       }

@@ -16,10 +16,7 @@ import { useAuth } from "./auth-context";
  * The package stays framework-agnostic: navigation is the caller's job, the
  * same way `OrgGuard` takes `onRedirectToSelectOrg`.
  */
-export function useRedirectIfAuthenticated(
-  enabled: boolean,
-  onAuthenticated: () => void,
-): boolean {
+export function useRedirectIfAuthenticated(enabled: boolean, onAuthenticated: () => void): boolean {
   const { status } = useAuth();
 
   useEffect(() => {

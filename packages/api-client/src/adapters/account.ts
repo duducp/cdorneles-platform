@@ -2,7 +2,12 @@ import { Account, type AuthenticationFactor } from "appwrite";
 import type { Client } from "appwrite";
 
 import type { AccountApi } from "../client";
-import type { AppwriteAccount, AppwriteMfaChallenge, AppwriteMfaFactors, AppwriteSession } from "../dto";
+import type {
+  AppwriteAccount,
+  AppwriteMfaChallenge,
+  AppwriteMfaFactors,
+  AppwriteSession,
+} from "../dto";
 import { mapAppwriteError } from "./map-error";
 
 export function createAccountApi(client: Client): AccountApi {

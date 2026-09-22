@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Button,
-  DataTable,
-  EmptyState,
-  PageContainer,
-  PageHeader,
-} from "@cdorneles/ui";
+import { Button, DataTable, EmptyState, PageContainer, PageHeader } from "@cdorneles/ui";
 import { PermissionGate } from "@cdorneles/ui/permissions";
 import { permissionKey } from "@cdorneles/permissions";
 import type { LegacyColumnDef } from "@tanstack/react-table/legacy";

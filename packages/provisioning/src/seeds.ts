@@ -12,11 +12,7 @@ function createTablesDbApi(config: AppwriteConfig): TablesDB {
   return new TablesDB(createClient(config));
 }
 
-async function seedTable(
-  tablesDb: TablesDB,
-  tableId: string,
-  seeds: SeedDef[],
-): Promise<void> {
+async function seedTable(tablesDb: TablesDB, tableId: string, seeds: SeedDef[]): Promise<void> {
   for (const seed of seeds) {
     try {
       await tablesDb.createRow(DATABASE_ID, tableId, seed.id, seed.data);

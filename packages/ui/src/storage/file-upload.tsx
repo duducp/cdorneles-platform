@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Button,
-  Group,
-  Image,
-  Paper,
-  Stack,
-  Text,
-  rem,
-} from "@mantine/core";
+import { Button, Group, Image, Paper, Stack, Text, rem } from "@mantine/core";
 import { Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
@@ -57,7 +49,9 @@ export function FileUpload({
       setError(null);
 
       if (maxSize && file.size > maxSize) {
-        setError(`File too large (${formatFileSize(file.size)}). Maximum: ${formatFileSize(maxSize)}`);
+        setError(
+          `File too large (${formatFileSize(file.size)}). Maximum: ${formatFileSize(maxSize)}`,
+        );
         return false;
       }
 
@@ -112,13 +106,7 @@ export function FileUpload({
     return (
       <Paper withBorder p="sm" radius="md">
         <Stack gap="xs">
-          <Image
-            src={previewUrl}
-            alt="Preview"
-            h={200}
-            fit="contain"
-            radius="md"
-          />
+          <Image src={previewUrl} alt="Preview" h={200} fit="contain" radius="md" />
           {onRemove && (
             <Group justify="flex-end">
               <Button

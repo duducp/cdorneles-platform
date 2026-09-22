@@ -224,7 +224,10 @@ describe("createAppwriteAuthService", () => {
 
       const service = createAppwriteAuthService(api);
       await expect(
-        service.requestPasswordRecovery({ email: "a@b.com", redirectUrl: "https://app.test/reset" }),
+        service.requestPasswordRecovery({
+          email: "a@b.com",
+          redirectUrl: "https://app.test/reset",
+        }),
       ).rejects.toThrow("user_invalid_credentials");
     });
   });
@@ -322,9 +325,9 @@ describe("createAppwriteAuthService", () => {
       vi.mocked(api.updateMfaChallenge).mockRejectedValue(new Error("invalid_otp"));
 
       const service = createAppwriteAuthService(api);
-      await expect(
-        service.completeMfa({ challengeId: "c1", code: "000000" }),
-      ).rejects.toThrow("invalid_otp");
+      await expect(service.completeMfa({ challengeId: "c1", code: "000000" })).rejects.toThrow(
+        "invalid_otp",
+      );
     });
   });
 });

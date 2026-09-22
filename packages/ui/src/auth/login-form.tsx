@@ -62,8 +62,7 @@ export function LoginForm({
     },
   );
 
-  const submitError =
-    form.errors.email ?? form.errors.password ?? null;
+  const submitError = form.errors.email ?? form.errors.password ?? null;
 
   return (
     <Box
@@ -107,7 +106,15 @@ export function LoginForm({
           aria-invalid={form.errors.password ? true : undefined}
         />
 
-        <Anchor component="button" type="button" size="sm" underline="hover" c="brand" ta="start" onClick={() => onForgotPassword?.(form.values.email)}>
+        <Anchor
+          component="button"
+          type="button"
+          size="sm"
+          underline="hover"
+          c="brand"
+          ta="start"
+          onClick={() => onForgotPassword?.(form.values.email)}
+        >
           Esqueci minha senha
         </Anchor>
 

@@ -22,9 +22,13 @@ export function UserMenu({ userName, userEmail, onLogout }: UserMenuProps) {
 
       <Menu.Dropdown>
         <Menu.Label>
-          <Text size="sm" fw={500}>{userName}</Text>
+          <Text size="sm" fw={500}>
+            {userName}
+          </Text>
           {userEmail && (
-            <Text size="xs" c="dimmed">{userEmail}</Text>
+            <Text size="xs" c="dimmed">
+              {userEmail}
+            </Text>
           )}
         </Menu.Label>
         <Menu.Divider />

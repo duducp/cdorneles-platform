@@ -37,9 +37,7 @@ describe("resolveGrants", () => {
   });
 
   it("returns empty arrays when no grants", async () => {
-    const api = createMockFunctionsApi(
-      JSON.stringify({ permissions: [], features: [] }),
-    );
+    const api = createMockFunctionsApi(JSON.stringify({ permissions: [], features: [] }));
 
     const result = await resolveGrants(api as any, {
       userId: "u1",

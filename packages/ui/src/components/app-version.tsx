@@ -20,7 +20,11 @@ export interface AppVersionProps {
 /** Small, dimmed build label — for sidebars and page footers. */
 export function AppVersion({ size = "xs", fallback }: AppVersionProps) {
   if (!APP_VERSION) {
-    return fallback ? <Text size={size} c="dimmed">{fallback}</Text> : null;
+    return fallback ? (
+      <Text size={size} c="dimmed">
+        {fallback}
+      </Text>
+    ) : null;
   }
 
   return (

@@ -98,13 +98,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
         <ThemeToggle />
       </Flex>
 
-      <Flex
-        component="main"
-        align="center"
-        justify="center"
-        p="md"
-        style={{ flex: 1 }}
-      >
+      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
         <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
         <Stack w="100%" maw={920} gap="xl">
           <AuthCard

@@ -11,8 +11,7 @@ export function createFunctionsApi(client: Client): FunctionsApi {
   return {
     async createExecution(input): Promise<AppwriteExecution> {
       try {
-        const body =
-          typeof input.body === "string" ? input.body : JSON.stringify(input.body);
+        const body = typeof input.body === "string" ? input.body : JSON.stringify(input.body);
         const execution = await functions.createExecution({
           functionId: input.functionId,
           body,

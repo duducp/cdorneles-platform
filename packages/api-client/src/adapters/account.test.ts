@@ -201,7 +201,11 @@ describe("createAccountApi", () => {
   });
 
   it("creates an MFA challenge for the given factor", async () => {
-    mocks.account.createMfaChallenge.mockResolvedValue({ $id: "c1", userId: "u1", factor: "email" });
+    mocks.account.createMfaChallenge.mockResolvedValue({
+      $id: "c1",
+      userId: "u1",
+      factor: "email",
+    });
 
     const api = createAccountApi(client);
     const challenge = await api.createMfaChallenge({ factor: "email" });

@@ -20,9 +20,7 @@ export function CreateOrganizationForm({ onCreate, onCancel }: CreateOrganizatio
     initialValues: { name: "" },
     validate: (values) => {
       const result = organizationNameSchema.safeParse(values.name);
-      return result.success
-        ? {}
-        : { name: result.error.issues[0]?.message ?? "Invalid name" };
+      return result.success ? {} : { name: result.error.issues[0]?.message ?? "Invalid name" };
     },
   });
 
@@ -34,9 +32,7 @@ export function CreateOrganizationForm({ onCreate, onCancel }: CreateOrganizatio
       form.reset();
     } catch (submitError) {
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Could not create the organization.",
+        submitError instanceof Error ? submitError.message : "Could not create the organization.",
       );
     } finally {
       setSubmitting(false);

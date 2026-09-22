@@ -10,7 +10,11 @@ export interface SocialLoginProps {
 }
 
 /** Social sign-in entry points. Google only for now (visual). */
-export function SocialLogin({ onGoogleClick, disabled, label = "Entrar com Google" }: SocialLoginProps) {
+export function SocialLogin({
+  onGoogleClick,
+  disabled,
+  label = "Entrar com Google",
+}: SocialLoginProps) {
   return (
     <Button
       type="button"

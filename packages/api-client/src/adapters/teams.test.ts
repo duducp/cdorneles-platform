@@ -156,9 +156,7 @@ describe("createTeamsApi", () => {
   });
 
   it("wraps create failures in ApiError", async () => {
-    mocks.teams.create.mockRejectedValue(
-      new AppwriteException("nope", 409, "team_already_exists"),
-    );
+    mocks.teams.create.mockRejectedValue(new AppwriteException("nope", 409, "team_already_exists"));
 
     const api = createTeamsApi(client);
 
