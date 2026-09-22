@@ -81,11 +81,19 @@ negação: a concessão apenas soma.
 
 O **root da plataforma** é membro do time de plataforma (`PLATFORM_TEAM_ID`) e
 tem **todas** as permissões, como o superuser do Django. O modo de plataforma do
-`resolve-grants` (um `organizationId` vazio) devolve todas as chaves da tabela
-`permissions`, concedidas pelo time de plataforma — não por papel de organização.
-As capabilities `users.read`, `users.create` e `users.manage_permissions` também
-são **de plataforma**: vêm do time, e por isso ficam de fora do
-`allPermissionIDs()` do `provision-organization`.
+`resolve-grants` é acionado pela **membership** no time, chamado com um
+`organizationId` vazio, e devolve todas as chaves da tabela `permissions`. Um
+`organizationId` vazio sozinho não concede nada: quem não é do time recebe lista
+vazia.
+
+As capabilities `users.read`, `users.create` e `users.manage_permissions` **não
+são concedidas por papel de organização** — ficam de fora do
+`allPermissionIDs()` do `provision-organization`, então nenhum papel semeado as
+carrega. Só o time de plataforma as tem de graça. Cada Function as resolve de um
+jeito: `create-user` e `update-user-permissions` checam as permissões
+**efetivas do chamador na organização** (papéis ∪ concessões diretas), então uma
+concessão **direta** basta; `list-users` resolve contra os grants de plataforma
+(organização vazia) e é, na prática, exclusivo do time de plataforma.
 
 O rótulo `root` é **apenas um marcador**, nunca um grant (AGENTS.md: autorizar
 por capability, nunca por rótulo ou nome de papel). Toda Function reautoriza no
@@ -118,3 +126,5 @@ organização, papel (`owner|admin|member`) e as permissões diretas.
 
 Está **fora de escopo**: auto-cadastro, negação por usuário, editar o papel ou a
 organização de um usuário depois de criado, e excluir ou desativar usuários.
+Editar as permissões de um usuário depois de criado ainda não está exposto: o
+cliente já tem `updateUserPermissions`, mas nenhuma tela o chama.
