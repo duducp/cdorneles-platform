@@ -52,7 +52,7 @@ capabilities. No business modules yet.
 
 - [x] Scaffold `@cdorneles/provisioning` with the database and the 10 tables
       from `ARCHITECTURE.md` §7 and their columns.
-- [x] Seed the global `applications` registry (`admin`, `client`, `customer`)
+- [x] Seed the global `applications` registry (`admin`, `client`)
       and the `permissions`/`features` definitions.
 - [x] Idempotent provisioning (409-safe) behind a CLI (`pnpm provision`).
 - [x] Provision the Storage buckets (`branding-logos`, `documents`, `avatars`).
