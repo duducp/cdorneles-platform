@@ -15,33 +15,50 @@ const LEVEL_MAP: Record<SeverityLevel, string> = {
   debug: "debug",
 };
 
+/** The slice of a Sentry scope this provider writes to. */
+export interface SentryScope {
+  setExtra(key: string, value: unknown): void;
+}
+
 /**
- * Creates a Sentry-backed observability provider. The `@sentry/nextjs`
- * package must be installed and initialized before calling this function.
- *
- * Falls back to console if Sentry is not available.
+ * Minimal structural shape of the Sentry SDK this provider needs. Keeping it
+ * structural lets the application own the `@sentry/nextjs` dependency and inject
+ * the module, so `@cdorneles/observability` stays framework-agnostic.
  */
-export function createSentryProvider(): ObservabilityProvider {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let sentry: any = null;
+export interface SentryLike {
+  captureException(error: unknown): void;
+  /**
+   * The second argument is the level/capture-context; it is typed `unknown` so
+   * the real SDK's richer signature (`CaptureContext | SeverityLevel`) is
+   * assignable. This provider always forwards the mapped severity string.
+   */
+  captureMessage(message: string, level?: unknown): void;
+  setUser(user: unknown): void;
+  setContext(key: string, context: unknown): void;
+  withScope(callback: (scope: SentryScope) => void): void;
+}
 
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    sentry = require("@sentry/nextjs");
-  } catch {
-    // Sentry not installed — fall back to console
+function applyContext(scope: SentryScope, context?: ObservabilityContext): void {
+  if (context) {
+    Object.entries(context).forEach(([key, value]) => {
+      scope.setExtra(key, value);
+    });
   }
+}
 
+/**
+ * Creates a Sentry-backed observability provider from an injected SDK module.
+ *
+ * The application passes its initialized `@sentry/nextjs` module (see
+ * `initObservability` in `@cdorneles/app`). When no SDK is injected the provider
+ * logs to the console instead, so instrumentation calls never throw.
+ */
+export function createSentryProvider(sentry?: SentryLike | null): ObservabilityProvider {
   return {
     captureException(error: unknown, context?: ObservabilityContext) {
       if (sentry) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sentry.withScope((scope: any) => {
-          if (context) {
-            Object.entries(context).forEach(([key, value]) => {
-              scope.setExtra(key, value);
-            });
-          }
+        sentry.withScope((scope) => {
+          applyContext(scope, context);
           sentry.captureException(error);
         });
       } else {
@@ -51,14 +68,9 @@ export function createSentryProvider(): ObservabilityProvider {
 
     captureMessage(message: string, level: SeverityLevel = "log", context?: ObservabilityContext) {
       if (sentry) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sentry.withScope((scope: any) => {
-          if (context) {
-            Object.entries(context).forEach(([key, value]) => {
-              scope.setExtra(key, value);
-            });
-          }
-          sentry.captureMessage(message, LEVEL_MAP[level] as SeverityLevel);
+        sentry.withScope((scope) => {
+          applyContext(scope, context);
+          sentry.captureMessage(message, LEVEL_MAP[level]);
         });
       } else {
         console[level === "error" ? "error" : level === "warning" ? "warn" : "log"](
@@ -69,21 +81,15 @@ export function createSentryProvider(): ObservabilityProvider {
     },
 
     setUser(user: ObservabilityUser | null) {
-      if (sentry) {
-        sentry.setUser(user);
-      }
+      sentry?.setUser(user);
     },
 
     setOrganization(organization: ObservabilityOrganization | null) {
-      if (sentry) {
-        sentry.setContext("organization", organization);
-      }
+      sentry?.setContext("organization", organization);
     },
 
     setContext(key: string, context: ObservabilityContext | null) {
-      if (sentry) {
-        sentry.setContext(key, context);
-      }
+      sentry?.setContext(key, context);
     },
   };
 }

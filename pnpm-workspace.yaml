@@ -3,6 +3,7 @@ packages:
   - "packages/*"
 
 allowBuilds:
+  "@sentry/cli": false
   esbuild: true
 
 # Single source of truth for dependency versions across the monorepo.
@@ -23,6 +24,7 @@ catalog:
   "zustand": 5.0.15
   "appwrite": 27.0.0
   "node-appwrite": ^27.0.0
+  "@sentry/nextjs": 10.75.2
 
   # Types
   "@types/node": 26.6.1
@@ -55,6 +57,19 @@ catalog:
 
 minimumReleaseAgeExclude:
   - eslint@10.11.0
+  - "@sentry/browser-utils@10.75.2"
+  - "@sentry/browser@10.75.2"
+  - "@sentry/core@10.75.2"
+  - "@sentry/feedback@10.75.2"
+  - "@sentry/nextjs@10.75.2"
+  - "@sentry/node-core@10.75.2"
+  - "@sentry/node@10.75.2"
+  - "@sentry/opentelemetry@10.75.2"
+  - "@sentry/react@10.75.2"
+  - "@sentry/replay-canvas@10.75.2"
+  - "@sentry/replay@10.75.2"
+  - "@sentry/server-utils@10.75.2"
+  - "@sentry/vercel-edge@10.75.2"
 
 # Native/postinstall build scripts allowed to run (pnpm blocks them by default).
 onlyBuiltDependencies:

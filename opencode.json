@@ -11,6 +11,11 @@
         "APPWRITE_API_KEY": "{env:APPWRITE_API_KEY}"
       }
     },
+    "sentry": {
+      "type": "remote",
+      "url": "https://mcp.sentry.dev/mcp",
+      "oauth": {}
+    },
     "mantine": {
       "type": "local",
       "command": ["npx", "-y", "@mantine/mcp-server"]

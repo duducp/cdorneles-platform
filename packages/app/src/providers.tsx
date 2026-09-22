@@ -13,6 +13,7 @@ import {
   createUnconfiguredAuthService,
   usePermissions,
 } from "@cdorneles/auth";
+import type { SentryLike } from "@cdorneles/observability";
 import {
   TenantBridge,
   TenantProvider,
@@ -68,6 +69,12 @@ export interface CreateProvidersOptions {
    * application is allowed to use.
    */
   applicationId: string;
+  /**
+   * The initialized `@sentry/nextjs` module, injected so the app owns the
+   * dependency. Omit it (or leave `NEXT_PUBLIC_SENTRY_DSN` unset) to use the
+   * noop provider.
+   */
+  observability?: SentryLike | null;
 }
 
 /**
@@ -80,7 +87,7 @@ export interface CreateProvidersOptions {
  * only resolves once authenticated, an anonymous visitor would get a blank
  * page instead of the login form.
  */
-export function createProviders({ applicationId }: CreateProvidersOptions) {
+export function createProviders({ applicationId, observability }: CreateProvidersOptions) {
   return function Providers({ children }: { children: ReactNode }) {
     const [sessionSignal] = useState(() => createSessionSignal());
     const [queryClient] = useState(() =>
@@ -111,7 +118,7 @@ export function createProviders({ applicationId }: CreateProvidersOptions) {
       return services.functions;
     })();
 
-    initObservability();
+    initObservability(observability);
 
     const tenantContent = (
       <ThemeBranding>

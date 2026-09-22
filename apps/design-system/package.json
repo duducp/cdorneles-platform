@@ -23,6 +23,7 @@
     "@mantine/core": "catalog:",
     "@mantine/hooks": "catalog:",
     "@mantine/notifications": "catalog:",
+    "@sentry/nextjs": "catalog:",
     "@tanstack/react-query": "catalog:",
     "lucide-react": "catalog:",
     "next": "catalog:",
