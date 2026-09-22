@@ -6,8 +6,8 @@ export interface CreateQueryClientOptions {
   /**
    * Called when any query or mutation fails because the session is gone.
    *
-   * Central on purpose: every request passes through these caches, so the
-   * session-expired dialog appears no matter which call noticed it first.
+   * Must be synchronous and must not throw — the QueryCache/MutationCache
+   * onError hook runs inside TanStack Query internals.
    */
   onUnauthorized?: () => void;
 }
@@ -15,6 +15,10 @@ export interface CreateQueryClientOptions {
 /**
  * Shared TanStack Query client (ARCHITECTURE §15). Apps create one instance
  * and provide it through `QueryClientProvider`.
+ *
+ * Without `onUnauthorized`, unauthorized errors are silently ignored (they
+ * still appear in the query cache as failed). With the option, a single
+ * callback is invoked for every 401 across all queries and mutations.
  */
 export function createQueryClient(options: CreateQueryClientOptions = {}): QueryClient {
   const handleError = (error: unknown) => {
