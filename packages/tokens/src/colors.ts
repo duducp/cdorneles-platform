@@ -4,30 +4,54 @@ import type { ColorScale } from "./color";
  * Platform palettes. These are tokens: components must consume them instead of
  * hardcoded colors. Index 5 is the primary/main shade used by Mantine.
  */
+
+/**
+ * Brand palette from the CDorneles visual identity guide (setembro/2026):
+ * primary `#F45D22`. The guide lists a 950 shade; a Mantine tuple holds ten
+ * shades, so 50→index 0 … 900→index 9.
+ */
 export const brand: ColorScale = [
-  "#eef2ff",
-  "#e0e7ff",
-  "#c7d2fe",
-  "#a5b4fc",
-  "#818cf8",
-  "#6366f1",
-  "#4f46e5",
-  "#4338ca",
-  "#3730a3",
-  "#312e81",
+  "#fff7f2",
+  "#ffebdd",
+  "#ffd5bd",
+  "#ffb58c",
+  "#ff8a55",
+  "#f45d22",
+  "#dc4b16",
+  "#b83b12",
+  "#8f2f12",
+  "#6f2712",
 ];
 
+/** Neutral gray scale (no blue cast), anchored on the guide fundamentals. */
 export const gray: ColorScale = [
-  "#f8fafc",
-  "#f1f5f9",
-  "#e2e8f0",
-  "#cbd5e1",
-  "#94a3b8",
-  "#64748b",
-  "#475569",
-  "#334155",
-  "#1e293b",
-  "#0f172a",
+  "#fafafa",
+  "#f5f5f5",
+  "#e5e5e5",
+  "#d4d4d4",
+  "#a3a3a3",
+  "#737373",
+  "#525252",
+  "#404040",
+  "#262626",
+  "#171717",
+];
+
+/**
+ * Dark-mode neutrals consumed by Mantine's `dark` palette. Mantine maps
+ * `--mantine-color-body` to index 7, surfaces to 6 and borders to 4.
+ */
+export const dark: ColorScale = [
+  "#fafafa",
+  "#e5e5e5",
+  "#d4d4d4",
+  "#a3a3a3",
+  "#292929",
+  "#1c1c1c",
+  "#141414",
+  "#0c0c0c",
+  "#0a0a0a",
+  "#000000",
 ];
 
 export const success: ColorScale = [
@@ -85,6 +109,7 @@ export const info: ColorScale = [
 export const palettes = {
   brand,
   gray,
+  dark,
   success,
   warning,
   danger,
@@ -94,22 +119,25 @@ export const palettes = {
 export type PaletteName = keyof typeof palettes;
 
 /**
- * Semantic surface/text tokens per theme mode. Used by state components so
- * they adapt to Light/Dark without hardcoded colors.
+ * Semantic surface/text tokens per theme mode. Used by state components and the
+ * theme's CSS-variable resolver so they adapt to Light/Dark without hardcoded
+ * colors.
  */
 export const semanticColors = {
   light: {
     background: gray[0],
     surface: "#ffffff",
+    surfaceMuted: "#fff7f2",
     border: gray[2],
     text: gray[9],
-    textMuted: gray[6],
+    textMuted: gray[5],
   },
   dark: {
-    background: gray[9],
-    surface: gray[8],
-    border: gray[7],
-    text: gray[0],
-    textMuted: gray[4],
+    background: "#0c0c0c",
+    surface: "#141414",
+    surfaceMuted: "#1c1c1c",
+    border: "#292929",
+    text: "#fafafa",
+    textMuted: "#a3a3a3",
   },
 } as const;
