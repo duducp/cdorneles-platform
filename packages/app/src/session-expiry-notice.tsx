@@ -1,7 +1,8 @@
 "use client";
 
+import { isUnauthorized } from "@cdorneles/api-client";
 import { useAuth } from "@cdorneles/auth";
-import { notifyHide, notifyInfo } from "@cdorneles/ui";
+import { notifyError, notifyHide, notifyInfo } from "@cdorneles/ui";
 import { Button } from "@mantine/core";
 import { useEffect, useRef } from "react";
 
@@ -38,10 +39,11 @@ export function SessionExpiryNotice() {
           size="compact-xs"
           variant="light"
           onClick={() => {
-            // A dead session already moved the provider to "expired" and opened
-            // the dialog; swallow the rejection so it cannot leak unhandled.
-            void renewSessionRef.current().catch(() => {
-              /* handled by the provider's session state */
+            void renewSessionRef.current().catch((error: unknown) => {
+              // A dead session already moved the provider to "expired" and
+              // opened the dialog; anything else is a real failure to surface.
+              if (isUnauthorized(error)) return;
+              notifyError("Não foi possível renovar a sessão. Tente novamente.");
             });
           }}
         >

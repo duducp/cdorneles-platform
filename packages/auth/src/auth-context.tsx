@@ -233,32 +233,37 @@ export function AuthProvider({
     };
   }, [status, service, markExpired]);
 
-  const login = useCallback(
-    async (input: LoginInput) => {
-      const nextSession = await service.login(input);
-      const nextUser = await service.getCurrentUser();
+  // Every successful credential exchange lands here: one place decides what a
+  // fresh identity means for session, user, status, cookie and dialog state.
+  const applyAuthenticatedSession = useCallback(
+    (nextSession: AuthSession, nextUser: AuthUser | null) => {
       setSession(nextSession);
       setUser(nextUser);
       setStatus(nextUser ? "authenticated" : "anonymous");
       setSessionState("active");
       if (nextUser) setSessionCookie();
+    },
+    [],
+  );
+
+  const login = useCallback(
+    async (input: LoginInput) => {
+      const nextSession = await service.login(input);
+      const nextUser = await service.getCurrentUser();
+      applyAuthenticatedSession(nextSession, nextUser);
       return nextSession;
     },
-    [service],
+    [service, applyAuthenticatedSession],
   );
 
   const completeMfa = useCallback(
     async (input: CompleteMfaInput) => {
       const nextSession = await service.completeMfa(input);
       const nextUser = await service.getCurrentUser();
-      setSession(nextSession);
-      setUser(nextUser);
-      setStatus(nextUser ? "authenticated" : "anonymous");
-      setSessionState("active");
-      if (nextUser) setSessionCookie();
+      applyAuthenticatedSession(nextSession, nextUser);
       return nextSession;
     },
-    [service],
+    [service, applyAuthenticatedSession],
   );
 
   // Re-authentication after the session died. Deliberately NOT the login page's
@@ -269,28 +274,20 @@ export function AuthProvider({
     async (input: LoginInput) => {
       const nextSession = await service.login(input);
       const nextUser = await service.getCurrentUser();
-      setSession(nextSession);
-      setUser(nextUser);
-      setStatus(nextUser ? "authenticated" : "anonymous");
-      setSessionState("active");
-      if (nextUser) setSessionCookie();
+      applyAuthenticatedSession(nextSession, nextUser);
       return nextSession;
     },
-    [service],
+    [service, applyAuthenticatedSession],
   );
 
   const completeReauthMfa = useCallback(
     async (input: CompleteMfaInput) => {
       const nextSession = await service.completeMfa(input);
       const nextUser = await service.getCurrentUser();
-      setSession(nextSession);
-      setUser(nextUser);
-      setStatus(nextUser ? "authenticated" : "anonymous");
-      setSessionState("active");
-      if (nextUser) setSessionCookie();
+      applyAuthenticatedSession(nextSession, nextUser);
       return nextSession;
     },
-    [service],
+    [service, applyAuthenticatedSession],
   );
 
   const renewSession = useCallback(async () => {

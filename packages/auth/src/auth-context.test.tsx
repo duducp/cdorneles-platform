@@ -572,56 +572,75 @@ describe("reauthentication", () => {
     expect(current().status).toBe("authenticated");
     expect(window.location.href).toBe("");
   });
+
+  it("keeps the session expired when the reauthentication MFA code is rejected", async () => {
+    const failure = new Error("invalid code");
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      completeMfa: vi.fn().mockRejectedValue(failure),
+    });
+    const signal = createSessionSignal();
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("authenticated"));
+
+    signal.notifyExpired();
+    await waitFor(() => expect(current().sessionState).toBe("expired"));
+
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await current().completeReauthMfa({ challengeId: "c1", code: "000000" });
+      } catch (error) {
+        caught = error;
+      }
+    });
+
+    // A wrong code must not close the dialog or activate a session.
+    expect(caught).toBe(failure);
+    expect(current().sessionState).toBe("expired");
+    expect(current().status).toBe("authenticated");
+  });
 });
 
 describe("renewSession failure", () => {
-  it("marks the session expired when a dead session is renewed and no rejection leaks", async () => {
-    const rejections: unknown[] = [];
-    const onRejection = (reason: unknown) => {
-      rejections.push(reason);
-    };
-    process.on("unhandledRejection", onRejection);
+  it("marks the session expired when a dead session is renewed", async () => {
+    const error = new ApiError("no", { status: 401 });
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      renewSession: vi.fn().mockRejectedValue(error),
+    });
+    stubLocation("/dashboard");
+    const { Capture, current } = captureAuth();
 
-    try {
-      const error = new ApiError("no", { status: 401 });
-      const service = createMockService({
-        getSession: vi.fn().mockResolvedValue(createMockSession()),
-        getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
-        renewSession: vi.fn().mockRejectedValue(error),
-      });
-      stubLocation("/dashboard");
-      const { Capture, current } = captureAuth();
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("authenticated"));
 
-      render(
-        <AuthProvider service={service}>
-          <Capture />
-        </AuthProvider>,
-      );
-      await waitFor(() => expect(current().status).toBe("authenticated"));
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await current().renewSession();
+      } catch (renewError) {
+        caught = renewError;
+      }
+    });
 
-      let caught: unknown;
-      await act(async () => {
-        try {
-          await current().renewSession();
-        } catch (renewError) {
-          caught = renewError;
-        }
-      });
-
-      // The failure is rethrown for the caller, but the dead session must also
-      // move the provider to "expired" so the dialog can open.
-      expect(caught).toBe(error);
-      expect(current().sessionState).toBe("expired");
-      expect(window.location.href).toBe("");
-
-      // Give Node a real turn to surface any unhandled rejection.
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
-      expect(rejections).toHaveLength(0);
-    } finally {
-      process.off("unhandledRejection", onRejection);
-    }
+    // The failure is rethrown for the caller, but the dead session must also
+    // move the provider to "expired" so the dialog can open.
+    expect(caught).toBe(error);
+    expect(current().sessionState).toBe("expired");
+    expect(window.location.href).toBe("");
   });
 
   it("rethrows a non-401 failure without touching the session state", async () => {

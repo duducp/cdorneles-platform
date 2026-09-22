@@ -1,20 +1,23 @@
 import "@testing-library/jest-dom/vitest";
 
+import { ApiError } from "@cdorneles/api-client";
 import { MantineProvider } from "@mantine/core";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { useAuthMock, notifyInfoMock, notifyHideMock } = vi.hoisted(() => ({
+const { useAuthMock, notifyInfoMock, notifyHideMock, notifyErrorMock } = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   notifyInfoMock: vi.fn(),
   notifyHideMock: vi.fn(),
+  notifyErrorMock: vi.fn(),
 }));
 
 vi.mock("@cdorneles/auth", () => ({ useAuth: useAuthMock }));
 vi.mock("@cdorneles/ui", () => ({
   notifyInfo: notifyInfoMock,
   notifyHide: notifyHideMock,
+  notifyError: notifyErrorMock,
 }));
 
 const { SessionExpiryNotice } = await import("./session-expiry-notice");
@@ -65,7 +68,20 @@ describe("SessionExpiryNotice", () => {
     expect(renewSession).toHaveBeenCalledTimes(1);
   });
 
-  it("does not leak an unhandled rejection when renewing a dead session fails", async () => {
+  it("surfaces a non-401 renewal failure to the user", async () => {
+    const renewSession = vi.fn().mockRejectedValue(new Error("boom"));
+    useAuthMock.mockReturnValue(authState({ sessionState: "expiring", renewSession }));
+
+    render(<SessionExpiryNotice />);
+
+    const [, options] = notifyInfoMock.mock.calls[0];
+    render(<MantineProvider>{options.action as ReactElement}</MantineProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Renovar sessão" }));
+
+    await waitFor(() => expect(notifyErrorMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("stays silent on a dead session and does not leak an unhandled rejection", async () => {
     const rejections: unknown[] = [];
     const onRejection = (reason: unknown) => {
       rejections.push(reason);
@@ -78,7 +94,7 @@ describe("SessionExpiryNotice", () => {
       let calls = 0;
       const renewSession = () => {
         calls += 1;
-        return Promise.reject(new Error("dead session"));
+        return Promise.reject(new ApiError("no", { status: 401 }));
       };
       useAuthMock.mockReturnValue(authState({ sessionState: "expiring", renewSession }));
 
@@ -95,6 +111,9 @@ describe("SessionExpiryNotice", () => {
 
       expect(calls).toBe(1);
       expect(rejections).toHaveLength(0);
+      // The provider already moved to "expired" and the dialog opens; the toast
+      // must not also shout at the user.
+      expect(notifyErrorMock).not.toHaveBeenCalled();
     } finally {
       process.off("unhandledRejection", onRejection);
     }
