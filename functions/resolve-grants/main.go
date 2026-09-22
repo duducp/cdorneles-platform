@@ -11,11 +11,16 @@ import (
 	sdk "github.com/appwrite/sdk-for-go/v7/appwrite"
 	"github.com/appwrite/sdk-for-go/v7/query"
 	"github.com/appwrite/sdk-for-go/v7/tablesdb"
+	teamsdk "github.com/appwrite/sdk-for-go/v7/teams"
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
 	"openruntimes/handler/internal/appwrite"
 	"openruntimes/handler/internal/httpx"
 )
+
+// pageSize bounds each Appwrite list page. Appwrite defaults to 25 rows, which
+// is smaller than the seeded permission set, so every "all rows" read pages.
+const pageSize = 100
 
 type grantRequest struct {
 	UserID         string `json:"userId"`
@@ -45,19 +50,17 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 	}
 
 	// A member of the platform team is the root and holds every permission and
-	// feature, with or without an organization.
+	// feature, with or without an organization. A stale or invalid platform
+	// team must not break ordinary traffic, so a failed lookup is treated as
+	// "not a platform member" and the request falls through to the org flow.
 	if platformTeamID := os.Getenv("PLATFORM_TEAM_ID"); platformTeamID != "" {
 		client := appwrite.NewClient(ctx.Req.Headers["x-appwrite-key"])
 		teams := sdk.NewTeams(client)
-		result, err := teams.ListMemberships(platformTeamID)
+		member, err := isTeamMember(teams, platformTeamID, headerUserID)
 		if err != nil {
-			ctx.Error(err)
-			return internalError(ctx)
-		}
-		for _, membership := range result.Memberships {
-			if membership.UserId == headerUserID {
-				return platformGrants(ctx, sdk.NewTablesDB(client))
-			}
+			ctx.Log("platform membership lookup failed", "teamId", platformTeamID, "error", err.Error())
+		} else if member {
+			return platformGrants(ctx, sdk.NewTablesDB(client))
 		}
 	}
 
@@ -113,6 +116,9 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 		}
 	}
 
+	// Known limitation: a user with only direct permissions and no matching
+	// role gets no grants. App access itself is role-derived, and the
+	// create-user flow always assigns a role, so this is not hit in practice.
 	if len(roleIDs) == 0 {
 		ctx.Log("no matching roles", "userId", headerUserID, "organizationId", organizationID)
 		return ctx.Res.Json(grantResponse{Permissions: []string{}, Features: []string{}})
@@ -236,22 +242,22 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 		featureKeys[appwrite.StringField(featureData, "key")] = struct{}{}
 	}
 
-	permissions := permissionKeys
 	features := make([]string, 0, len(featureKeys))
 	for key := range featureKeys {
 		features = append(features, key)
 	}
+	sort.Strings(features)
 
 	ctx.Log(
 		"resolved grants",
 		"userId", headerUserID,
 		"organizationId", organizationID,
 		"applicationId", applicationID,
-		"permissions", len(permissions),
+		"permissions", len(permissionKeys),
 		"features", len(features),
 	)
 
-	return ctx.Res.Json(grantResponse{Permissions: permissions, Features: features})
+	return ctx.Res.Json(grantResponse{Permissions: permissionKeys, Features: features})
 }
 
 // platformGrants returns every permission and feature key for a member of the
@@ -271,19 +277,51 @@ func platformGrants(ctx openruntimes.Context, tables *tablesdb.TablesDB) openrun
 	return ctx.Res.Json(grantResponse{Permissions: permissions, Features: features})
 }
 
-// allKeys returns the key field of every row in a table.
-func allKeys(tables *tablesdb.TablesDB, tableID string) ([]string, error) {
-	result, err := tables.ListRows(appwrite.DatabaseID, tableID)
-	if err != nil {
-		return nil, err
+// isTeamMember reports whether the user belongs to the team, paging through
+// every membership so teams larger than one page are handled.
+func isTeamMember(teams *teamsdk.Teams, teamID, userID string) (bool, error) {
+	for offset := 0; ; offset += pageSize {
+		result, err := teams.ListMemberships(
+			teamID,
+			teams.WithListMembershipsQueries([]string{query.Limit(pageSize), query.Offset(offset)}),
+		)
+		if err != nil {
+			return false, err
+		}
+		for _, membership := range result.Memberships {
+			if membership.UserId == userID {
+				return true, nil
+			}
+		}
+		if len(result.Memberships) < pageSize {
+			return false, nil
+		}
 	}
-	keys := make([]string, 0, len(result.Rows))
-	for i := range result.Rows {
-		data, err := appwrite.RowData(&result.Rows[i])
+}
+
+// allKeys returns the key field of every row in a table, paging until the
+// table is exhausted.
+func allKeys(tables *tablesdb.TablesDB, tableID string) ([]string, error) {
+	keys := []string{}
+	for offset := 0; ; offset += pageSize {
+		result, err := tables.ListRows(
+			appwrite.DatabaseID,
+			tableID,
+			tables.WithListRowsQueries([]string{query.Limit(pageSize), query.Offset(offset)}),
+		)
 		if err != nil {
 			return nil, err
 		}
-		keys = append(keys, appwrite.StringField(data, "key"))
+		for i := range result.Rows {
+			data, err := appwrite.RowData(&result.Rows[i])
+			if err != nil {
+				return nil, err
+			}
+			keys = append(keys, appwrite.StringField(data, "key"))
+		}
+		if len(result.Rows) < pageSize {
+			break
+		}
 	}
 	return keys, nil
 }
