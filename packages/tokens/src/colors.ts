@@ -3,9 +3,7 @@ import type { ColorScale } from "./color";
 /**
  * Platform palettes. These are tokens: components must consume them instead of
  * hardcoded colors. Index 5 is the primary/main shade used by Mantine.
- */
-
-/**
+ *
  * Brand palette from the CDorneles visual identity guide (setembro/2026):
  * primary `#F45D22`. The guide lists a 950 shade; a Mantine tuple holds ten
  * shades, so 50→index 0 … 900→index 9.
@@ -127,17 +125,17 @@ export const semanticColors = {
   light: {
     background: gray[0],
     surface: "#ffffff",
-    surfaceMuted: "#fff7f2",
+    surfaceMuted: brand[0],
     border: gray[2],
     text: gray[9],
     textMuted: gray[5],
   },
   dark: {
-    background: "#0c0c0c",
-    surface: "#141414",
-    surfaceMuted: "#1c1c1c",
-    border: "#292929",
-    text: "#fafafa",
-    textMuted: "#a3a3a3",
+    background: dark[7],
+    surface: dark[6],
+    surfaceMuted: dark[5],
+    border: dark[4],
+    text: dark[0],
+    textMuted: dark[3],
   },
 } as const;
