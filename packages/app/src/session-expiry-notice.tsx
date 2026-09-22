@@ -38,7 +38,11 @@ export function SessionExpiryNotice() {
           size="compact-xs"
           variant="light"
           onClick={() => {
-            void renewSessionRef.current();
+            // A dead session already moved the provider to "expired" and opened
+            // the dialog; swallow the rejection so it cannot leak unhandled.
+            void renewSessionRef.current().catch(() => {
+              /* handled by the provider's session state */
+            });
           }}
         >
           Renovar sessão

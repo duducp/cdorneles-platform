@@ -27,7 +27,9 @@ function authState(
   return {
     sessionState: "active",
     status: "authenticated",
-    renewSession: vi.fn(),
+    // The real contract returns a Promise; a bare vi.fn() would return
+    // undefined and the button handler's `.catch` would throw.
+    renewSession: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -51,7 +53,7 @@ describe("SessionExpiryNotice", () => {
   });
 
   it("renews the session when the action is pressed", () => {
-    const renewSession = vi.fn();
+    const renewSession = vi.fn().mockResolvedValue(undefined);
     useAuthMock.mockReturnValue(authState({ sessionState: "expiring", renewSession }));
 
     render(<SessionExpiryNotice />);
@@ -61,6 +63,41 @@ describe("SessionExpiryNotice", () => {
     fireEvent.click(screen.getByRole("button", { name: "Renovar sessão" }));
 
     expect(renewSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not leak an unhandled rejection when renewing a dead session fails", async () => {
+    const rejections: unknown[] = [];
+    const onRejection = (reason: unknown) => {
+      rejections.push(reason);
+    };
+    process.on("unhandledRejection", onRejection);
+
+    try {
+      // A plain function, not a vi.fn: vitest attaches its own handling to mock
+      // return values, which would hide the very leak this test guards against.
+      let calls = 0;
+      const renewSession = () => {
+        calls += 1;
+        return Promise.reject(new Error("dead session"));
+      };
+      useAuthMock.mockReturnValue(authState({ sessionState: "expiring", renewSession }));
+
+      render(<SessionExpiryNotice />);
+
+      const [, options] = notifyInfoMock.mock.calls[0];
+      render(<MantineProvider>{options.action as ReactElement}</MantineProvider>);
+      fireEvent.click(screen.getByRole("button", { name: "Renovar sessão" }));
+
+      // Give Node a real turn to surface any unhandled rejection.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(calls).toBe(1);
+      expect(rejections).toHaveLength(0);
+    } finally {
+      process.off("unhandledRejection", onRejection);
+    }
   });
 
   it("stays silent while the session is healthy", () => {
