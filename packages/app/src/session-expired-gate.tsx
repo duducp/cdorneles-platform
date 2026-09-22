@@ -8,10 +8,13 @@ import {
 import { SessionExpiredDialog, SessionExpiredMfaDialog } from "@cdorneles/ui";
 import type { MfaChallengeFormValues } from "@cdorneles/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+const RENEWED_KEY = "cdorneles-session-renewed";
 
 export function SessionExpiredGate() {
-  const { sessionState, user, reauthenticate, completeReauthMfa, logout, service } = useAuth();
+  const { sessionState, user, refresh, reauthenticate, completeReauthMfa, logout, service } =
+    useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<"password" | "mfa">("password");
   const [challengeId, setChallengeId] = useState<string | null>(null);
@@ -22,12 +25,23 @@ export function SessionExpiredGate() {
     setChallengeId(null);
   }, [queryClient]);
 
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === RENEWED_KEY) {
+        void refresh();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [refresh]);
+
   const handlePassword = useCallback(
     async (password: string) => {
       if (!user) return;
       try {
         await reauthenticate({ email: user.email, password });
         await finish();
+        window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
       } catch (error) {
         if (error instanceof MfaRequiredError) {
           const challenge = await service.createMfaChallenge({ factor: "totp" });
@@ -46,6 +60,7 @@ export function SessionExpiredGate() {
       if (!challengeId) return;
       await completeReauthMfa({ challengeId, code: values.code });
       await finish();
+      window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
     },
     [challengeId, completeReauthMfa, finish],
   );

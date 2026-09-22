@@ -29,11 +29,12 @@ vi.mock("@tanstack/react-query", () => ({
 const { SessionExpiredGate } = await import("./session-expired-gate");
 
 function authState(
-  overrides: Partial<Record<"sessionState" | "user" | "service", unknown>> = {},
+  overrides: Partial<Record<"sessionState" | "user" | "service" | "refresh", unknown>> = {},
 ) {
   return {
     sessionState: "active",
     user: null,
+    refresh: vi.fn(),
     reauthenticate: vi.fn(),
     completeReauthMfa: vi.fn(),
     logout: vi.fn(),
@@ -64,5 +65,22 @@ describe("SessionExpiredGate", () => {
     );
     render(<SessionExpiredGate />);
     expect(screen.getByTestId("password-dialog")).toBeInTheDocument();
+  });
+
+  it("revalidates when another tab renews the session", () => {
+    const refreshMock = vi.fn();
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        refresh: refreshMock,
+      }),
+    );
+
+    render(<SessionExpiredGate />);
+
+    window.dispatchEvent(new StorageEvent("storage", { key: "cdorneles-session-renewed" }));
+
+    expect(refreshMock).toHaveBeenCalled();
   });
 });
