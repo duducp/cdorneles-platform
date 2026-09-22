@@ -38,6 +38,22 @@ describe("createAppwriteTenantService", () => {
       ]);
     });
 
+    it("omits the configured platform team", async () => {
+      vi.stubEnv("NEXT_PUBLIC_PLATFORM_TEAM_ID", "team-platform");
+      const api = createMockTeamsApi();
+      vi.mocked(api.listTeams).mockResolvedValue([
+        { $id: "team-platform", name: "Platform" },
+        { $id: "org-1", name: "Acme" },
+      ]);
+
+      const service = createAppwriteTenantService(api, createMockFunctionsApi());
+
+      await expect(service.listOrganizations()).resolves.toEqual([
+        { id: "org-1", name: "Acme" },
+      ]);
+      vi.unstubAllEnvs();
+    });
+
     it("returns an empty list when the user has no teams", async () => {
       const api = createMockTeamsApi();
       vi.mocked(api.listTeams).mockResolvedValue([]);
@@ -75,6 +91,27 @@ describe("createAppwriteTenantService", () => {
       await expect(service.listMemberships("u1")).resolves.toEqual([
         { organizationId: "org-1", roles: ["owner"] },
       ]);
+    });
+
+    it("omits the configured platform team", async () => {
+      vi.stubEnv("NEXT_PUBLIC_PLATFORM_TEAM_ID", "team-platform");
+      const api = createMockTeamsApi();
+      vi.mocked(api.listTeams).mockResolvedValue([
+        { $id: "team-platform", name: "Platform" },
+        { $id: "org-1", name: "Acme" },
+      ]);
+      vi.mocked(api.listMemberships).mockImplementation(async (teamId: string) =>
+        teamId === "team-platform"
+          ? [{ $id: "m1", teamId: "team-platform", userId: "u1", roles: ["owner"] }]
+          : [{ $id: "m2", teamId: "org-1", userId: "u1", roles: ["admin"] }],
+      );
+
+      const service = createAppwriteTenantService(api, createMockFunctionsApi());
+
+      await expect(service.listMemberships("u1")).resolves.toEqual([
+        { organizationId: "org-1", roles: ["admin"] },
+      ]);
+      vi.unstubAllEnvs();
     });
 
     it("queries memberships for every team", async () => {

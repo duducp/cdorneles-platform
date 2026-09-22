@@ -40,6 +40,7 @@ vi.mock("node-appwrite", () => {
 });
 
 import { seedData } from "../seeds.js";
+import { SEED_PERMISSIONS } from "../config.js";
 
 describe("seedData", () => {
   const config = {
@@ -63,11 +64,12 @@ describe("seedData", () => {
     expect(appCalls.map((call: any[]) => call[2])).toEqual(["app_admin", "app_client"]);
   });
 
-  it("inserts 24 permissions", async () => {
+  it("inserts every seeded permission", async () => {
     await seedData(config);
 
     const permCalls = mockCreateRow.mock.calls.filter((call: any[]) => call[1] === "permissions");
-    expect(permCalls).toHaveLength(24);
+    expect(permCalls).toHaveLength(SEED_PERMISSIONS.length);
+    expect(permCalls.map((call: any[]) => call[3].key)).toContain("organizations.create");
   });
 
   it("inserts 8 features", async () => {

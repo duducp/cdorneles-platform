@@ -50,3 +50,22 @@ mesa. A fronteira real é a **duração de sessão do Appwrite**, configurada em
 Sessões existentes mantêm o vencimento original; só as novas usam 24h.
 `account.updateSession('current')` (o `renewSession`) estende uma sessão ainda
 válida, então quem está ativo nunca é deslogado no meio do trabalho.
+
+## Criação de organização
+
+Criar uma organização exige a capability `organizations.create`. Ela é uma
+capability de **plataforma**, não de papel de organização: o `resolve-grants`
+tem um modo de plataforma (um `organizationId` vazio) que a devolve para quem
+é membro do time de plataforma — o `PLATFORM_TEAM_ID` configurado na função.
+
+O time de plataforma é configurado no app por `NEXT_PUBLIC_PLATFORM_TEAM_ID` e
+é **excluído** da lista de organizações, então nunca aparece como uma
+organização.
+
+Em `/select-org`: sem nenhuma organização, a tela mostra "Nenhuma organização
+vinculada. Fale com um administrador."; o botão "Create organization" só
+aparece com a capability.
+
+O gate é **UX, não segurança** (AGENTS.md): a criação continua rodando no
+cliente (`TeamsApi.createTeam` + `provision-organization`). Mover a criação
+para trás de uma Function é a fronteira real.

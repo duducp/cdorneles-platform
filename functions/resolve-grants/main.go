@@ -5,6 +5,8 @@
 package handler
 
 import (
+	"os"
+
 	sdk "github.com/appwrite/sdk-for-go/v7/appwrite"
 	"github.com/appwrite/sdk-for-go/v7/query"
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
@@ -42,8 +44,11 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 
 	organizationID := body.OrganizationID
 	applicationID := body.ApplicationID
-	if organizationID == "" || applicationID == "" {
-		return httpx.BadRequest(ctx, "organizationId and applicationId are required")
+	if organizationID == "" {
+		return platformGrants(ctx, headerUserID)
+	}
+	if applicationID == "" {
+		return httpx.BadRequest(ctx, "applicationId is required")
 	}
 
 	client := appwrite.NewClient(ctx.Req.Headers["x-appwrite-key"])
@@ -224,6 +229,34 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 	)
 
 	return ctx.Res.Json(grantResponse{Permissions: permissions, Features: features})
+}
+
+// platformGrants resolves capabilities that are not tied to an organization.
+// The only one today is organizations.create, granted to members of the
+// platform team (PLATFORM_TEAM_ID).
+func platformGrants(ctx openruntimes.Context, userID string) openruntimes.Response {
+	platformTeamID := os.Getenv("PLATFORM_TEAM_ID")
+	if platformTeamID == "" {
+		ctx.Log("PLATFORM_TEAM_ID not configured")
+		return ctx.Res.Json(grantResponse{Permissions: []string{}, Features: []string{}})
+	}
+
+	client := appwrite.NewClient(ctx.Req.Headers["x-appwrite-key"])
+	teams := sdk.NewTeams(client)
+	result, err := teams.ListMemberships(platformTeamID)
+	if err != nil {
+		ctx.Error(err)
+		return internalError(ctx)
+	}
+	for _, membership := range result.Memberships {
+		if membership.UserId == userID {
+			return ctx.Res.Json(grantResponse{
+				Permissions: []string{"organizations.create"},
+				Features:    []string{},
+			})
+		}
+	}
+	return ctx.Res.Json(grantResponse{Permissions: []string{}, Features: []string{}})
 }
 
 func internalError(ctx openruntimes.Context) openruntimes.Response {

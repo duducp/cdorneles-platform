@@ -36,6 +36,26 @@ describe("resolveGrants", () => {
     });
   });
 
+  it("forwards an empty organizationId verbatim to resolve platform grants", async () => {
+    const api = createMockFunctionsApi(
+      JSON.stringify({ permissions: ["organizations.create"], features: [] }),
+    );
+
+    const result = await resolveGrants(api as any, {
+      userId: "u1",
+      organizationId: "",
+      applicationId: "admin",
+    });
+
+    expect(result).toEqual({ permissions: ["organizations.create"], features: [] });
+
+    expect(api.createExecution).toHaveBeenCalledWith({
+      functionId: "resolve-grants",
+      body: JSON.stringify({ userId: "u1", organizationId: "", applicationId: "admin" }),
+      method: "POST",
+    });
+  });
+
   it("returns empty arrays when no grants", async () => {
     const api = createMockFunctionsApi(JSON.stringify({ permissions: [], features: [] }));
 

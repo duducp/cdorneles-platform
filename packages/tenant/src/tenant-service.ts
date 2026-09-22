@@ -29,21 +29,27 @@ export function createAppwriteTenantService(
   teamsApi: TeamsApi,
   functionsApi: FunctionsApi,
 ): TenantService {
+  const platformTeamId = process.env.NEXT_PUBLIC_PLATFORM_TEAM_ID ?? "";
+
   return {
     async listOrganizations() {
       const teams = await teamsApi.listTeams();
-      return teams.map((team) => ({ id: team.$id, name: team.name }));
+      return teams
+        .filter((team) => team.$id !== platformTeamId)
+        .map((team) => ({ id: team.$id, name: team.name }));
     },
 
     async listMemberships(userId: string) {
       const teams = await teamsApi.listTeams();
 
       const memberships = await Promise.all(
-        teams.map(async (team): Promise<OrganizationMembership | null> => {
-          const rows = await teamsApi.listMemberships(team.$id);
-          const own = rows.find((row) => row.userId === userId);
-          return own ? { organizationId: team.$id, roles: own.roles } : null;
-        }),
+        teams
+          .filter((team) => team.$id !== platformTeamId)
+          .map(async (team): Promise<OrganizationMembership | null> => {
+            const rows = await teamsApi.listMemberships(team.$id);
+            const own = rows.find((row) => row.userId === userId);
+            return own ? { organizationId: team.$id, roles: own.roles } : null;
+          }),
       );
 
       return memberships.filter(

@@ -214,6 +214,13 @@ export const SEED_PERMISSIONS: SeedDef[] = [
     data: { key: "organizations.update", description: "Update organization settings" },
   },
   {
+    // Platform capability: granted via the platform team (resolve-grants
+    // platform mode), NOT through organization roles. Keep it out of
+    // provision-organization's allPermissionIDs() on purpose.
+    id: "perm_organizations_create",
+    data: { key: "organizations.create", description: "Create new organizations" },
+  },
+  {
     id: "perm_customers_read",
     data: { key: "customers.read", description: "List and view customers" },
   },

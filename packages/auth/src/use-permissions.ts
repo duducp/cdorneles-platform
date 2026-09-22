@@ -17,6 +17,12 @@ export interface UsePermissionsResult {
  * Loads the user's effective permissions and features for the active
  * organization and current application. Uses TanStack Query for caching
  * and automatic re-fetch on organization change.
+ *
+ * `organizationId` distinguishes three states:
+ * - `undefined` — the tenant state is still loading; the query stays disabled.
+ * - `null` — the tenant is resolved and the user has no organization; grants
+ *   are resolved in platform mode (an empty organizationId).
+ * - a string — grants are resolved for that organization.
  */
 export function usePermissions(
   applicationId: string,
@@ -26,14 +32,17 @@ export function usePermissions(
   const { user, status: authStatus } = useAuth();
   const queryClient = useQueryClient();
 
-  const enabled = authStatus === "authenticated" && !!user && !!organizationId;
+  // A user with no active organization still resolves platform grants, but
+  // only once the tenant state is resolved: `undefined` means "not resolved
+  // yet", while `null` means "resolved, no organization".
+  const enabled = authStatus === "authenticated" && !!user && organizationId !== undefined;
 
   const query = useQuery({
     queryKey: ["grants", user?.id, organizationId, applicationId],
     queryFn: async (): Promise<GrantedAccess> => {
       return resolveGrants(functionsApi, {
         userId: user!.id,
-        organizationId: organizationId!,
+        organizationId: organizationId ?? "",
         applicationId,
       });
     },

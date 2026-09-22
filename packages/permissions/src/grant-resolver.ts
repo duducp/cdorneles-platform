@@ -8,6 +8,11 @@ const RESOLVE_GRANTS_FUNCTION_ID = "resolve-grants";
 
 export interface GrantResolverInput {
   userId: string;
+  /**
+   * Organization to resolve grants for. An empty string requests platform
+   * grants: they are resolved against the platform team rather than an
+   * organization, and the Function branches on the empty value.
+   */
   organizationId: string;
   applicationId: string;
 }
@@ -21,7 +26,9 @@ interface GrantResponse {
 
 /**
  * Calls the resolve-grants Appwrite Function to fetch the user's effective
- * permissions and features for the given organization and application.
+ * permissions and features for the given organization and application. Pass an
+ * empty `organizationId` to resolve platform grants instead of organization
+ * grants.
  */
 export async function resolveGrants(
   functionsApi: FunctionsApi,
