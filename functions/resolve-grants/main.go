@@ -6,9 +6,11 @@ package handler
 
 import (
 	"os"
+	"sort"
 
 	sdk "github.com/appwrite/sdk-for-go/v7/appwrite"
 	"github.com/appwrite/sdk-for-go/v7/query"
+	"github.com/appwrite/sdk-for-go/v7/tablesdb"
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
 	"openruntimes/handler/internal/appwrite"
@@ -42,10 +44,27 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 		return httpx.Forbidden(ctx, "userId mismatch")
 	}
 
+	// A member of the platform team is the root and holds every permission and
+	// feature, with or without an organization.
+	if platformTeamID := os.Getenv("PLATFORM_TEAM_ID"); platformTeamID != "" {
+		client := appwrite.NewClient(ctx.Req.Headers["x-appwrite-key"])
+		teams := sdk.NewTeams(client)
+		result, err := teams.ListMemberships(platformTeamID)
+		if err != nil {
+			ctx.Error(err)
+			return internalError(ctx)
+		}
+		for _, membership := range result.Memberships {
+			if membership.UserId == headerUserID {
+				return platformGrants(ctx, sdk.NewTablesDB(client))
+			}
+		}
+	}
+
 	organizationID := body.OrganizationID
 	applicationID := body.ApplicationID
 	if organizationID == "" {
-		return platformGrants(ctx, headerUserID)
+		return ctx.Res.Json(grantResponse{Permissions: []string{}, Features: []string{}})
 	}
 	if applicationID == "" {
 		return httpx.BadRequest(ctx, "applicationId is required")
@@ -99,7 +118,7 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 		return ctx.Res.Json(grantResponse{Permissions: []string{}, Features: []string{}})
 	}
 
-	permissionKeys := map[string]struct{}{}
+	var rolePermissionKeys []string
 	for _, roleID := range roleIDs {
 		permissionRows, err := tables.ListRows(
 			appwrite.DatabaseID,
@@ -130,9 +149,16 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 				ctx.Error(err)
 				return internalError(ctx)
 			}
-			permissionKeys[appwrite.StringField(permissionData, "key")] = struct{}{}
+			rolePermissionKeys = append(rolePermissionKeys, appwrite.StringField(permissionData, "key"))
 		}
 	}
+
+	directPermissionKeys, err := directPermissionKeysForUser(tables, organizationID, headerUserID)
+	if err != nil {
+		ctx.Error(err)
+		return internalError(ctx)
+	}
+	permissionKeys := collectPermissionKeys(rolePermissionKeys, directPermissionKeys)
 
 	appIDs := map[string]struct{}{}
 	for _, roleID := range roleIDs {
@@ -210,10 +236,7 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 		featureKeys[appwrite.StringField(featureData, "key")] = struct{}{}
 	}
 
-	permissions := make([]string, 0, len(permissionKeys))
-	for key := range permissionKeys {
-		permissions = append(permissions, key)
-	}
+	permissions := permissionKeys
 	features := make([]string, 0, len(featureKeys))
 	for key := range featureKeys {
 		features = append(features, key)
@@ -231,32 +254,94 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 	return ctx.Res.Json(grantResponse{Permissions: permissions, Features: features})
 }
 
-// platformGrants resolves capabilities that are not tied to an organization.
-// The only one today is organizations.create, granted to members of the
-// platform team (PLATFORM_TEAM_ID).
-func platformGrants(ctx openruntimes.Context, userID string) openruntimes.Response {
-	platformTeamID := os.Getenv("PLATFORM_TEAM_ID")
-	if platformTeamID == "" {
-		ctx.Log("PLATFORM_TEAM_ID not configured")
-		return ctx.Res.Json(grantResponse{Permissions: []string{}, Features: []string{}})
-	}
-
-	client := appwrite.NewClient(ctx.Req.Headers["x-appwrite-key"])
-	teams := sdk.NewTeams(client)
-	result, err := teams.ListMemberships(platformTeamID)
+// platformGrants returns every permission and feature key for a member of the
+// platform team (the root). The table reads go through the Appwrite SDK, which
+// this package does not mock, so this path is verified by the live probe.
+func platformGrants(ctx openruntimes.Context, tables *tablesdb.TablesDB) openruntimes.Response {
+	permissions, err := allKeys(tables, "permissions")
 	if err != nil {
 		ctx.Error(err)
 		return internalError(ctx)
 	}
-	for _, membership := range result.Memberships {
-		if membership.UserId == userID {
-			return ctx.Res.Json(grantResponse{
-				Permissions: []string{"organizations.create"},
-				Features:    []string{},
-			})
-		}
+	features, err := allKeys(tables, "features")
+	if err != nil {
+		ctx.Error(err)
+		return internalError(ctx)
 	}
-	return ctx.Res.Json(grantResponse{Permissions: []string{}, Features: []string{}})
+	return ctx.Res.Json(grantResponse{Permissions: permissions, Features: features})
+}
+
+// allKeys returns the key field of every row in a table.
+func allKeys(tables *tablesdb.TablesDB, tableID string) ([]string, error) {
+	result, err := tables.ListRows(appwrite.DatabaseID, tableID)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(result.Rows))
+	for i := range result.Rows {
+		data, err := appwrite.RowData(&result.Rows[i])
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, appwrite.StringField(data, "key"))
+	}
+	return keys, nil
+}
+
+// directPermissionKeysForUser resolves the permission keys granted directly to
+// a user within an organization (the Django-style user_permissions table).
+// The Appwrite SDK path is not unit-tested (no SDK mock here); verified live.
+func directPermissionKeysForUser(tables *tablesdb.TablesDB, organizationID, userID string) ([]string, error) {
+	rows, err := tables.ListRows(
+		appwrite.DatabaseID,
+		"user_permissions",
+		tables.WithListRowsQueries([]string{
+			query.Equal("organizationId", organizationID),
+			query.Equal("userId", userID),
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(rows.Rows))
+	for i := range rows.Rows {
+		data, err := appwrite.RowData(&rows.Rows[i])
+		if err != nil {
+			return nil, err
+		}
+		permission, err := tables.GetRow(
+			appwrite.DatabaseID,
+			"permissions",
+			appwrite.StringField(data, "permissionId"),
+		)
+		if err != nil {
+			return nil, err
+		}
+		permissionData, err := appwrite.RowData(permission)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, appwrite.StringField(permissionData, "key"))
+	}
+	return keys, nil
+}
+
+// collectPermissionKeys returns the deduplicated union of role and direct
+// permission keys, sorted for deterministic output.
+func collectPermissionKeys(roleKeys, directKeys []string) []string {
+	seen := make(map[string]struct{}, len(roleKeys)+len(directKeys))
+	for _, key := range roleKeys {
+		seen[key] = struct{}{}
+	}
+	for _, key := range directKeys {
+		seen[key] = struct{}{}
+	}
+	keys := make([]string, 0, len(seen))
+	for key := range seen {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func internalError(ctx openruntimes.Context) openruntimes.Response {

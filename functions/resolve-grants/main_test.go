@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
@@ -57,6 +58,35 @@ func TestMainPlatformGrantsWithoutPlatformTeam(t *testing.T) {
 	}
 	if got := string(resp.Body); got != `{"permissions":[],"features":[]}` {
 		t.Fatalf("expected empty grants, got %q", got)
+	}
+}
+
+// collectPermissionKeys is the pure set logic behind the role/direct union.
+// The SDK-backed paths that feed it — platform-team membership granting every
+// permission, and the user_permissions query — are verified by the live probe,
+// not here, because this package does not mock the Appwrite SDK.
+func TestCollectPermissionKeysUnionsAndDeduplicates(t *testing.T) {
+	got := collectPermissionKeys(
+		[]string{"products.read", "products.read", "addresses.read"},
+		[]string{"products.read", "users.read"},
+	)
+	want := []string{"addresses.read", "products.read", "users.read"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+}
+
+func TestCollectPermissionKeysIsOrderIndependent(t *testing.T) {
+	first := collectPermissionKeys([]string{"b", "a"}, []string{"c"})
+	second := collectPermissionKeys([]string{"c"}, []string{"a", "b"})
+	if !reflect.DeepEqual(first, second) {
+		t.Fatalf("expected identical unions, got %v and %v", first, second)
+	}
+}
+
+func TestCollectPermissionKeysEmpty(t *testing.T) {
+	if got := collectPermissionKeys(nil, nil); len(got) != 0 {
+		t.Fatalf("expected empty union, got %v", got)
 	}
 }
 
