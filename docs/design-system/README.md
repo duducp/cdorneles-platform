@@ -73,7 +73,7 @@ waiting, not by habit.
 | Wait | Mechanism |
 |---|---|
 | A button's own action (submit, resend) | Mantine's `loading` prop on `Button` / `IconButton` |
-| A route segment being fetched | `loading.tsx` in that route group, rendering `LoadingState` |
+| A route segment being fetched | `loading.tsx` in that route group, rendering `LoadingScreen` |
 | The session and organization resolving | the `fallback` prop on `OrgGuard` |
 | A specific link's navigation | `useLinkStatus` (Next 16), rendered beside the nav label |
 
@@ -90,6 +90,11 @@ Notes:
   and let `loading` show progress; a disabled button hides why it is disabled.
 - `LoadingState` carries `role="status"` and `aria-live="polite"`; prefer it
   over bare dimmed text so the state reaches screen readers.
+- **`LoadingScreen` is the route-level loader** (centred logo + build version,
+  spinner pinned to the footer region); `LoadingState` remains for
+  inline/embedded waits (the `OrgGuard` fallback, the select-org picker).
+  Neither renders a visible caption. `LoadingScreen` adds no `<main>` — it
+  renders inside `AppShell.Main`, which is already the page's `<main>`.
 
 ## Feedback: inline vs toast
 
