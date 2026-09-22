@@ -81,9 +81,9 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 	}
 	if !platformMember {
 		// users.read is a platform capability, not an organization role grant,
-		// so there is no organization context to resolve against. The empty
-		// organization yields the caller's platform grants, and any caller
-		// without users.read is denied.
+		// so there is no organization context to resolve against. With an empty
+		// organization there is nothing to resolve, so a non-platform caller is
+		// denied; the platform-member bypass above is how users.read is granted.
 		permissions, err := ops.EffectivePermissions("", callerID)
 		if err != nil {
 			ctx.Error(err)
@@ -156,6 +156,15 @@ func (o *appwriteOps) IsPlatformMember(userID string) (bool, error) {
 // user_permissions, the same model resolve-grants returns. A caller who is not
 // a member gets an empty set, which denies by default.
 func (o *appwriteOps) EffectivePermissions(organizationID, userID string) ([]string, error) {
+	// An empty organization means there is no organization context to resolve:
+	// list-users calls this with "" for the platform-capability check, where the
+	// platform-member bypass is the only grant path. Guarding here avoids asking
+	// Appwrite for the memberships of "". The SDK guard is not unit-testable
+	// (the operations seam is faked); it is covered by the live smoke test.
+	if organizationID == "" {
+		return nil, nil
+	}
+
 	memberships, err := o.repo.ListMemberships(organizationID)
 	if err != nil {
 		return nil, err

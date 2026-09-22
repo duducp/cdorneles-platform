@@ -46,7 +46,7 @@ scopes_for() {
     provision-organization)      echo "teams.read rows.read rows.write" ;;
     create-user)                 echo "users.write teams.read teams.write rows.read rows.write executions.write" ;;
     update-user-permissions)     echo "teams.read rows.read rows.write" ;;
-    list-users)                  echo "users.read" ;;
+    list-users)                  echo "teams.read users.read" ;;
     *)                           echo "" ;;
   esac
 }

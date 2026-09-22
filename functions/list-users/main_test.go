@@ -25,6 +25,9 @@ type fakeOps struct {
 	// effectiveCalls counts EffectivePermissions invocations so a test can
 	// assert the platform bypass never resolves organization permissions.
 	effectiveCalls int
+	// effectiveOrgs records the organization id each EffectivePermissions call
+	// received, so a test can assert list-users resolves against no organization.
+	effectiveOrgs []string
 
 	// usersByPage is the page returned for each offset. A missing offset is an
 	// empty (short) page, which ends the paging loop.
@@ -40,6 +43,7 @@ func (f *fakeOps) IsPlatformMember(userID string) (bool, error) {
 
 func (f *fakeOps) EffectivePermissions(organizationID, userID string) ([]string, error) {
 	f.effectiveCalls++
+	f.effectiveOrgs = append(f.effectiveOrgs, organizationID)
 	return f.effective, f.effectiveErr
 }
 
@@ -77,6 +81,19 @@ func TestMainDeniesCallerWithoutReadPermission(t *testing.T) {
 	ctx := newContext(emptyBody, map[string]string{"x-appwrite-user-id": "u1"})
 	resp := handle(ctx, ops)
 	assertError(t, resp, 403, "forbidden", "missing permission: users.read")
+}
+
+// list-users resolves permissions against no organization: users.read is a
+// platform capability, so a non-platform caller has nothing to resolve and must
+// be denied with 403, never a 500 from resolving an empty organization id.
+func TestMainDeniesNonPlatformCallerWithEmptyOrganization(t *testing.T) {
+	ops := &fakeOps{}
+	ctx := newContext(emptyBody, map[string]string{"x-appwrite-user-id": "u1"})
+	resp := handle(ctx, ops)
+	assertError(t, resp, 403, "forbidden", "missing permission: users.read")
+	if !reflect.DeepEqual(ops.effectiveOrgs, []string{""}) {
+		t.Fatalf(`expected EffectivePermissions to resolve against "", got %v`, ops.effectiveOrgs)
+	}
 }
 
 func TestMainPlatformMemberBypassesPermissionLookup(t *testing.T) {
