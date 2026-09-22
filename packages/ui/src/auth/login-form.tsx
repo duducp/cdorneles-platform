@@ -107,11 +107,9 @@ export function LoginForm({
           aria-invalid={form.errors.password ? true : undefined}
         />
 
-        <div style={{ textAlign: "start" }}>
-          <Anchor component="button" type="button" size="sm" underline="hover" c="brand" onClick={() => onForgotPassword?.(form.values.email)}>
-            Esqueci minha senha
-          </Anchor>
-        </div>
+        <Anchor component="button" type="button" size="sm" underline="hover" c="brand" ta="start" onClick={() => onForgotPassword?.(form.values.email)}>
+          Esqueci minha senha
+        </Anchor>
 
         <FormError id="login-form-error" mb="xs">
           {submitError ?? error}

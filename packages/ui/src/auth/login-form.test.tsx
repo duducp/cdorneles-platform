@@ -150,6 +150,6 @@ describe("LoginForm", () => {
     renderForm({ onSubmit: vi.fn() });
 
     const link = screen.getByRole("button", { name: "Esqueci minha senha" });
-    expect(link.parentElement).toHaveStyle({ textAlign: "start" });
+    expect(link).toHaveStyle({ textAlign: "start" });
   });
 });
