@@ -244,6 +244,10 @@ export function UsersPage() {
   const [opened, { open, close }] = useDisclosure(false);
 
   const load = useCallback(() => {
+    if (!functionsApi) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     void functionsApi
@@ -261,6 +265,7 @@ export function UsersPage() {
 
   const handleCreate = useCallback(
     async (input: CreateUserInput) => {
+      if (!functionsApi) return;
       await functionsApi.createUser(input);
       close();
       load();

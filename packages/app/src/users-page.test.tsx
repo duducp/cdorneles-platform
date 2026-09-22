@@ -93,7 +93,7 @@ vi.mock("@mantine/core", async (importOriginal) => {
   };
 });
 
-const { FunctionsApiProvider } = await import("./functions-api-context");
+const { FunctionsApiProvider, useFunctionsApi } = await import("./functions-api-context");
 const { UsersPage } = await import("./users-page");
 
 const READ: GrantedAccess = { permissions: [permissionKey("users.read")], features: [] };
@@ -121,10 +121,10 @@ function tenantState() {
   };
 }
 
-function renderPage(granted: GrantedAccess, functionsApi: Partial<FunctionsApi>) {
+function renderPage(granted: GrantedAccess, functionsApi: Partial<FunctionsApi> | null) {
   return render(
     <MantineProvider>
-      <FunctionsApiProvider functionsApi={functionsApi as FunctionsApi}>
+      <FunctionsApiProvider value={functionsApi as FunctionsApi | null}>
         <AccessProvider granted={granted}>
           <UsersPage />
         </AccessProvider>
@@ -158,6 +158,24 @@ describe("UsersPage", () => {
 
     expect(await screen.findByTestId("empty-state")).toHaveTextContent("Access denied");
     expect(listUsers).not.toHaveBeenCalled();
+  });
+
+  it("renders without an api (unconfigured build) without throwing or fetching", async () => {
+    renderPage(READ, null);
+
+    expect(await screen.findByText(/No users yet/)).toBeInTheDocument();
+  });
+
+  it("throws when the hook is used with no provider at all", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    function Probe() {
+      useFunctionsApi();
+      return null;
+    }
+
+    expect(() => render(<Probe />)).toThrow(/FunctionsApiProvider/);
+    errorSpy.mockRestore();
   });
 
   it("shows the 'New user' action when users.create is granted", async () => {

@@ -127,7 +127,7 @@ export function createProviders({ applicationId, observability }: CreateProvider
     const tenantContent = (
       <ThemeBranding>
         {functionsApi ? (
-          <FunctionsApiProvider functionsApi={functionsApi}>
+          <FunctionsApiProvider value={functionsApi}>
             <InnerProviders applicationId={applicationId} functionsApi={functionsApi}>
               {children}
             </InnerProviders>
@@ -135,8 +135,11 @@ export function createProviders({ applicationId, observability }: CreateProvider
         ) : (
           // No Appwrite config (e.g. a build without env): still provide the
           // access context so `PermissionGate`/`useAccess` render a deny state
-          // instead of throwing.
-          <AccessProvider granted={{ permissions: [], features: [] }}>{children}</AccessProvider>
+          // instead of throwing, and a null api so pages can render an
+          // unconfigured state without calling into a missing client.
+          <FunctionsApiProvider value={null}>
+            <AccessProvider granted={{ permissions: [], features: [] }}>{children}</AccessProvider>
+          </FunctionsApiProvider>
         )}
       </ThemeBranding>
     );
