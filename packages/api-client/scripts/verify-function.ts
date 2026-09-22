@@ -73,8 +73,7 @@ if (existsSync(envFile)) {
 }
 
 const endpoint = process.env.APPWRITE_ENDPOINT ?? process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-const projectId =
-  process.env.APPWRITE_PROJECT_ID ?? process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+const projectId = process.env.APPWRITE_PROJECT_ID ?? process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
 const email = process.env.E2E_EMAIL;
 const password = process.env.E2E_PASSWORD;
 
@@ -135,7 +134,7 @@ const missingApp = await services.functions.createExecution({
   method: "POST",
   body: JSON.stringify({
     organizationId: ORGANIZATION_ID,
-    applicationId: "customer",
+    applicationId: "ungranted-app",
     displayName: "Should Not Apply",
   }),
 });

@@ -56,7 +56,7 @@ Database: `cdorneles_platform` (Appwrite TablesDB)
 
 | Column | Type | Required | Notes |
 |--------|------|----------|-------|
-| appId | string(255) | yes | e.g. "admin", "client", "customer" |
+| appId | string(255) | yes | e.g. "admin", "client" |
 | name | string(255) | yes | |
 | description | string(1024) | yes | |
 
@@ -131,7 +131,7 @@ Database: `cdorneles_platform` (Appwrite TablesDB)
 
 ## Seeded Data
 
-- **3 applications:** admin, client, customer
+- **2 applications:** admin, client
 - **24 permissions:** organizations.{read,update}, customers.{read,create,update,delete}, orders.{read,create,update,delete}, invoices.{read,create,approve}, products.{read,create,update,delete}, roles.{read,create,update,delete}, features.{read,manage}, audit.read
 - **8 features:** customers, orders, invoices, products, inventory, financial, sales, white-label
 
@@ -146,7 +146,7 @@ which is idempotent (create-if-missing):
 | `organization_profiles` | one row (`displayName`, `active: true`) |
 | `roles` | `owner`, `admin`, `member` |
 | `role_permissions` | owner/admin → all permissions (admin excludes `features.manage`); member → read permissions |
-| `role_applications` | owner/admin → admin + client + customer; member → client + customer |
+| `role_applications` | owner/admin → admin + client; member → client |
 | `organization_features` | one row per feature; only `white-label` enabled by default |
 
 The `role_permissions` and `role_applications` rows reference the deterministic

@@ -11,7 +11,6 @@ const config: DomainRoutingConfig = {
   applicationHosts: {
     admin: "admin.example.com",
     client: "client.example.com",
-    customer: "customer.example.com",
   },
   organizationHosts: { "portal.acme.com": "team-acme" },
 };

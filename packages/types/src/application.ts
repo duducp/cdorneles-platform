@@ -2,7 +2,7 @@
  * Global application registry (ADR-004 / ARCHITECTURE §8).
  * Applications are a platform-level concept, not a business module.
  */
-export const APPLICATION_IDS = ["admin", "client", "customer"] as const;
+export const APPLICATION_IDS = ["admin", "client"] as const;
 
 export type ApplicationId = (typeof APPLICATION_IDS)[number];
 

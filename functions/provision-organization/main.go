@@ -37,13 +37,13 @@ var roleDefs = []roleDef{
 		name:         "owner",
 		description:  "Full control of the organization",
 		permissions:  []string{allPermissions},
-		applications: []string{"app_admin", "app_client", "app_customer"},
+		applications: []string{"app_admin", "app_client"},
 	},
 	{
 		name:         "admin",
 		description:  "Administrative access",
 		permissions:  []string{allPermissions},
-		applications: []string{"app_admin", "app_client", "app_customer"},
+		applications: []string{"app_admin", "app_client"},
 	},
 	{
 		name:        "member",
@@ -58,7 +58,7 @@ var roleDefs = []roleDef{
 			"perm_features_read",
 			"perm_audit_read",
 		},
-		applications: []string{"app_client", "app_customer"},
+		applications: []string{"app_client"},
 	},
 }
 

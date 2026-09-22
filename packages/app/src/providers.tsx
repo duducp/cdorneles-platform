@@ -63,7 +63,7 @@ function InnerProviders({
 
 export interface CreateProvidersOptions {
   /**
-   * The application this deployment serves (`admin`, `client`, `customer`).
+   * The application this deployment serves (`admin`, `client`).
    * Permissions are resolved for it, so a role only grants what the
    * application is allowed to use.
    */

@@ -160,7 +160,6 @@ Applications are a global registry:
 ```text
 admin
 client
-customer
 ```
 
 Roles are organization-scoped metadata associated with Team roles.
@@ -190,7 +189,6 @@ Standard domains identify an application:
 ```text
 admin.cdorneles.com.br
 client.cdorneles.com.br
-customer.cdorneles.com.br
 ```
 
 A custom domain identifies an organization:

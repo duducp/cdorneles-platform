@@ -4,8 +4,8 @@ import { APPLICATION_IDS, isApplicationId } from "./application";
 import { isThemeMode } from "./theme";
 
 describe("application registry", () => {
-  it("exposes exactly the three platform applications", () => {
-    expect(APPLICATION_IDS).toEqual(["admin", "client", "customer"]);
+  it("exposes exactly the two platform applications", () => {
+    expect(APPLICATION_IDS).toEqual(["admin", "client"]);
   });
 
   it("guards application ids", () => {

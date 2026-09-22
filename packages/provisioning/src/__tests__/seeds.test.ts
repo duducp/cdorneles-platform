@@ -56,30 +56,24 @@ describe("seedData", () => {
     expect(typeof seedData).toBe("function");
   });
 
-  it("inserts 3 applications", async () => {
+  it("inserts the admin and client applications, and no customer portal", async () => {
     await seedData(config);
 
-    const appCalls = mockCreateRow.mock.calls.filter(
-      (call: any[]) => call[1] === "applications",
-    );
-    expect(appCalls).toHaveLength(3);
+    const appCalls = mockCreateRow.mock.calls.filter((call: any[]) => call[1] === "applications");
+    expect(appCalls.map((call: any[]) => call[2])).toEqual(["app_admin", "app_client"]);
   });
 
   it("inserts 24 permissions", async () => {
     await seedData(config);
 
-    const permCalls = mockCreateRow.mock.calls.filter(
-      (call: any[]) => call[1] === "permissions",
-    );
+    const permCalls = mockCreateRow.mock.calls.filter((call: any[]) => call[1] === "permissions");
     expect(permCalls).toHaveLength(24);
   });
 
   it("inserts 8 features", async () => {
     await seedData(config);
 
-    const featCalls = mockCreateRow.mock.calls.filter(
-      (call: any[]) => call[1] === "features",
-    );
+    const featCalls = mockCreateRow.mock.calls.filter((call: any[]) => call[1] === "features");
     expect(featCalls).toHaveLength(8);
   });
 

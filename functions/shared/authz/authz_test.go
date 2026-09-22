@@ -97,7 +97,7 @@ func TestAuthorizeDeniesNoMatchingRole(t *testing.T) {
 
 func TestAuthorizeDeniesMissingApplication(t *testing.T) {
 	repo := grantedRepo()
-	repo.applications = []string{"customer"}
+	repo.applications = []string{"client"}
 	decision, _ := Authorize(input, repo)
 	assertDenied(t, decision, 403, "missing application access: admin")
 }

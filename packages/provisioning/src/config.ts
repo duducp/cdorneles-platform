@@ -34,9 +34,7 @@ const USER_PERMISSIONS = [
   Permission.delete(Role.users()),
 ];
 
-const READ_ONLY_PERMISSIONS = [
-  Permission.read(Role.users()),
-];
+const READ_ONLY_PERMISSIONS = [Permission.read(Role.users())];
 
 export function getTablePermissions(table: TableDef): string[] {
   return table.rowSecurity ? USER_PERMISSIONS : READ_ONLY_PERMISSIONS;
@@ -58,9 +56,7 @@ export const TABLES: TableDef[] = [
       { key: "defaultTheme", type: "enum", required: false, elements: ["light", "dark"] },
       { key: "active", type: "boolean", required: true, default: true },
     ],
-    indexes: [
-      { key: "org_unique", type: TablesDBIndexType.Unique, columns: ["organizationId"] },
-    ],
+    indexes: [{ key: "org_unique", type: TablesDBIndexType.Unique, columns: ["organizationId"] }],
   },
   {
     id: "roles",
@@ -71,9 +67,7 @@ export const TABLES: TableDef[] = [
       { key: "name", type: "string", required: true, size: 255 },
       { key: "description", type: "string", required: false, size: 1024 },
     ],
-    indexes: [
-      { key: "org_idx", type: TablesDBIndexType.Key, columns: ["organizationId"] },
-    ],
+    indexes: [{ key: "org_idx", type: TablesDBIndexType.Key, columns: ["organizationId"] }],
   },
   {
     id: "permissions",
@@ -83,9 +77,7 @@ export const TABLES: TableDef[] = [
       { key: "key", type: "string", required: true, size: 255 },
       { key: "description", type: "string", required: true, size: 1024 },
     ],
-    indexes: [
-      { key: "key_unique", type: TablesDBIndexType.Unique, columns: ["key"] },
-    ],
+    indexes: [{ key: "key_unique", type: TablesDBIndexType.Unique, columns: ["key"] }],
   },
   {
     id: "role_permissions",
@@ -109,9 +101,7 @@ export const TABLES: TableDef[] = [
       { key: "name", type: "string", required: true, size: 255 },
       { key: "description", type: "string", required: true, size: 1024 },
     ],
-    indexes: [
-      { key: "appId_unique", type: TablesDBIndexType.Unique, columns: ["appId"] },
-    ],
+    indexes: [{ key: "appId_unique", type: TablesDBIndexType.Unique, columns: ["appId"] }],
   },
   {
     id: "role_applications",
@@ -135,9 +125,7 @@ export const TABLES: TableDef[] = [
       { key: "name", type: "string", required: true, size: 255 },
       { key: "description", type: "string", required: false, size: 1024 },
     ],
-    indexes: [
-      { key: "key_unique", type: TablesDBIndexType.Unique, columns: ["key"] },
-    ],
+    indexes: [{ key: "key_unique", type: TablesDBIndexType.Unique, columns: ["key"] }],
   },
   {
     id: "organization_features",
@@ -149,7 +137,11 @@ export const TABLES: TableDef[] = [
       { key: "enabled", type: "boolean", required: true, default: false },
     ],
     indexes: [
-      { key: "org_feature_unique", type: TablesDBIndexType.Unique, columns: ["organizationId", "featureId"] },
+      {
+        key: "org_feature_unique",
+        type: TablesDBIndexType.Unique,
+        columns: ["organizationId", "featureId"],
+      },
     ],
   },
   {
@@ -182,7 +174,12 @@ export const TABLES: TableDef[] = [
     indexes: [
       { key: "org_idx", type: TablesDBIndexType.Key, columns: ["organizationId"] },
       { key: "user_idx", type: TablesDBIndexType.Key, columns: ["userId"] },
-      { key: "timestamp_idx", type: TablesDBIndexType.Key, columns: ["timestamp"], orders: [OrderBy.Desc] },
+      {
+        key: "timestamp_idx",
+        type: TablesDBIndexType.Key,
+        columns: ["timestamp"],
+        orders: [OrderBy.Desc],
+      },
     ],
   },
 ];
@@ -193,35 +190,86 @@ export interface SeedDef {
 }
 
 export const SEED_APPLICATIONS: SeedDef[] = [
-  { id: "app_admin", data: { appId: "admin", name: "Admin Panel", description: "Internal Cdorneles administration" } },
-  { id: "app_client", data: { appId: "client", name: "Client Panel", description: "Organization/tenant administration" } },
-  { id: "app_customer", data: { appId: "customer", name: "Customer Portal", description: "End-customer experience" } },
+  {
+    id: "app_admin",
+    data: { appId: "admin", name: "Admin Panel", description: "Internal Cdorneles administration" },
+  },
+  {
+    id: "app_client",
+    data: {
+      appId: "client",
+      name: "Client Panel",
+      description: "Organization/tenant administration",
+    },
+  },
 ];
 
 export const SEED_PERMISSIONS: SeedDef[] = [
-  { id: "perm_organizations_read", data: { key: "organizations.read", description: "Read organization data" } },
-  { id: "perm_organizations_update", data: { key: "organizations.update", description: "Update organization settings" } },
-  { id: "perm_customers_read", data: { key: "customers.read", description: "List and view customers" } },
-  { id: "perm_customers_create", data: { key: "customers.create", description: "Create new customers" } },
-  { id: "perm_customers_update", data: { key: "customers.update", description: "Update customer data" } },
-  { id: "perm_customers_delete", data: { key: "customers.delete", description: "Delete customers" } },
+  {
+    id: "perm_organizations_read",
+    data: { key: "organizations.read", description: "Read organization data" },
+  },
+  {
+    id: "perm_organizations_update",
+    data: { key: "organizations.update", description: "Update organization settings" },
+  },
+  {
+    id: "perm_customers_read",
+    data: { key: "customers.read", description: "List and view customers" },
+  },
+  {
+    id: "perm_customers_create",
+    data: { key: "customers.create", description: "Create new customers" },
+  },
+  {
+    id: "perm_customers_update",
+    data: { key: "customers.update", description: "Update customer data" },
+  },
+  {
+    id: "perm_customers_delete",
+    data: { key: "customers.delete", description: "Delete customers" },
+  },
   { id: "perm_orders_read", data: { key: "orders.read", description: "List and view orders" } },
   { id: "perm_orders_create", data: { key: "orders.create", description: "Create new orders" } },
   { id: "perm_orders_update", data: { key: "orders.update", description: "Update order data" } },
   { id: "perm_orders_delete", data: { key: "orders.delete", description: "Delete orders" } },
-  { id: "perm_invoices_read", data: { key: "invoices.read", description: "List and view invoices" } },
-  { id: "perm_invoices_create", data: { key: "invoices.create", description: "Create new invoices" } },
-  { id: "perm_invoices_approve", data: { key: "invoices.approve", description: "Approve invoices" } },
-  { id: "perm_products_read", data: { key: "products.read", description: "List and view products" } },
-  { id: "perm_products_create", data: { key: "products.create", description: "Create new products" } },
-  { id: "perm_products_update", data: { key: "products.update", description: "Update product data" } },
+  {
+    id: "perm_invoices_read",
+    data: { key: "invoices.read", description: "List and view invoices" },
+  },
+  {
+    id: "perm_invoices_create",
+    data: { key: "invoices.create", description: "Create new invoices" },
+  },
+  {
+    id: "perm_invoices_approve",
+    data: { key: "invoices.approve", description: "Approve invoices" },
+  },
+  {
+    id: "perm_products_read",
+    data: { key: "products.read", description: "List and view products" },
+  },
+  {
+    id: "perm_products_create",
+    data: { key: "products.create", description: "Create new products" },
+  },
+  {
+    id: "perm_products_update",
+    data: { key: "products.update", description: "Update product data" },
+  },
   { id: "perm_products_delete", data: { key: "products.delete", description: "Delete products" } },
   { id: "perm_roles_read", data: { key: "roles.read", description: "List and view roles" } },
   { id: "perm_roles_create", data: { key: "roles.create", description: "Create new roles" } },
   { id: "perm_roles_update", data: { key: "roles.update", description: "Update role data" } },
   { id: "perm_roles_delete", data: { key: "roles.delete", description: "Delete roles" } },
-  { id: "perm_features_read", data: { key: "features.read", description: "List and view features" } },
-  { id: "perm_features_manage", data: { key: "features.manage", description: "Enable/disable features for organizations" } },
+  {
+    id: "perm_features_read",
+    data: { key: "features.read", description: "List and view features" },
+  },
+  {
+    id: "perm_features_manage",
+    data: { key: "features.manage", description: "Enable/disable features for organizations" },
+  },
   { id: "perm_audit_read", data: { key: "audit.read", description: "View audit logs" } },
 ];
 
