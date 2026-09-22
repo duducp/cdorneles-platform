@@ -5,7 +5,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { SessionExpiredDialog, SessionExpiredMfaDialog } from "./session-expired-dialog";
+import { LockScreen, SessionExpiredDialog, SessionExpiredMfaDialog } from "./session-expired-dialog";
 
 // The required marker (" *") is part of the label text, and the visibility
 // toggle's aria-label also mentions "senha", so scope the query to the input.
@@ -71,6 +71,31 @@ describe("SessionExpiredDialog", () => {
     await userEvent.click(screen.getByRole("button", { name: /outra conta/i }));
 
     expect(onSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets the caller override the title and description", () => {
+    renderDialog({ title: "Tela bloqueada", description: "Inativo por muito tempo." });
+
+    expect(screen.getByText("Tela bloqueada")).toBeInTheDocument();
+    expect(screen.getByText("Inativo por muito tempo.")).toBeInTheDocument();
+  });
+});
+
+describe("LockScreen", () => {
+  it("shows the lock copy and submits the password", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <MantineProvider>
+        <LockScreen email="ana@exemplo.com" onSubmit={onSubmit} onSignOut={vi.fn()} />
+      </MantineProvider>,
+    );
+
+    expect(screen.getByText("Tela bloqueada")).toBeInTheDocument();
+
+    await userEvent.type(passwordField(), "segredo123");
+    await userEvent.click(screen.getByRole("button", { name: /desbloquear/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith("segredo123");
   });
 });
 

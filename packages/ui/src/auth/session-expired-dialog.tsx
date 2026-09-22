@@ -37,10 +37,21 @@ export interface SessionExpiredDialogProps {
   onSubmit: (password: string) => Promise<void>;
   /** Leaves for the login page. The only way out without authenticating. */
   onSignOut: () => void;
+  /** Defaults to the session-expired copy. */
+  title?: string;
+  description?: string;
+  submitLabel?: string;
 }
 
 /** First step: the password. */
-export function SessionExpiredDialog({ email, onSubmit, onSignOut }: SessionExpiredDialogProps) {
+export function SessionExpiredDialog({
+  email,
+  onSubmit,
+  onSignOut,
+  title = "Sua sessão expirou",
+  description = "Entre novamente para continuar de onde parou. Nada do que está na tela foi perdido.",
+  submitLabel = "Entrar",
+}: SessionExpiredDialogProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -63,9 +74,9 @@ export function SessionExpiredDialog({ email, onSubmit, onSignOut }: SessionExpi
   );
 
   return (
-    <ReauthModal title="Sua sessão expirou">
+    <ReauthModal title={title}>
       <Text c="dimmed" fz="sm" mb="md">
-        Entre novamente para continuar de onde parou. Nada do que está na tela foi perdido.
+        {description}
       </Text>
 
       <form onSubmit={handleSubmit} noValidate>
@@ -95,7 +106,7 @@ export function SessionExpiredDialog({ email, onSubmit, onSignOut }: SessionExpi
           />
 
           <Button type="submit" fullWidth loading={submitting}>
-            Entrar
+            {submitLabel}
           </Button>
 
           <Button type="button" variant="subtle" fullWidth onClick={onSignOut}>
@@ -129,5 +140,26 @@ export function SessionExpiredMfaDialog({
         Entrar com outra conta
       </Button>
     </ReauthModal>
+  );
+}
+
+export interface LockScreenProps {
+  email: string;
+  onSubmit: (password: string) => Promise<void>;
+  onSignOut: () => void;
+}
+
+/**
+ * The inactivity lock. Same shell as the expired-session step, different copy:
+ * the session may still be valid, so it must not claim it expired.
+ */
+export function LockScreen(props: LockScreenProps) {
+  return (
+    <SessionExpiredDialog
+      {...props}
+      title="Tela bloqueada"
+      description="Você ficou inativo por um tempo. Digite sua senha para continuar de onde parou."
+      submitLabel="Desbloquear"
+    />
   );
 }
