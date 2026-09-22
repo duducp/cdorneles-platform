@@ -19,4 +19,14 @@ describe("SocialLogin", () => {
     await userEvent.click(screen.getByRole("button", { name: "Entrar com Google" }));
     expect(onGoogleClick).toHaveBeenCalledOnce();
   });
+
+  it("renders a custom label when provided", () => {
+    render(
+      <ThemeProvider>
+        <SocialLogin label="Continuar com Google novamente" />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "Continuar com Google novamente" })).toBeInTheDocument();
+  });
 });

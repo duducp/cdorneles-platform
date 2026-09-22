@@ -127,4 +127,29 @@ describe("LoginForm", () => {
 
     expect(screen.getByText("Criar conta")).toBeInTheDocument();
   });
+
+  it("renders a custom heading", () => {
+    renderForm({ onSubmit: vi.fn(), heading: "Bem vindo" });
+
+    expect(screen.getByRole("heading", { name: "Bem vindo" })).toBeInTheDocument();
+  });
+
+  it("defaults to 'Bem-vindo de volta' when no heading is provided", () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    expect(screen.getByRole("heading", { name: "Bem-vindo de volta" })).toBeInTheDocument();
+  });
+
+  it("passes googleLabel to SocialLogin", () => {
+    renderForm({ onSubmit: vi.fn(), googleLabel: "Continuar com Google novamente" });
+
+    expect(screen.getByRole("button", { name: "Continuar com Google novamente" })).toBeInTheDocument();
+  });
+
+  it("aligns 'Esqueci minha senha' to the left", () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    const link = screen.getByRole("button", { name: "Esqueci minha senha" });
+    expect(link).toHaveStyle({ textAlign: "start" });
+  });
 });

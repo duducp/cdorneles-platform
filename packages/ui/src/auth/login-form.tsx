@@ -14,6 +14,8 @@ export interface LoginFormProps {
   loading?: boolean;
   error?: string | null;
   showSignUp?: boolean;
+  heading?: string;
+  googleLabel?: string;
   onGoogleClick?: () => void;
   onForgotPassword?: (email: string) => void;
   onSignUp?: () => void;
@@ -24,6 +26,8 @@ export function LoginForm({
   loading = false,
   error = null,
   showSignUp = false,
+  heading = "Bem-vindo de volta",
+  googleLabel,
   onGoogleClick,
   onForgotPassword,
   onSignUp,
@@ -71,7 +75,7 @@ export function LoginForm({
     >
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
-          Bem-vindo de volta
+          {heading}
         </Text>
         <Text c="dimmed" fz="sm">
           Entre na sua conta
@@ -79,7 +83,7 @@ export function LoginForm({
       </Stack>
 
       <Stack gap="md" mt="lg">
-        <SocialLogin onGoogleClick={onGoogleClick} disabled={loading} />
+        <SocialLogin onGoogleClick={onGoogleClick} disabled={loading} label={googleLabel} />
 
         <Divider label="OU CONTINUE COM" labelPosition="center" />
 
@@ -103,7 +107,7 @@ export function LoginForm({
           aria-invalid={form.errors.password ? true : undefined}
         />
 
-        <Anchor component="button" type="button" size="sm" underline="hover" c="brand" onClick={() => onForgotPassword?.(form.values.email)}>
+        <Anchor component="button" type="button" size="sm" underline="hover" c="brand" ta="start" onClick={() => onForgotPassword?.(form.values.email)}>
           Esqueci minha senha
         </Anchor>
 

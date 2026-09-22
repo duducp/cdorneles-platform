@@ -10,9 +10,12 @@ import {
   useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
 import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
-import { Anchor, Flex, Stack, Text, VisuallyHidden } from "@mantine/core";
+import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+
+const LAST_METHOD_KEY = "cdorneles-last-login-method";
+type LoginMethod = "email" | "google";
 
 export interface LoginPageProps {
   /**
@@ -33,7 +36,14 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [lastMethod] = useState<LoginMethod | null>(() => {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem(LAST_METHOD_KEY);
+    return stored === "email" || stored === "google" ? stored : null;
+  });
   const enableSignUp = process.env.NEXT_PUBLIC_ENABLE_SIGN_UP === "true";
+  const heading = lastMethod ? "Bem-vindo de volta" : "Bem vindo";
+  const googleLabel = lastMethod === "google" ? "Continuar com Google novamente" : undefined;
 
   // Carry a valid e-mail to the recovery screen so it does not have to be
   // retyped; anything else goes to the plain screen and is validated there.
@@ -47,12 +57,17 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
     [router],
   );
 
+  const handleGoogleClick = useCallback(() => {
+    localStorage.setItem(LAST_METHOD_KEY, "google");
+  }, []);
+
   async function handleSubmit(credentials: { email: string; password: string }) {
     setError(null);
     setAnnouncement("Entrando...");
     setLoading(true);
     try {
       await login(credentials);
+      localStorage.setItem(LAST_METHOD_KEY, "email");
       // Honour the path the proxy sent the user away from.
       router.push(resolvePostAuthRedirect(window.location.search));
     } catch (err) {
@@ -99,6 +114,9 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
                 loading={loading}
                 error={error}
                 showSignUp={enableSignUp}
+                heading={heading}
+                googleLabel={googleLabel}
+                onGoogleClick={handleGoogleClick}
                 onForgotPassword={handleForgotPassword}
               />
             }
@@ -106,17 +124,6 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
           />
 
           <Stack component="footer" align="center" gap="sm">
-            <Text ta="center" fz="xs" c="dimmed">
-              Ao continuar, você concorda com os{" "}
-              <Anchor href="#" underline="always">
-                Termos de Uso
-              </Anchor>{" "}
-              e a{" "}
-              <Anchor href="#" underline="always">
-                Política de Privacidade
-              </Anchor>
-              .
-            </Text>
             <Logo alt="Cdorneles" variant="horizontal" height={32} />
             <AppVersion />
           </Stack>
