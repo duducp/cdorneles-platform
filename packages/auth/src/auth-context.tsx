@@ -71,6 +71,7 @@ export interface AuthContextValue {
   completeMfa: (input: CompleteMfaInput) => Promise<AuthSession>;
   logout: (sessionId?: string) => Promise<void>;
   refresh: () => Promise<void>;
+  renewSession: () => Promise<AuthSession>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -254,6 +255,13 @@ export function AuthProvider({
     [service],
   );
 
+  const renewSession = useCallback(async () => {
+    const nextSession = await service.renewSession();
+    setSession(nextSession);
+    setSessionState(isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active");
+    return nextSession;
+  }, [service]);
+
   const logout = useCallback(
     async (sessionId?: string) => {
       await service.logout(sessionId);
@@ -277,8 +285,9 @@ export function AuthProvider({
       completeMfa,
       logout,
       refresh,
+      renewSession,
     }),
-    [service, user, session, status, sessionState, login, completeMfa, logout, refresh],
+    [service, user, session, status, sessionState, login, completeMfa, logout, refresh, renewSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

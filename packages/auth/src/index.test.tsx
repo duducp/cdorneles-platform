@@ -23,6 +23,7 @@ function createFakeService(): AuthService {
     createMfaChallenge: vi.fn(async () => ({ challengeId: "c1", factor: "email" as const })),
     logout: vi.fn(async () => undefined),
     getSession: vi.fn(async () => null),
+    renewSession: vi.fn(async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" })),
     getCurrentUser: vi.fn(async () => user),
     requestPasswordRecovery: vi.fn(async () => undefined),
     confirmPasswordRecovery: vi.fn(async () => undefined),

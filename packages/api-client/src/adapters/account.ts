@@ -34,6 +34,15 @@ export function createAccountApi(client: Client): AccountApi {
       }
     },
 
+    async updateSession(input): Promise<AppwriteSession> {
+      try {
+        const session = await account.updateSession({ sessionId: input.sessionId });
+        return { $id: session.$id, userId: session.userId, expire: session.expire };
+      } catch (error) {
+        throw mapAppwriteError(error);
+      }
+    },
+
     async listSessions(): Promise<AppwriteSession[]> {
       try {
         const result = await account.listSessions();

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   account: {
     get: vi.fn(),
     getSession: vi.fn(),
+    updateSession: vi.fn(),
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     deleteSession: vi.fn(),
@@ -70,6 +71,24 @@ describe("createAccountApi", () => {
       expire: "2026-01-01T00:00:00.000Z",
     });
     expect(mocks.account.getSession).toHaveBeenCalledWith({ sessionId: "current" });
+  });
+
+  it("extends the current session", async () => {
+    mocks.account.updateSession.mockResolvedValue({
+      $id: "s1",
+      userId: "u1",
+      expire: "2099-01-01T00:00:00.000Z",
+    });
+
+    const api = createAccountApi(client);
+    const session = await api.updateSession({ sessionId: "current" });
+
+    expect(mocks.account.updateSession).toHaveBeenCalledWith({ sessionId: "current" });
+    expect(session).toEqual({
+      $id: "s1",
+      userId: "u1",
+      expire: "2099-01-01T00:00:00.000Z",
+    });
   });
 
   it("maps sessions", async () => {

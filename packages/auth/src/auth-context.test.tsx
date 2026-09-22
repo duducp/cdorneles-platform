@@ -44,6 +44,7 @@ function createMockService(overrides?: Partial<AuthService>): AuthService {
     createMfaChallenge: vi.fn(),
     logout: vi.fn(),
     getSession: vi.fn(),
+    renewSession: vi.fn(),
     getCurrentUser: vi.fn(),
     requestPasswordRecovery: vi.fn(),
     confirmPasswordRecovery: vi.fn(),
@@ -72,7 +73,7 @@ function createMockSession(overrides?: Partial<AuthSession>): AuthSession {
 }
 
 function TestConsumer() {
-  const { user, session, status, login, completeMfa, logout, refresh } = useAuth();
+  const { user, session, status, login, completeMfa, logout, refresh, renewSession } = useAuth();
 
   return (
     <div>
@@ -99,6 +100,15 @@ function TestConsumer() {
       </button>
       <button onClick={() => logout()}>logout</button>
       <button onClick={() => refresh()}>refresh</button>
+      <button
+        onClick={() =>
+          renewSession().catch(() => {
+            /* intentionally empty */
+          })
+        }
+      >
+        renewSession
+      </button>
     </div>
   );
 }
@@ -213,6 +223,19 @@ describe("AuthProvider", () => {
     expect(service.getCurrentUser).toHaveBeenCalled();
     expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
     expect(screen.getByTestId("user")).toHaveTextContent("user@example.com");
+  });
+
+  it("renewSession calls service.renewSession and updates the session", async () => {
+    const user = userEvent.setup();
+    const service = createMockService({
+      renewSession: vi.fn().mockResolvedValue(createMockSession({ id: "s2" })),
+    });
+
+    renderWithAuth(service, <TestConsumer />);
+    await user.click(screen.getByRole("button", { name: "renewSession" }));
+
+    expect(service.renewSession).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("session")).toHaveTextContent("s2");
   });
 
   it("throws when useAuth is used outside AuthProvider", () => {

@@ -70,6 +70,8 @@ export interface AuthService {
   createMfaChallenge(input: CreateMfaChallengeInput): Promise<MfaChallenge>;
   logout(sessionId?: string): Promise<void>;
   getSession(): Promise<AuthSession | null>;
+  /** Extends the current session. Requires a session that is still valid. */
+  renewSession(): Promise<AuthSession>;
   getCurrentUser(): Promise<AuthUser | null>;
   requestPasswordRecovery(input: PasswordRecoveryRequestInput): Promise<void>;
   confirmPasswordRecovery(input: PasswordRecoveryConfirmInput): Promise<void>;

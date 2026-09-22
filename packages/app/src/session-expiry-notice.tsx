@@ -19,9 +19,9 @@ const NOTICE_ID = "session-expiring";
  * stack duplicates.
  */
 export function SessionExpiryNotice() {
-  const { sessionState, status, refresh } = useAuth();
-  const refreshRef = useRef(refresh);
-  refreshRef.current = refresh;
+  const { sessionState, status, renewSession } = useAuth();
+  const renewSessionRef = useRef(renewSession);
+  renewSessionRef.current = renewSession;
 
   useEffect(() => {
     if (sessionState !== "expiring" || status !== "authenticated") {
@@ -38,7 +38,7 @@ export function SessionExpiryNotice() {
           size="compact-xs"
           variant="light"
           onClick={() => {
-            void refreshRef.current();
+            void renewSessionRef.current();
           }}
         >
           Renovar sessão

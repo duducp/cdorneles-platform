@@ -1,6 +1,8 @@
 import "@testing-library/jest-dom/vitest";
 
-import { render } from "@testing-library/react";
+import { MantineProvider } from "@mantine/core";
+import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { useAuthMock, notifyInfoMock, notifyHideMock } = vi.hoisted(() => ({
@@ -19,11 +21,13 @@ const { SessionExpiryNotice } = await import("./session-expiry-notice");
 
 const NOTICE_ID = "session-expiring";
 
-function authState(overrides: Partial<Record<"sessionState" | "status", unknown>> = {}) {
+function authState(
+  overrides: Partial<Record<"sessionState" | "status" | "renewSession", unknown>> = {},
+) {
   return {
     sessionState: "active",
     status: "authenticated",
-    refresh: vi.fn(),
+    renewSession: vi.fn(),
     ...overrides,
   };
 }
@@ -44,6 +48,19 @@ describe("SessionExpiryNotice", () => {
     expect(options.id).toBe(NOTICE_ID);
     expect(options.autoClose).toBe(false);
     expect(options.action).toBeTruthy();
+  });
+
+  it("renews the session when the action is pressed", () => {
+    const renewSession = vi.fn();
+    useAuthMock.mockReturnValue(authState({ sessionState: "expiring", renewSession }));
+
+    render(<SessionExpiryNotice />);
+
+    const [, options] = notifyInfoMock.mock.calls[0];
+    render(<MantineProvider>{options.action as ReactElement}</MantineProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Renovar sessão" }));
+
+    expect(renewSession).toHaveBeenCalledTimes(1);
   });
 
   it("stays silent while the session is healthy", () => {
