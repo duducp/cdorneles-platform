@@ -86,7 +86,9 @@ describe("IdleLockGate", () => {
     await userEvent.type(screen.getByLabelText(/senha/i, { selector: "input" }), "segredo123");
     await userEvent.click(screen.getByRole("button", { name: /desbloquear/i }));
 
-    await waitFor(() => expect(reauthenticate).toHaveBeenCalledWith({ email: "a@b.c", password: "segredo123" }));
+    await waitFor(() =>
+      expect(reauthenticate).toHaveBeenCalledWith({ email: "a@b.c", password: "segredo123" }),
+    );
     expect(invalidateMock).toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument());
   });
@@ -100,6 +102,7 @@ describe("IdleLockGate", () => {
     await userEvent.click(screen.getByRole("button", { name: /continuar trabalhando/i }));
 
     expect(activateMock).toHaveBeenCalledTimes(1);
+    expect(activateMock).toHaveBeenCalledWith();
   });
 
   it("does not re-lock after the session expires and is restored", async () => {
@@ -151,6 +154,17 @@ describe("IdleLockGate", () => {
 
     expect(idleCallbacks.current.timeout).toBe(15 * 60 * 1000);
     expect(idleCallbacks.current.promptBeforeIdle).toBe(30 * 1000);
+  });
+
+  it("unlocks when another tab unlocks", async () => {
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    window.dispatchEvent(new StorageEvent("storage", { key: "cdorneles-idle-unlocked" }));
+
+    await waitFor(() => expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument());
   });
 });
 

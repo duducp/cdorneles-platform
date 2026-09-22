@@ -40,12 +40,14 @@ export function resolveIdleTimings(
   return { timeoutMs, promptBeforeIdleMs };
 }
 
-const { timeoutMs: IDLE_TIMEOUT_MS, promptBeforeIdleMs: PROMPT_BEFORE_IDLE_MS } = resolveIdleTimings(
-  process.env.NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES,
-  process.env.NEXT_PUBLIC_IDLE_PROMPT_SECONDS,
-);
+const { timeoutMs: IDLE_TIMEOUT_MS, promptBeforeIdleMs: PROMPT_BEFORE_IDLE_MS } =
+  resolveIdleTimings(
+    process.env.NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES,
+    process.env.NEXT_PUBLIC_IDLE_PROMPT_SECONDS,
+  );
 /** Routes that must never lock (they have no session to protect). */
 const PUBLIC_PREFIXES = ["/login", "/mfa", "/forgot-password", "/reset-password", "/select-org"];
+const UNLOCKED_KEY = "cdorneles-idle-unlocked";
 
 /**
  * Locks the screen after inactivity and asks for the password to continue.
@@ -59,7 +61,8 @@ const PUBLIC_PREFIXES = ["/login", "/mfa", "/forgot-password", "/reset-password"
  * so unsaved work survives.
  */
 export function IdleLockGate() {
-  const { status, sessionState, user, reauthenticate, completeReauthMfa, logout, service } = useAuth();
+  const { status, sessionState, user, reauthenticate, completeReauthMfa, logout, service } =
+    useAuth();
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const [locked, setLocked] = useState(false);
@@ -96,11 +99,26 @@ export function IdleLockGate() {
     }
   }, [sessionState]);
 
+  // Another tab unlocked; drop the lock here too.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === UNLOCKED_KEY) {
+        setLocked(false);
+        setPrompted(false);
+        setStep("password");
+        setChallengeId(null);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const reset = useCallback(async () => {
     setLocked(false);
     setPrompted(false);
     setStep("password");
     setChallengeId(null);
+    window.localStorage.setItem(UNLOCKED_KEY, String(Date.now()));
     await queryClient.invalidateQueries();
   }, [queryClient]);
 
@@ -146,7 +164,7 @@ export function IdleLockGate() {
     }
     return <LockScreen email={user.email} onSubmit={handlePassword} onSignOut={handleSignOut} />;
   }
-  return prompted ? <IdlePrompt onContinue={activate} /> : null;
+  return prompted ? <IdlePrompt onContinue={() => activate()} /> : null;
 }
 
 function IdlePrompt({ onContinue }: { onContinue: () => void }) {
