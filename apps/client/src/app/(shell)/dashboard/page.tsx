@@ -10,9 +10,7 @@ export function DashboardPage() {
   return (
     <PageContainer py="xl">
       <PageHeader title="Dashboard" description="Organization overview." />
-      <Text c="dimmed">
-        Overview of {currentOrganization?.name ?? "your organization"}.
-      </Text>
+      <Text c="dimmed">Overview of {currentOrganization?.name ?? "your organization"}.</Text>
     </PageContainer>
   );
 }
