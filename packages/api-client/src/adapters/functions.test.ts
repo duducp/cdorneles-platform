@@ -244,4 +244,24 @@ describe("createFunctionsApi user management", () => {
     await expect(promise).rejects.toBeInstanceOf(ApiError);
     await expect(promise).rejects.not.toBeInstanceOf(SyntaxError);
   });
+
+  it("throws an ApiError for a null response body", async () => {
+    mockExecution("null");
+    const api = createFunctionsApi(client);
+
+    const promise = api.listUsers();
+
+    await expect(promise).rejects.toBeInstanceOf(ApiError);
+    await expect(promise).rejects.not.toBeInstanceOf(TypeError);
+  });
+
+  it("throws an ApiError for a scalar JSON response body", async () => {
+    mockExecution(JSON.stringify("x"));
+    const api = createFunctionsApi(client);
+
+    const promise = api.listUsers();
+
+    await expect(promise).rejects.toBeInstanceOf(ApiError);
+    await expect(promise).rejects.not.toBeInstanceOf(TypeError);
+  });
 });

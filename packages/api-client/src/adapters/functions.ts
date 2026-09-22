@@ -48,7 +48,10 @@ export function createFunctionsApi(client: Client): FunctionsApi {
     } catch (cause) {
       throw new ApiError("malformed function response", { code: "invalid_response", cause });
     }
-    if (data && typeof data === "object" && data.error) {
+    if (data === null || typeof data !== "object") {
+      throw new ApiError("malformed function response", { code: "invalid_response" });
+    }
+    if (data.error) {
       throw new ApiError(data.reason ?? data.error, { code: data.error });
     }
     return data;
