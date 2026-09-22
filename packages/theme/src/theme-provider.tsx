@@ -27,18 +27,18 @@ export interface ThemeProviderProps {
   respectSystemPreference?: boolean;
 }
 
-// Mantine's default `dimmed` (dark-2) fails AA on the dark body; use gray-4.
-//
 // `--mantine-color-body` is what actually paints the page. Mantine defaults it
-// to white in Light, which ignores the `semanticColors.light.background` token
-// and leaves white surfaces sitting on a white page. Wiring it here is what
-// gives the Light theme its faint gray canvas and makes cards read as cards.
+// to white in Light and `dark-7` (#242424) in Dark; wiring it to the semantic
+// tokens gives Light its faint gray canvas and Dark the guide's #0C0C0C.
+//
+// Mantine's default `dimmed` (dark-2) fails AA on the dark body; use gray-4.
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {},
   light: {
     "--mantine-color-body": semanticColors.light.background,
   },
   dark: {
+    "--mantine-color-body": semanticColors.dark.background,
     "--mantine-color-dimmed": "var(--mantine-color-gray-4)",
   },
 });

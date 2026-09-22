@@ -2,6 +2,7 @@ import {
   brand,
   createColorScale,
   danger,
+  dark,
   density,
   fontFamily,
   fontWeights,
@@ -37,6 +38,7 @@ export function createAppTheme(options: CreateAppThemeOptions = {}): MantineThem
   const colors: Record<string, MantineColorsTuple> = {
     brand: primaryScale,
     gray,
+    dark,
     success,
     warning,
     danger,

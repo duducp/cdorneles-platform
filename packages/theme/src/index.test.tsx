@@ -64,6 +64,13 @@ describe("css variables", () => {
     expect(semanticColors.light.background).not.toBe("#ffffff");
   });
 
+  it("paints the dark page with the semantic dark background", () => {
+    const resolved = cssVariablesResolver({} as MantineTheme);
+
+    expect(resolved.dark?.["--mantine-color-body"]).toBe(semanticColors.dark.background);
+    expect(semanticColors.dark.background).toBe("#0c0c0c");
+  });
+
   it("keeps `dimmed` readable on the dark body", () => {
     // The resolver ignores the theme it is handed; the cast only satisfies the
     // signature Mantine declares.
