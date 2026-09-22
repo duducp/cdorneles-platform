@@ -191,10 +191,26 @@ export function AuthProvider({
     setStatus("authenticated");
   }, []);
 
+  // Read the latest sessionState without making `markExpired` depend on it: the
+  // signal subscription effect must stay stable across renders.
+  const sessionStateRef = useRef(sessionState);
+  sessionStateRef.current = sessionState;
+
+  // Track whether the session has ever been expired during this mount. After a
+  // successful reauthentication the state returns to "active", but the signal
+  // subscription must ignore stale 401s from requests made before reauth.
+  const everExpiredRef = useRef(false);
+
   // A 401 from any request reaches the query client, not the auth state.
   useEffect(() => {
     if (!sessionSignal) return;
-    return sessionSignal.subscribe(markExpired);
+    return sessionSignal.subscribe(() => {
+      // After a successful reauthentication, sessionState is "active" again. A
+      // stale 401 from a request made before reauth must not reopen the dialog.
+      if (sessionStateRef.current === "active" && everExpiredRef.current) return;
+      everExpiredRef.current = true;
+      markExpired();
+    });
   }, [sessionSignal, markExpired]);
 
   // Poll session validity. The check goes to the server rather than comparing

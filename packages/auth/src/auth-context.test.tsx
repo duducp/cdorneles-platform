@@ -573,6 +573,42 @@ describe("reauthentication", () => {
     expect(window.location.href).toBe("");
   });
 
+  it("does not reopen the dialog after a stale 401 arrives post-reauthentication", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      login: vi.fn().mockResolvedValue(createMockSession({ id: "s2" })),
+    });
+    const signal = createSessionSignal();
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("authenticated"));
+
+    // 1. Drive the provider to expired via the signal.
+    signal.notifyExpired();
+    await waitFor(() => expect(current().sessionState).toBe("expired"));
+
+    // 2. Reauthenticate successfully — sessionState returns to "active".
+    await act(async () => {
+      await current().reauthenticate({ email: "user@example.com", password: "pw" });
+    });
+    expect(current().sessionState).toBe("active");
+
+    // 3. A stale 401 from a request made before reauth arrives now.
+    await act(async () => {
+      signal.notifyExpired();
+    });
+
+    // 4. The dialog must NOT reopen — sessionState stays "active".
+    //    waitFor ensures React has flushed and the signal handler ran.
+    await waitFor(() => expect(current().sessionState).toBe("active"));
+  });
+
   it("keeps the session expired when the reauthentication MFA code is rejected", async () => {
     const failure = new Error("invalid code");
     const service = createMockService({

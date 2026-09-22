@@ -568,6 +568,9 @@ importers:
       '@mantine/hooks':
         specifier: 'catalog:'
         version: 9.6.1(react@19.3.0)
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.103.1(react@19.3.0)
       lucide-react:
         specifier: 'catalog:'
         version: 1.47.0(react@19.3.0)
