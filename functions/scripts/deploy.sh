@@ -32,6 +32,7 @@ ALL_FUNCTIONS=(
   get-organization-profile
   provision-organization
   create-user
+  update-user-permissions
 )
 
 # API key scopes the function's per-execution key needs.
@@ -43,6 +44,7 @@ scopes_for() {
     get-organization-profile)    echo "teams.read rows.read" ;;
     provision-organization)      echo "teams.read rows.read rows.write" ;;
     create-user)                 echo "users.write teams.read teams.write rows.read rows.write executions.write" ;;
+    update-user-permissions)     echo "teams.read rows.read rows.write" ;;
     *)                           echo "" ;;
   esac
 }
