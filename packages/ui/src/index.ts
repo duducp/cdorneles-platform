@@ -27,3 +27,4 @@ export * from "./provider/app-provider";
 export * from "./states/empty-state";
 export * from "./states/error-state";
 export * from "./states/loading-state";
+export * from "./states/loading-screen";
