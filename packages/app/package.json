@@ -29,7 +29,8 @@
     "@mantine/hooks": "catalog:",
     "@tanstack/react-query": "catalog:",
     "lucide-react": "catalog:",
-    "next": "catalog:"
+    "next": "catalog:",
+    "react-idle-timer": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:",
