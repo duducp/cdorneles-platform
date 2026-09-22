@@ -8,6 +8,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { FormError } from "../components/form-error";
 
+export type { MfaChallengeFormValues };
+
 export interface MfaChallengeFormProps {
   onSubmit: (values: MfaChallengeFormValues) => Promise<void>;
   onResend?: () => Promise<void>;
