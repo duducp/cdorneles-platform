@@ -93,6 +93,29 @@ export const TABLES: TableDef[] = [
     ],
   },
   {
+    id: "user_permissions",
+    name: "User Permissions",
+    rowSecurity: true,
+    attributes: [
+      { key: "userId", type: "string", required: true, size: 36 },
+      { key: "organizationId", type: "string", required: true, size: 36 },
+      { key: "permissionId", type: "string", required: true, size: 36 },
+      { key: "grantedBy", type: "string", required: true, size: 36 },
+    ],
+    indexes: [
+      {
+        key: "org_user_permission_unique",
+        type: TablesDBIndexType.Unique,
+        columns: ["organizationId", "userId", "permissionId"],
+      },
+      {
+        key: "org_user_idx",
+        type: TablesDBIndexType.Key,
+        columns: ["organizationId", "userId"],
+      },
+    ],
+  },
+  {
     id: "applications",
     name: "Applications",
     rowSecurity: false,
@@ -219,6 +242,15 @@ export const SEED_PERMISSIONS: SeedDef[] = [
     // provision-organization's allPermissionIDs() on purpose.
     id: "perm_organizations_create",
     data: { key: "organizations.create", description: "Create new organizations" },
+  },
+  // Platform capabilities: granted via the platform team, NOT through
+  // organization roles. Intentionally kept out of provision-organization's
+  // allPermissionIDs().
+  { id: "perm_users_read", data: { key: "users.read", description: "List and view users" } },
+  { id: "perm_users_create", data: { key: "users.create", description: "Create users" } },
+  {
+    id: "perm_users_manage_permissions",
+    data: { key: "users.manage_permissions", description: "Grant or revoke a user's permissions" },
   },
   {
     id: "perm_customers_read",

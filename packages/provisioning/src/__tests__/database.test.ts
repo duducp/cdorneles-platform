@@ -77,10 +77,10 @@ describe("createDatabase", () => {
     expect(mockCreate).toHaveBeenCalledWith("cdorneles_platform", "Cdorneles Platform");
   });
 
-  it("creates all 10 tables", async () => {
+  it("creates all 11 tables", async () => {
     await createDatabase(config);
 
-    expect(mockCreateTable).toHaveBeenCalledTimes(10);
+    expect(mockCreateTable).toHaveBeenCalledTimes(11);
   });
 
   it("creates indexes for each table", async () => {
