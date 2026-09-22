@@ -100,10 +100,13 @@ output_directory() {
 
 set_variable() {
   local site_id="$1" var_id="$2" key="$3" value="$4"
+  # --secret=false: these are NEXT_PUBLIC_* values, public by design. Appwrite
+  # marks new variables secret by default, and a secret variable cannot be
+  # unmarked later without recreating it.
   appwrite sites create-variable \
-    --site-id "$site_id" --variable-id "$var_id" --key "$key" --value "$value" --force >/dev/null 2>&1 \
+    --site-id "$site_id" --variable-id "$var_id" --key "$key" --value "$value" --secret=false --force >/dev/null 2>&1 \
     || appwrite sites update-variable \
-      --site-id "$site_id" --variable-id "$var_id" --key "$key" --value "$value" --force >/dev/null 2>&1 \
+      --site-id "$site_id" --variable-id "$var_id" --key "$key" --value "$value" --secret=false --force >/dev/null 2>&1 \
     || echo "   (could not set $key)"
 }
 
