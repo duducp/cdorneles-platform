@@ -41,11 +41,11 @@ type fakeOps struct {
 	findErr      error
 	foundEmail   string
 
-	session       *models.Session
-	sessionErr    error
-	sessionUserID string
-	sessionCalls  int
-	verifyCalls   int
+	token       *models.Token
+	tokenErr    error
+	tokenUserID string
+	tokenCalls  int
+	verifyCalls int
 }
 
 func (f *fakeOps) VerifyIDToken(idToken string) (*jwt.Token, error) {
@@ -61,13 +61,13 @@ func (f *fakeOps) FindUserByEmail(email string) (*models.User, error) {
 	return f.usersByEmail[email], nil
 }
 
-func (f *fakeOps) CreateSession(userID string) (*models.Session, error) {
-	f.sessionCalls++
-	f.sessionUserID = userID
-	if f.sessionErr != nil {
-		return nil, f.sessionErr
+func (f *fakeOps) CreateLoginToken(userID string) (*models.Token, error) {
+	f.tokenCalls++
+	f.tokenUserID = userID
+	if f.tokenErr != nil {
+		return nil, f.tokenErr
 	}
-	return f.session, nil
+	return f.token, nil
 }
 
 // signToken produces a real RS256 JWT the way Google would, with the given
@@ -138,7 +138,7 @@ func TestMainRejectsWhenGoogleAuthDisabled(t *testing.T) {
 	ops := &fakeOps{verifyErr: errors.New("verification must not run")}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 403, "google_auth_disabled", "Google auth is disabled")
-	if ops.sessionCalls != 0 {
+	if ops.tokenCalls != 0 {
 		t.Fatal("no session may be created when Google auth is disabled")
 	}
 	if ops.verifyCalls != 0 {
@@ -158,7 +158,7 @@ func TestMainRejectsFailedVerification(t *testing.T) {
 	ops := &fakeOps{verifyErr: errors.New("bad signature")}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 401, "invalid_token", "invalid Google ID token")
-	if ops.sessionCalls != 0 {
+	if ops.tokenCalls != 0 {
 		t.Fatal("no session may be created for an unverified token")
 	}
 }
@@ -199,7 +199,7 @@ func TestMainAcceptsBothIssuerSpellings(t *testing.T) {
 		usersByEmail: map[string]*models.User{
 			"user@example.com": activeUser("u1", "user@example.com"),
 		},
-		session: &models.Session{Id: "s1", UserId: "u1", Secret: "sec"},
+		token: &models.Token{Id: "t1", UserId: "u1", Secret: "sec"},
 	}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	if resp.StatusCode != 200 {
@@ -224,7 +224,7 @@ func TestMainRejectsUnknownEmail(t *testing.T) {
 	}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 403, "unknown_email", "no platform user for this Google account")
-	if ops.sessionCalls != 0 {
+	if ops.tokenCalls != 0 {
 		t.Fatal("no session may be created for an unknown e-mail")
 	}
 }
@@ -260,7 +260,7 @@ func TestMainLogsInAndReturnsCredentials(t *testing.T) {
 		usersByEmail: map[string]*models.User{
 			"user@example.com": activeUser("u1", "user@example.com"),
 		},
-		session: &models.Session{Id: "s1", UserId: "u1", Secret: "the-secret"},
+		token: &models.Token{Id: "t1", UserId: "u1", Secret: "the-secret"},
 	}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	if resp.StatusCode != 200 {
@@ -269,8 +269,8 @@ func TestMainLogsInAndReturnsCredentials(t *testing.T) {
 	if ops.foundEmail != "user@example.com" {
 		t.Fatalf("expected lookup by token e-mail, got %q", ops.foundEmail)
 	}
-	if ops.sessionUserID != "u1" {
-		t.Fatalf("expected a session for u1, got %q", ops.sessionUserID)
+	if ops.tokenUserID != "u1" {
+		t.Fatalf("expected a login token for u1, got %q", ops.tokenUserID)
 	}
 	var out oneTapLoginResponse
 	if err := json.Unmarshal(resp.Body, &out); err != nil {
@@ -281,17 +281,28 @@ func TestMainLogsInAndReturnsCredentials(t *testing.T) {
 	}
 }
 
-func TestMainReturns500WhenSessionCreationFails(t *testing.T) {
+func TestMainReturns500WhenTokenCreationFails(t *testing.T) {
 	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
 	ops := &fakeOps{
 		verifyToken: googleToken(t, nil),
 		usersByEmail: map[string]*models.User{
 			"user@example.com": activeUser("u1", "user@example.com"),
 		},
-		sessionErr: errors.New("boom"),
+		tokenErr: errors.New("boom"),
 	}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
-	assertError(t, resp, 500, "internal_error", "failed to create session")
+	assertError(t, resp, 500, "internal_error", "failed to create login token")
+}
+
+func TestMainRejectsAnEmptyLoginTokenSecret(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
+	ops := &fakeOps{
+		verifyToken:  googleToken(t, nil),
+		usersByEmail: map[string]*models.User{"user@example.com": activeUser("u1", "user@example.com")},
+		token:        &models.Token{Id: "t1", UserId: "u1", Secret: ""},
+	}
+	resp := handle(newContext(`{"idToken":"x"}`), ops)
+	assertError(t, resp, 500, "internal_error", "failed to create login token")
 }
 
 func TestMainReturns500WhenUserLookupFails(t *testing.T) {

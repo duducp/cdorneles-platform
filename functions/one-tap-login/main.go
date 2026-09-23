@@ -1,11 +1,11 @@
 // Package handler implements the one-tap-login Appwrite Function. It takes a
 // Google One Tap ID token (JWT) produced by the Google Identity Services SDK,
 // verifies it server-side (RS256 signature against Google's published keys,
-// issuer, audience, expiry and a verified e-mail claim), and creates the
-// Appwrite session for the matching platform user. The browser finishes the
-// login with `account.createSession(userId, secret)` using the returned
-// credentials. Deny by default: an unknown e-mail, a disabled account or an
-// Appwrite-unverified e-mail never gets a session.
+// issuer, audience, expiry and a verified e-mail claim), and creates an
+// Appwrite login token for the matching platform user. The browser exchanges
+// that token for a session with `account.createSession(userId, secret)`. Deny
+// by default: an unknown e-mail, a disabled account or an Appwrite-unverified
+// e-mail never gets a token.
 package handler
 
 import (
@@ -91,8 +91,9 @@ type operations interface {
 	// FindUserByEmail resolves the platform user for an e-mail, or nil when
 	// no user matches.
 	FindUserByEmail(email string) (*models.User, error)
-	// CreateSession creates a usable Appwrite session for the user.
-	CreateSession(userID string) (*models.Session, error)
+	// CreateLoginToken creates the single-use token the browser exchanges for a
+	// session with `account.createSession(userId, secret)`.
+	CreateLoginToken(userID string) (*models.Token, error)
 }
 
 // Main is the function entrypoint.
@@ -100,9 +101,9 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 	return handle(ctx, newAppwriteOps(ctx.Req.Headers["x-appwrite-key"]))
 }
 
-// handle verifies the ID token, resolves the user, then creates the session
-// through the injected operations seam. The ID token and the session secret
-// are never logged.
+// handle verifies the ID token, resolves the user, then creates the login
+// token through the injected operations seam. The ID token and the login token
+// secret are never logged.
 func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 	// Kill switch first: reject before parsing the body or doing any work.
 	if googleAuthDisabled() {
@@ -140,7 +141,7 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 	}
 
 	// Deny by default: no matching user, a disabled account, or an e-mail
-	// Google has verified but Appwrite has not never gets a session.
+	// Google has verified but Appwrite has not never gets a login token.
 	if user == nil {
 		ctx.Log(map[string]interface{}{"action": "one_tap.rejected", "reason": "unknown_email"})
 		return errorBody(ctx, http.StatusForbidden, errUnknownEmail, "no platform user for this Google account")
@@ -152,10 +153,14 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 		return errorBody(ctx, http.StatusForbidden, errEmailNotVerified, "account e-mail is not verified")
 	}
 
-	session, err := ops.CreateSession(user.Id)
+	loginToken, err := ops.CreateLoginToken(user.Id)
 	if err != nil {
 		ctx.Error(err)
-		return errorBody(ctx, http.StatusInternalServerError, errInternal, "failed to create session")
+		return errorBody(ctx, http.StatusInternalServerError, errInternal, "failed to create login token")
+	}
+	if strings.TrimSpace(loginToken.Secret) == "" {
+		ctx.Error(errors.New("appwrite returned an empty login token secret"))
+		return errorBody(ctx, http.StatusInternalServerError, errInternal, "failed to create login token")
 	}
 
 	ctx.Log(map[string]interface{}{
@@ -164,8 +169,8 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 	})
 
 	return ctx.Res.Json(oneTapLoginResponse{
-		UserID: session.UserId,
-		Secret: session.Secret,
+		UserID: loginToken.UserId,
+		Secret: loginToken.Secret,
 	})
 }
 
@@ -320,10 +325,11 @@ func (o *appwriteOps) FindUserByEmail(email string) (*models.User, error) {
 	return &result.Users[0], nil
 }
 
-// CreateSession creates the Appwrite session. The secret is only included in
-// responses made with an API key, which this function's per-execution key is.
-func (o *appwriteOps) CreateSession(userID string) (*models.Session, error) {
-	return o.users.CreateSession(userID)
+// CreateLoginToken creates the Appwrite login token. The browser finishes with
+// `account.createSession(userId, secret)`, which consumes a token secret — not
+// a session secret, which is why this uses users.createToken.
+func (o *appwriteOps) CreateLoginToken(userID string) (*models.Token, error) {
+	return o.users.CreateToken(userID)
 }
 
 // parseRSAKey decodes a JWK's base64url modulus and exponent into an RSA
