@@ -104,6 +104,7 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 // through the injected operations seam. The ID token and the session secret
 // are never logged.
 func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
+	// Kill switch first: reject before parsing the body or doing any work.
 	if googleAuthDisabled() {
 		return errorBody(ctx, http.StatusForbidden, errGoogleAuthDisabled, "Google auth is disabled")
 	}

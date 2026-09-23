@@ -45,9 +45,11 @@ type fakeOps struct {
 	sessionErr    error
 	sessionUserID string
 	sessionCalls  int
+	verifyCalls   int
 }
 
 func (f *fakeOps) VerifyIDToken(idToken string) (*jwt.Token, error) {
+	f.verifyCalls++
 	return f.verifyToken, f.verifyErr
 }
 
@@ -138,6 +140,9 @@ func TestMainRejectsWhenGoogleAuthDisabled(t *testing.T) {
 	assertError(t, resp, 403, "google_auth_disabled", "Google auth is disabled")
 	if ops.sessionCalls != 0 {
 		t.Fatal("no session may be created when Google auth is disabled")
+	}
+	if ops.verifyCalls != 0 {
+		t.Fatal("verification must not run when Google auth is disabled")
 	}
 }
 
@@ -297,6 +302,23 @@ func TestMainReturns500WhenUserLookupFails(t *testing.T) {
 	}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 500, "internal_error", "failed to resolve user")
+}
+
+func TestGoogleAuthDisabled(t *testing.T) {
+	cases := map[string]bool{
+		"false":   true,
+		" FALSE ": true,
+		"false ":  true,
+		"":        false,
+		"true":    false,
+		"no":      false,
+	}
+	for value, want := range cases {
+		t.Setenv("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED", value)
+		if got := googleAuthDisabled(); got != want {
+			t.Fatalf("googleAuthDisabled() with %q = %v, want %v", value, got, want)
+		}
+	}
 }
 
 func TestValidateClaimsRejectsNonGoogleClaims(t *testing.T) {
