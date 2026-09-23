@@ -85,8 +85,8 @@ export interface GoogleOneTapProps {
   enabled: boolean;
   /** Called after the Appwrite session was established. */
   onSuccess: () => void;
-  /** Receives a user-facing message for any failure. */
-  onError: (message: string) => void;
+  /** Receives the raw failure; the parent decides how to map or route it. */
+  onError: (error: unknown) => void;
 }
 
 /**
@@ -132,7 +132,7 @@ export function GoogleOneTap({ clientId, enabled, onSuccess, onError }: GoogleOn
             loginWithOneTapRef
               .current({ idToken })
               .then(() => onSuccessRef.current())
-              .catch((error: unknown) => onErrorRef.current(describeOneTapError(error)));
+              .catch((error: unknown) => onErrorRef.current(error));
           },
           auto_select: false,
           cancel_on_tap_outside: true,
@@ -144,7 +144,7 @@ export function GoogleOneTap({ clientId, enabled, onSuccess, onError }: GoogleOn
         }, PROMPT_DELAY_MS);
       })
       .catch(() => {
-        if (!cancelled) onErrorRef.current(describeOneTapError(null));
+        if (!cancelled) onErrorRef.current(null);
       });
 
     return () => {

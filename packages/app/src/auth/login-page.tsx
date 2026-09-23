@@ -10,7 +10,7 @@ import {
   useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
 import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
-import { GoogleOneTap } from "./google-one-tap";
+import { describeOneTapError, GoogleOneTap } from "./google-one-tap";
 import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -58,6 +58,21 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
       router.push(
         valid ? `/forgot-password?email=${encodeURIComponent(email)}` : "/forgot-password",
       );
+    },
+    [router],
+  );
+
+  // One Tap errors arrive raw: only an MFA challenge gets special routing;
+  // everything else becomes display text via the module's mapper.
+  const handleOneTapError = useCallback(
+    (err: unknown) => {
+      if (err instanceof MfaRequiredError) {
+        router.push(
+          `/mfa?redirect=${encodeURIComponent(resolvePostAuthRedirect(window.location.search))}`,
+        );
+        return;
+      }
+      setError(describeOneTapError(err));
     },
     [router],
   );
@@ -121,7 +136,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
           // Same destination as the OAuth fallback button.
           router.replace(resolvePostAuthRedirect(window.location.search));
         }}
-        onError={setError}
+        onError={handleOneTapError}
       />
       <Flex justify="flex-end" p="sm">
         <ThemeToggle />

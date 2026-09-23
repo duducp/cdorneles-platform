@@ -104,21 +104,23 @@ describe("GoogleOneTap", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it("surfaces a mapped message when the exchange fails", async () => {
+  it("forwards the raw error to onError", async () => {
     installGsi();
-    loginWithOneTapMock.mockRejectedValue(
-      new ApiError("no platform user", { code: "unknown_email", status: 403 }),
-    );
+    const apiError = new ApiError("no platform user", {
+      code: "unknown_email",
+      status: 403,
+    });
+    loginWithOneTapMock.mockRejectedValue(apiError);
     const { onError } = renderOneTap();
 
     await waitFor(() => expect(initCalls).toHaveLength(1));
     initCalls[0].callback({ credential: "the-jwt" });
 
     await waitFor(() => expect(onError).toHaveBeenCalledOnce());
-    expect(onError.mock.calls[0][0]).toContain("Não há conta na plataforma");
+    expect(onError).toHaveBeenCalledWith(apiError);
   });
 
-  it("reports an error when the GSI script fails to load", async () => {
+  it("reports null when the GSI script fails to load", async () => {
     const { onError } = renderOneTap();
 
     // No window.google stub: the component injects the script tag, which
@@ -131,7 +133,7 @@ describe("GoogleOneTap", () => {
     script.dispatchEvent(new Event("error"));
 
     await waitFor(() => expect(onError).toHaveBeenCalledOnce());
-    expect(onError.mock.calls[0][0]).toContain("Não foi possível entrar");
+    expect(onError).toHaveBeenCalledWith(null);
   });
 });
 

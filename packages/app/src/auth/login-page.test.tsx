@@ -1,14 +1,18 @@
 import "@testing-library/jest-dom/vitest";
 
 import { ThemeProvider } from "@cdorneles/theme";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { loginWithGoogleMock, loginWithOneTapMock } = vi.hoisted(() => ({
-  loginWithGoogleMock: vi.fn(),
-  loginWithOneTapMock: vi.fn(),
-}));
+const { loginWithGoogleMock, loginWithOneTapMock, pushMock, replaceMock, oneTapProps } =
+  vi.hoisted(() => ({
+    loginWithGoogleMock: vi.fn(),
+    loginWithOneTapMock: vi.fn(),
+    pushMock: vi.fn(),
+    replaceMock: vi.fn(),
+    oneTapProps: { current: null as null | { onError: (error: unknown) => void } },
+  }));
 
 vi.mock("@cdorneles/auth", () => ({
   useAuth: () => ({
@@ -23,15 +27,19 @@ vi.mock("@cdorneles/auth", () => ({
 }));
 
 vi.mock("./google-one-tap", () => ({
-  GoogleOneTap: () => null,
-  describeOneTapError: (error: unknown) => String(error),
+  GoogleOneTap: (props: { onError: (error: unknown) => void }) => {
+    oneTapProps.current = props;
+    return null;
+  },
+  describeOneTapError: (error: unknown) => `mapped:${String(error)}`,
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ replace: replaceMock, push: pushMock }),
 }));
 
 import { LoginPage } from "./login-page";
+import { MfaRequiredError } from "@cdorneles/auth";
 
 function renderPage() {
   return render(
@@ -44,6 +52,7 @@ function renderPage() {
 describe("LoginPage", () => {
   beforeEach(() => {
     localStorage.clear();
+    oneTapProps.current = null;
     vi.clearAllMocks();
     window.history.replaceState({}, "", "/login");
   });
@@ -98,5 +107,28 @@ describe("LoginPage", () => {
     expect(
       await screen.findByText("Não foi possível entrar com o Google. Tente novamente."),
     ).toBeInTheDocument();
+  });
+
+  it("routes a One Tap MFA challenge to the MFA page", async () => {
+    renderPage();
+
+    expect(oneTapProps.current).not.toBeNull();
+    act(() => {
+      oneTapProps.current?.onError(new MfaRequiredError());
+    });
+
+    expect(pushMock).toHaveBeenCalledWith("/mfa?redirect=%2Fdashboard");
+  });
+
+  it("maps other One Tap failures to a display message", async () => {
+    renderPage();
+
+    expect(oneTapProps.current).not.toBeNull();
+    act(() => {
+      oneTapProps.current?.onError(new Error("boom"));
+    });
+
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(await screen.findByText("mapped:Error: boom")).toBeInTheDocument();
   });
 });
