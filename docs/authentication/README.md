@@ -35,17 +35,9 @@ página anterior a preservar nem identidade conhecida para preencher o e-mail.
 **ainda é válida** e não pede senha — é o que o aviso de expiração usa.
 Reautenticar só é necessário quando a sessão já morreu.
 
-## Bloqueio por inatividade
+## Duração de sessão
 
-Depois de **15 minutos** (configurável por `NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES`)
-sem atividade, a tela avisa por **30 segundos** (`NEXT_PUBLIC_IDLE_PROMPT_SECONDS`,
-com countdown e botão "Continuar trabalhando") e então **bloqueia**. Para continuar,
-o usuário digita a senha (e o código, se tiver MFA) — sempre, mesmo que a sessão
-ainda esteja válida. A detecção é do `react-idle-timer` (`crossTab`), então
-qualquer aba ativa mantém todas desbloqueadas.
-
-O bloqueio é **UX, não segurança** (AGENTS.md): desencoraja quem se afastou da
-mesa. A fronteira real é a **duração de sessão do Appwrite**, configurada em
+A fronteira de expiração é a **duração de sessão do Appwrite**, configurada em
 **Auth → Security → Session duration** para **24h** (`project_update_session_duration_policy`).
 Sessões existentes mantêm o vencimento original; só as novas usam 24h.
 `account.updateSession('current')` (o `renewSession`) estende uma sessão ainda
