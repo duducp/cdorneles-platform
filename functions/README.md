@@ -59,6 +59,7 @@ functions/
 ├── create-user/
 ├── update-user-permissions/
 ├── list-users/
+├── list-organizations/
 ├── scripts/
 │   ├── prepare.sh             # copies shared/ into each function's internal/
 │   └── deploy.sh              # prepares and deploys every function
@@ -79,6 +80,7 @@ The generated directories are gitignored.
 | `create-user` | Creates a user, adds them to an organization with a role, grants direct permissions and emails a temporary password | Authenticated; `users.create` (platform team or organization role), plus `users.manage_permissions` when direct permissions are requested |
 | `update-user-permissions` | Reconciles a user's direct permissions for an organization (revokes the ones no longer requested, grants the new ones) | Authenticated; `users.manage_permissions` (platform team or organization role); non-platform callers may only grant a subset of their own effective permissions |
 | `list-users` | Lists the platform's users (`id`, `email`, `name`, `labels`), paging through every server `users.list` page | Authenticated; `users.read` (platform team or the caller's effective permissions) |
+| `list-organizations` | Lists every organization (`id`, `name`), paging through every server `teams` page and filtering out the platform team | Authenticated; `organizations.read` (platform team); non-platform callers denied |
 
 `create-user` sends the temporary-password welcome email **directly** through
 Appwrite Messaging, targeting the newly created user id (Appwrite registers the
@@ -169,6 +171,7 @@ Per-function scopes for the per-execution API key:
 | `create-user` | `users.write teams.read teams.write rows.read rows.write messages.write` |
 | `update-user-permissions` | `teams.read rows.read rows.write` |
 | `list-users` | `users.read` |
+| `list-organizations` | `teams.read` |
 
 Appwrite compiles the uploaded source. The runtime's environment provides
 `APPWRITE_FUNCTION_API_ENDPOINT` and `APPWRITE_FUNCTION_PROJECT_ID`, and the

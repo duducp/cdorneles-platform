@@ -33,6 +33,7 @@ ALL_FUNCTIONS=(
   create-user
   update-user-permissions
   list-users
+  list-organizations
 )
 
 # API key scopes the function's per-execution key needs.
@@ -45,6 +46,7 @@ scopes_for() {
     create-user)                 echo "users.write teams.read teams.write rows.read rows.write messages.write" ;;
     update-user-permissions)     echo "teams.read rows.read rows.write" ;;
     list-users)                  echo "teams.read users.read" ;;
+    list-organizations)         echo "teams.read" ;;
     *)                           echo "" ;;
   esac
 }
