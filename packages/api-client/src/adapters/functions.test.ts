@@ -297,8 +297,6 @@ describe("createFunctionsApi organizations", () => {
     );
     const api = createFunctionsApi(client);
 
-    await expect(api.listOrganizations()).rejects.toThrow(
-      "missing permission: organizations.read",
-    );
+    await expect(api.listOrganizations()).rejects.toThrow("missing permission: organizations.read");
   });
 });
