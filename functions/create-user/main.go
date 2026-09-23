@@ -369,7 +369,12 @@ func (o *appwriteOps) CreateUserPermission(userID, organizationID, permissionID,
 
 // SendWelcomeEmail sends the temporary-password welcome email through Appwrite
 // Messaging, targeting the newly created user (whose email Appwrite registers
-// as a target). The content is Brazilian Portuguese HTML.
+// as a target). The content is Brazilian Portuguese HTML. Delivery is
+// asynchronous: CreateEmail only queues the message, so a provider failure is
+// not observable here — only the synchronous error is returned.
+//
+// The password is interpolated unescaped: generatePassword emits base64
+// raw-URL characters (A-Z a-z 0-9 - _), which contain no HTML metacharacters.
 func (o *appwriteOps) SendWelcomeEmail(userID, name, password string) error {
 	htmlBody := fmt.Sprintf(
 		"<p>Olá %s,</p>"+

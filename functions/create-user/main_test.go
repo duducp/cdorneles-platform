@@ -290,7 +290,7 @@ func TestMainSucceedsWhenWelcomeEmailFails(t *testing.T) {
 	ops := &fakeOps{
 		effective:     []string{"users.create"},
 		createdUserID: "user-1",
-		emailErr:      errors.New("send-email failed"),
+		emailErr:      errors.New("welcome email failed"),
 	}
 	ctx := newContext(validBody, map[string]string{"x-appwrite-user-id": "u1"})
 	resp := handle(ctx, ops)
