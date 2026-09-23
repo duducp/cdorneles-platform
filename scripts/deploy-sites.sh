@@ -47,9 +47,11 @@
 #                        (default __no-autodeploy__, which matches nothing).
 #                        Deploys therefore come only from this script and the
 #                        release workflow.
-#   NEXT_PUBLIC_APPWRITE_ENDPOINT
-#   NEXT_PUBLIC_APPWRITE_PROJECT_ID
-#                        build-time variables, set on each site when present
+# Build-time variables (NEXT_PUBLIC_APPWRITE_ENDPOINT, NEXT_PUBLIC_APPWRITE_PROJECT_ID,
+# NEXT_PUBLIC_GOOGLE_CLIENT_ID, NEXT_PUBLIC_GOOGLE_AUTH_ENABLED, NEXT_PUBLIC_IDLE_*,
+# NEXT_PUBLIC_PLATFORM_TEAM_ID) are Appwrite *project* variables, inherited by every
+# site, so they are no longer set per site here. A site can still override one with
+# its own variable of the same key.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -101,18 +103,6 @@ build_command() {
 # wrapper at .next/standalone/server.js, so the output directory is `.next`.
 output_directory() {
   echo ".next"
-}
-
-set_variable() {
-  local site_id="$1" var_id="$2" key="$3" value="$4"
-  # --secret=false: these are NEXT_PUBLIC_* values, public by design. Appwrite
-  # marks new variables secret by default, and a secret variable cannot be
-  # unmarked later without recreating it.
-  appwrite sites create-variable \
-    --site-id "$site_id" --variable-id "$var_id" --key "$key" --value "$value" --secret=false --force >/dev/null 2>&1 \
-    || appwrite sites update-variable \
-      --site-id "$site_id" --variable-id "$var_id" --key "$key" --value "$value" --secret=false --force >/dev/null 2>&1 \
-    || echo "   (could not set $key)"
 }
 
 site_domain() {
@@ -233,18 +223,6 @@ for site in "${SITES[@]}"; do
       "${base_args[@]}" \
       ${provider_args[@]+"${provider_args[@]}"} \
       --force
-  fi
-
-  # Variable ids are unique per project, not per site, so they must be
-  # namespaced by site — reusing "appwrite-endpoint" would silently fail for
-  # every site after the first.
-  if [ -n "${NEXT_PUBLIC_APPWRITE_ENDPOINT:-}" ]; then
-    echo "==> Setting NEXT_PUBLIC_APPWRITE_ENDPOINT on $site"
-    set_variable "$site" "$site-appwrite-endpoint" "NEXT_PUBLIC_APPWRITE_ENDPOINT" "$NEXT_PUBLIC_APPWRITE_ENDPOINT"
-  fi
-  if [ -n "${NEXT_PUBLIC_APPWRITE_PROJECT_ID:-}" ]; then
-    echo "==> Setting NEXT_PUBLIC_APPWRITE_PROJECT_ID on $site"
-    set_variable "$site" "$site-appwrite-project" "NEXT_PUBLIC_APPWRITE_PROJECT_ID" "$NEXT_PUBLIC_APPWRITE_PROJECT_ID"
   fi
 
   if site_is_vcs_linked "$site"; then
