@@ -218,4 +218,52 @@ describe("SessionExpiredGate", () => {
 
     expect(promptMock).toHaveBeenCalledOnce();
   });
+
+  it("matches the locked account case-insensitively", async () => {
+    const loginWithOneTap = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        loginWithOneTap,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("USER@EXAMPLE.COM");
+    });
+
+    await waitFor(() =>
+      expect(loginWithOneTap).toHaveBeenCalledWith({ idToken: "USER@EXAMPLE.COM" }),
+    );
+  });
+
+  it("offers no Google when no client id is configured", () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "");
+    useAuthMock.mockReturnValue(
+      authState({ sessionState: "expired", user: { email: "user@example.com" } }),
+    );
+    render(<SessionExpiredGate />);
+
+    const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { google?: unknown };
+    expect(props.google).toBeUndefined();
+    expect(oneTapProps.current).toBeNull();
+  });
+
+  it("surfaces the unavailable hint when the prompt cannot open", () => {
+    useAuthMock.mockReturnValue(
+      authState({ sessionState: "expired", user: { email: "user@example.com" } }),
+    );
+    render(<SessionExpiredGate />);
+
+    const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      google?: { onClick: () => void };
+    };
+    act(() => props.google?.onClick());
+    act(() => promptMock.mock.calls.at(-1)?.[0]?.());
+
+    const latest = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
+    expect(latest.errorMessage).toMatch(/Não foi possível abrir o Google/i);
+  });
 });
