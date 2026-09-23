@@ -53,7 +53,7 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 	// feature, with or without an organization. A stale or invalid platform
 	// team must not break ordinary traffic, so a failed lookup is treated as
 	// "not a platform member" and the request falls through to the org flow.
-	if platformTeamID := os.Getenv("PLATFORM_TEAM_ID"); platformTeamID != "" {
+	if platformTeamID := os.Getenv("NEXT_PUBLIC_PLATFORM_TEAM_ID"); platformTeamID != "" {
 		client := appwrite.NewClient(ctx.Req.Headers["x-appwrite-key"])
 		teams := sdk.NewTeams(client)
 		member, err := isTeamMember(teams, platformTeamID, headerUserID)

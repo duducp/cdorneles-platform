@@ -100,7 +100,7 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 	}
 
 	// The platform team is not an organization the admin form can target, so
-	// it is filtered out. An empty PLATFORM_TEAM_ID never equals a real team
+	// it is filtered out. An empty NEXT_PUBLIC_PLATFORM_TEAM_ID never equals a real team
 	// id, so nothing is excluded in that case.
 	platformTeamID := ops.PlatformTeamID()
 	summaries := make([]organizationSummary, 0, len(rows))
@@ -136,9 +136,9 @@ func newAppwriteOps(apiKey string) operations {
 	}
 }
 
-// IsPlatformMember reports whether the caller belongs to PLATFORM_TEAM_ID.
+// IsPlatformMember reports whether the caller belongs to NEXT_PUBLIC_PLATFORM_TEAM_ID.
 func (o *appwriteOps) IsPlatformMember(userID string) (bool, error) {
-	teamID := os.Getenv("PLATFORM_TEAM_ID")
+	teamID := os.Getenv("NEXT_PUBLIC_PLATFORM_TEAM_ID")
 	if teamID == "" {
 		return false, nil
 	}
@@ -162,7 +162,7 @@ func (o *appwriteOps) EffectivePermissions(organizationID, userID string) ([]str
 // PlatformTeamID returns the team id that must be filtered from the result
 // (empty when the environment does not configure one).
 func (o *appwriteOps) PlatformTeamID() string {
-	return os.Getenv("PLATFORM_TEAM_ID")
+	return os.Getenv("NEXT_PUBLIC_PLATFORM_TEAM_ID")
 }
 
 // ListOrganizationsPage returns one page of the server teams list at the given

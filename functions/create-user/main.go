@@ -208,9 +208,9 @@ func newAppwriteOps(apiKey string) operations {
 	}
 }
 
-// IsPlatformMember reports whether the caller belongs to PLATFORM_TEAM_ID.
+// IsPlatformMember reports whether the caller belongs to NEXT_PUBLIC_PLATFORM_TEAM_ID.
 func (o *appwriteOps) IsPlatformMember(userID string) (bool, error) {
-	teamID := os.Getenv("PLATFORM_TEAM_ID")
+	teamID := os.Getenv("NEXT_PUBLIC_PLATFORM_TEAM_ID")
 	if teamID == "" {
 		return false, nil
 	}

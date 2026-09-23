@@ -42,12 +42,12 @@ func TestMainRejectsUserIDMismatch(t *testing.T) {
 }
 
 // Platform mode (empty organizationId) resolves grants from the platform team
-// membership. With PLATFORM_TEAM_ID unset the function short-circuits to an
+// membership. With NEXT_PUBLIC_PLATFORM_TEAM_ID unset the function short-circuits to an
 // empty grant before touching Appwrite, so this unit test can assert it without
 // an SDK mock. The membership path itself needs the live SDK, so it is verified
 // by the live probe, not here.
 func TestMainPlatformGrantsWithoutPlatformTeam(t *testing.T) {
-	t.Setenv("PLATFORM_TEAM_ID", "")
+	t.Setenv("NEXT_PUBLIC_PLATFORM_TEAM_ID", "")
 	ctx := newContext(
 		`{"userId":"u1","organizationId":"","applicationId":"admin"}`,
 		map[string]string{"x-appwrite-user-id": "u1"},
