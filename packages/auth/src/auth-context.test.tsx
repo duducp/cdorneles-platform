@@ -43,6 +43,7 @@ function createMockService(overrides?: Partial<AuthService>): AuthService {
   return {
     login: vi.fn(),
     loginWithGoogle: vi.fn(),
+    loginWithOneTap: vi.fn(),
     completeMfa: vi.fn(),
     listMfaFactors: vi.fn(),
     createMfaChallenge: vi.fn(),

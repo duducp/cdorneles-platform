@@ -18,6 +18,7 @@ function createMockFunctionsApi(): FunctionsApi {
     updateUserPermissions: vi.fn(),
     listUsers: vi.fn(),
     listOrganizations: vi.fn(),
+    oneTapLogin: vi.fn(),
   };
 }
 

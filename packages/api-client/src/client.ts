@@ -19,6 +19,12 @@ export interface AccountApi {
   createEmailPasswordSession(input: { email: string; password: string }): Promise<AppwriteSession>;
   /** Starts an OAuth2 sign-in: a full-page redirect to the provider. */
   createOAuth2Session(input: { provider: "google"; success: string; failure: string }): void;
+  /**
+   * Completes a server-orchestrated login: the `userId`+`secret` pair comes
+   * from a trusted source (e.g. the one-tap-login function) and establishes
+   * the browser session cookie.
+   */
+  createSessionFromToken(input: { userId: string; secret: string }): Promise<AppwriteSession>;
   deleteSession(sessionId?: string): Promise<void>;
   createRecovery(input: { email: string; url: string }): Promise<void>;
   updateRecovery(input: { userId: string; secret: string; password: string }): Promise<void>;
@@ -68,6 +74,12 @@ export interface FunctionsApi {
   listOrganizations(): Promise<{
     organizations: { id: string; name: string }[];
   }>;
+  /**
+   * Exchanges a Google One Tap ID token for Appwrite session credentials.
+   * The one-tap-login function verifies the token server-side and returns the
+   * `userId`+`secret` pair for `account.createSession`.
+   */
+  oneTapLogin(input: { idToken: string }): Promise<{ userId: string; secret: string }>;
 }
 
 export interface StorageApi {

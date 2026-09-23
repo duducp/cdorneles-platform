@@ -84,6 +84,17 @@ export function createAccountApi(client: Client): AccountApi {
       });
     },
 
+    async createSessionFromToken(input): Promise<AppwriteSession> {
+      try {
+        // The pair comes from a trusted source (the one-tap-login function);
+        // this call only establishes the browser session cookie.
+        const session = await account.createSession(input.userId, input.secret);
+        return { $id: session.$id, userId: session.userId, expire: session.expire };
+      } catch (error) {
+        throw mapAppwriteError(error);
+      }
+    },
+
     async deleteSession(sessionId): Promise<void> {
       try {
         await account.deleteSession({ sessionId: sessionId || "current" });

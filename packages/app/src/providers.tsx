@@ -103,7 +103,9 @@ export function createProviders({ applicationId, observability }: CreateProvider
       if (!endpoint || !projectId) return createUnconfiguredAuthService();
       const config = resolveApiClientConfig({ endpoint, projectId });
       const services = createAppwriteServices(config);
-      return createAppwriteAuthService(services.account);
+      // services.functions backs loginWithOneTap; without it the one-tap-login
+      // exchange would always throw "not available" at runtime.
+      return createAppwriteAuthService(services.account, services.functions);
     });
     const [tenantService] = useState<TenantService | null>(() => {
       const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;

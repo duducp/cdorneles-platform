@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     createOAuth2Session: vi.fn(),
+    createSession: vi.fn(),
     deleteSession: vi.fn(),
     createRecovery: vi.fn(),
     updateRecovery: vi.fn(),
@@ -142,6 +143,36 @@ describe("createAccountApi", () => {
       userId: "u1",
       expire: "2026-01-01T00:00:00.000Z",
     });
+  });
+
+  it("creates a session from a server-issued userId/secret pair", async () => {
+    mocks.account.createSession.mockResolvedValue({
+      $id: "s1",
+      userId: "u1",
+      expire: "2026-01-01T00:00:00.000Z",
+    });
+
+    const api = createAccountApi(client);
+    const session = await api.createSessionFromToken({ userId: "u1", secret: "the-secret" });
+
+    expect(mocks.account.createSession).toHaveBeenCalledWith("u1", "the-secret");
+    expect(session).toEqual({
+      $id: "s1",
+      userId: "u1",
+      expire: "2026-01-01T00:00:00.000Z",
+    });
+  });
+
+  it("wraps createSession failures in ApiError", async () => {
+    mocks.account.createSession.mockRejectedValue(
+      new AppwriteException("nope", 401, "user_unauthorized"),
+    );
+
+    const api = createAccountApi(client);
+
+    await expect(
+      api.createSessionFromToken({ userId: "u1", secret: "bad" }),
+    ).rejects.toBeInstanceOf(ApiError);
   });
 
   it("deletes the current session by default", async () => {

@@ -13,6 +13,7 @@ const services: AppwriteServices = {
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     createOAuth2Session: vi.fn(),
+    createSessionFromToken: vi.fn(),
     deleteSession: vi.fn(),
     createRecovery: vi.fn(),
     updateRecovery: vi.fn(),
@@ -28,6 +29,7 @@ const services: AppwriteServices = {
     updateUserPermissions: vi.fn(),
     listUsers: vi.fn(),
     listOrganizations: vi.fn(),
+    oneTapLogin: vi.fn(),
   },
   storage: {
     getFilePreviewUrl: vi.fn(() => "https://example.com/preview"),

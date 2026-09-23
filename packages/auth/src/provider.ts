@@ -24,6 +24,7 @@ export function createUnconfiguredAuthService(): AuthService {
   return {
     login: fail("login"),
     loginWithGoogle: failSync("loginWithGoogle"),
+    loginWithOneTap: fail("loginWithOneTap"),
     completeMfa: fail("completeMfa"),
     listMfaFactors: fail("listMfaFactors"),
     createMfaChallenge: fail("createMfaChallenge"),

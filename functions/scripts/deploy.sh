@@ -34,6 +34,7 @@ ALL_FUNCTIONS=(
   update-user-permissions
   list-users
   list-organizations
+  one-tap-login
 )
 
 # API key scopes the function's per-execution key needs.
@@ -47,7 +48,18 @@ scopes_for() {
     update-user-permissions)     echo "teams.read rows.read rows.write" ;;
     list-users)                  echo "teams.read users.read" ;;
     list-organizations)         echo "teams.read" ;;
+    one-tap-login)              echo "users.read users.write" ;;
     *)                           echo "" ;;
+  esac
+}
+
+# Execute roles per function. Every function runs behind an authenticated
+# session except one-tap-login, which pre-authentication visitors (guests)
+# must be able to reach.
+execute_for() {
+  case "$1" in
+    one-tap-login) echo "guests" ;;
+    *)             echo "$EXECUTE" ;;
   esac
 }
 
@@ -84,6 +96,7 @@ for fn in "${FUNCTIONS[@]}"; do
   for scope in $(scopes_for "$fn"); do
     scope_args+=(--scopes "$scope")
   done
+  fn_execute=$(execute_for "$fn")
 
   if function_exists "$fn"; then
     # Keep an existing function's configuration in sync (name, runtime,
@@ -95,7 +108,7 @@ for fn in "${FUNCTIONS[@]}"; do
       --function-id "$fn" \
       --name "$fn" \
       --runtime "$RUNTIME" \
-      --execute "$EXECUTE" \
+      --execute "$fn_execute" \
       --entrypoint "$ENTRYPOINT" \
       --force \
       ${scope_args[@]+"${scope_args[@]}"}
@@ -105,7 +118,7 @@ for fn in "${FUNCTIONS[@]}"; do
       --function-id "$fn" \
       --name "$fn" \
       --runtime "$RUNTIME" \
-      --execute "$EXECUTE" \
+      --execute "$fn_execute" \
       --entrypoint "$ENTRYPOINT" \
       --force \
       ${scope_args[@]+"${scope_args[@]}"}

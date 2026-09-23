@@ -1,6 +1,6 @@
-import { isApiError, type AccountApi } from "@cdorneles/api-client";
+import { isApiError, type AccountApi, type FunctionsApi } from "@cdorneles/api-client";
 import { MfaRequiredError } from "./errors";
-import type { AuthService, AuthSession, AuthUser, MfaFactors } from "./types";
+import type { AuthService, AuthSession, AuthUser, MfaFactors, OneTapLoginInput } from "./types";
 
 function mapSession(raw: { $id: string; userId: string; expire: string }): AuthSession {
   return { id: raw.$id, userId: raw.userId, expiresAt: raw.expire };
@@ -22,7 +22,10 @@ function mapUser(raw: {
   };
 }
 
-export function createAppwriteAuthService(accountApi: AccountApi): AuthService {
+export function createAppwriteAuthService(
+  accountApi: AccountApi,
+  functionsApi?: FunctionsApi | null,
+): AuthService {
   return {
     async login(input) {
       try {
@@ -42,6 +45,23 @@ export function createAppwriteAuthService(accountApi: AccountApi): AuthService {
         success: input.successUrl,
         failure: input.failureUrl,
       });
+    },
+
+    async loginWithOneTap(input: OneTapLoginInput) {
+      if (!functionsApi) {
+        // One Tap needs the one-tap-login function; without it the flow cannot
+        // be honored and must fail loudly rather than pretend to succeed.
+        throw new Error("Google One Tap is not available in this environment.");
+      }
+      // The function verifies the ID token server-side and returns the
+      // one-time credentials; the browser session is established here.
+      const credentials = await functionsApi.oneTapLogin({ idToken: input.idToken });
+      return mapSession(
+        await accountApi.createSessionFromToken({
+          userId: credentials.userId,
+          secret: credentials.secret,
+        }),
+      );
     },
 
     async completeMfa(input) {

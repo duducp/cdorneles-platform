@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAppwriteAuthService } from "./appwrite-auth-service";
-import { ApiError, type AccountApi } from "@cdorneles/api-client";
+import { ApiError, type AccountApi, type FunctionsApi } from "@cdorneles/api-client";
 import { MfaRequiredError } from "./errors";
 
 function createMockAccountApi(): AccountApi {
@@ -11,12 +11,24 @@ function createMockAccountApi(): AccountApi {
     listSessions: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     createOAuth2Session: vi.fn(),
+    createSessionFromToken: vi.fn(),
     deleteSession: vi.fn(),
     createRecovery: vi.fn(),
     updateRecovery: vi.fn(),
     listMfaFactors: vi.fn(),
     createMfaChallenge: vi.fn(),
     updateMfaChallenge: vi.fn(),
+  };
+}
+
+function createMockFunctionsApi(): FunctionsApi {
+  return {
+    createExecution: vi.fn(),
+    createUser: vi.fn(),
+    updateUserPermissions: vi.fn(),
+    listUsers: vi.fn(),
+    listOrganizations: vi.fn(),
+    oneTapLogin: vi.fn(),
   };
 }
 
@@ -90,6 +102,54 @@ describe("createAppwriteAuthService", () => {
         success: "https://app.test/",
         failure: "https://app.test/login?error=google",
       });
+    });
+  });
+
+  describe("loginWithOneTap", () => {
+    it("exchanges the ID token and completes the session", async () => {
+      const account = createMockAccountApi();
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.oneTapLogin).mockResolvedValue({ userId: "u1", secret: "the-secret" });
+      vi.mocked(account.createSessionFromToken).mockResolvedValue({
+        $id: "s1",
+        userId: "u1",
+        expire: futureDate,
+      });
+
+      const service = createAppwriteAuthService(account, functions);
+      const session = await service.loginWithOneTap({ idToken: "jwt" });
+
+      expect(functions.oneTapLogin).toHaveBeenCalledWith({ idToken: "jwt" });
+      expect(account.createSessionFromToken).toHaveBeenCalledWith({
+        userId: "u1",
+        secret: "the-secret",
+      });
+      expect(session).toEqual({
+        id: "s1",
+        userId: "u1",
+        expiresAt: futureDate,
+      });
+    });
+
+    it("propagates function errors (unknown e-mail, invalid token)", async () => {
+      const account = createMockAccountApi();
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.oneTapLogin).mockRejectedValue(
+        new ApiError("no platform user", { code: "unknown_email", status: 403 }),
+      );
+
+      const service = createAppwriteAuthService(account, functions);
+
+      await expect(service.loginWithOneTap({ idToken: "jwt" })).rejects.toThrow("no platform user");
+      expect(account.createSessionFromToken).not.toHaveBeenCalled();
+    });
+
+    it("fails loudly when no functions API is configured", async () => {
+      const service = createAppwriteAuthService(createMockAccountApi(), null);
+
+      await expect(service.loginWithOneTap({ idToken: "jwt" })).rejects.toThrow(
+        "Google One Tap is not available",
+      );
     });
   });
 

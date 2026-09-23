@@ -60,6 +60,7 @@ functions/
 ├── update-user-permissions/
 ├── list-users/
 ├── list-organizations/
+├── one-tap-login/
 ├── scripts/
 │   ├── prepare.sh             # copies shared/ into each function's internal/
 │   └── deploy.sh              # prepares and deploys every function
@@ -81,6 +82,7 @@ The generated directories are gitignored.
 | `update-user-permissions` | Reconciles a user's direct permissions for an organization (revokes the ones no longer requested, grants the new ones) | Authenticated; `users.manage_permissions` (platform team or organization role); non-platform callers may only grant a subset of their own effective permissions |
 | `list-users` | Lists the platform's users (`id`, `email`, `name`, `labels`), paging through every server `users.list` page | Authenticated; `users.read` (platform team or the caller's effective permissions) |
 | `list-organizations` | Lists every organization (`id`, `name`), paging through every server `teams` page and filtering out the platform team | Authenticated; `organizations.read` (platform team); non-platform callers denied |
+| `one-tap-login` | Verifies a Google One Tap ID token (RS256 signature against Google's keys, issuer, audience, expiry, verified e-mail) and creates the Appwrite session for the matching user, returning `userId`+`secret` for `account.createSession` | Public (pre-authentication); deny-by-default on unknown e-mail, disabled account or Appwrite-unverified e-mail. Requires `GOOGLE_CLIENT_ID` env var and the `users.read`+`users.write` scopes |
 
 `create-user` sends the temporary-password welcome email **directly** through
 Appwrite Messaging, targeting the newly created user id (Appwrite registers the

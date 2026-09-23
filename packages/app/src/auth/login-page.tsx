@@ -10,6 +10,7 @@ import {
   useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
 import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
+import { GoogleOneTap } from "./google-one-tap";
 import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -27,7 +28,7 @@ export interface LoginPageProps {
 }
 
 export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) {
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, status } = useAuth();
   const router = useRouter();
   const goToApp = useCallback(() => {
     router.replace(resolvePostAuthRedirect(window.location.search));
@@ -42,6 +43,10 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
     return stored === "email" || stored === "google" ? stored : null;
   });
   const enableSignUp = process.env.NEXT_PUBLIC_ENABLE_SIGN_UP === "true";
+  // One Tap only runs with a configured client id, and only for confirmed
+  // anonymous visitors — never while the session is still being resolved and
+  // never for an authenticated user (requirement 5).
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const heading = lastMethod ? "Bem-vindo de volta" : "Bem vindo";
   const googleLabel = lastMethod === "google" ? "Continuar com Google" : undefined;
 
@@ -109,6 +114,15 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
 
   return (
     <Flex direction="column" mih="100dvh">
+      <GoogleOneTap
+        clientId={googleClientId ?? ""}
+        enabled={canRender && status === "anonymous" && !!googleClientId}
+        onSuccess={() => {
+          // Same destination as the OAuth fallback button.
+          router.replace(resolvePostAuthRedirect(window.location.search));
+        }}
+        onError={setError}
+      />
       <Flex justify="flex-end" p="sm">
         <ThemeToggle />
       </Flex>

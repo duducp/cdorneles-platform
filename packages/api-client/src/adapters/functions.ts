@@ -102,5 +102,14 @@ export function createFunctionsApi(client: Client): FunctionsApi {
       }>(execution);
       return { organizations: data.organizations };
     },
+
+    async oneTapLogin(input) {
+      const execution = await execute({
+        functionId: "one-tap-login",
+        body: input,
+        method: "POST",
+      });
+      return parseResponse<{ userId: string; secret: string }>(execution);
+    },
   };
 }

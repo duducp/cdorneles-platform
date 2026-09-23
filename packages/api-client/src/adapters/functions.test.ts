@@ -300,3 +300,28 @@ describe("createFunctionsApi organizations", () => {
     await expect(api.listOrganizations()).rejects.toThrow("missing permission: organizations.read");
   });
 });
+
+describe("createFunctionsApi one-tap login", () => {
+  it("posts the ID token to the one-tap-login function and returns the credentials", async () => {
+    mockExecution(JSON.stringify({ userId: "u1", secret: "the-secret" }));
+    const api = createFunctionsApi(client);
+
+    const result = await api.oneTapLogin({ idToken: "jwt" });
+
+    expect(mocks.functions.createExecution).toHaveBeenCalledWith({
+      functionId: "one-tap-login",
+      body: JSON.stringify({ idToken: "jwt" }),
+      async: false,
+      xpath: undefined,
+      method: "POST",
+    });
+    expect(result).toEqual({ userId: "u1", secret: "the-secret" });
+  });
+
+  it("throws the one-tap-login error reason", async () => {
+    mockExecution(JSON.stringify({ error: "unknown_email", reason: "no platform user" }));
+    const api = createFunctionsApi(client);
+
+    await expect(api.oneTapLogin({ idToken: "jwt" })).rejects.toThrow("no platform user");
+  });
+});

@@ -5,13 +5,26 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { loginWithGoogleMock } = vi.hoisted(() => ({ loginWithGoogleMock: vi.fn() }));
+const { loginWithGoogleMock, loginWithOneTapMock } = vi.hoisted(() => ({
+  loginWithGoogleMock: vi.fn(),
+  loginWithOneTapMock: vi.fn(),
+}));
 
 vi.mock("@cdorneles/auth", () => ({
-  useAuth: () => ({ login: vi.fn(), loginWithGoogle: loginWithGoogleMock }),
+  useAuth: () => ({
+    login: vi.fn(),
+    loginWithGoogle: loginWithGoogleMock,
+    loginWithOneTap: loginWithOneTapMock,
+    status: "anonymous",
+  }),
   useRedirectIfAuthenticated: () => true,
   resolvePostAuthRedirect: () => "/dashboard",
   MfaRequiredError: class MfaRequiredError extends Error {},
+}));
+
+vi.mock("./google-one-tap", () => ({
+  GoogleOneTap: () => null,
+  describeOneTapError: (error: unknown) => String(error),
 }));
 
 vi.mock("next/navigation", () => ({
