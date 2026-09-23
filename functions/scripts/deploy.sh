@@ -44,7 +44,7 @@ scopes_for() {
     send-email)                  echo "messages.write" ;;
     get-organization-profile)    echo "teams.read rows.read" ;;
     provision-organization)      echo "teams.read rows.read rows.write" ;;
-    create-user)                 echo "users.write teams.read teams.write rows.read rows.write executions.write" ;;
+    create-user)                 echo "users.write teams.read teams.write rows.read rows.write messages.write" ;;
     update-user-permissions)     echo "teams.read rows.read rows.write" ;;
     list-users)                  echo "teams.read users.read" ;;
     *)                           echo "" ;;

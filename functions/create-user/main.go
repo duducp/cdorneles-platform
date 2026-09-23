@@ -6,15 +6,14 @@ package handler
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"html"
 	"os"
 	"sort"
 
 	sdk "github.com/appwrite/sdk-for-go/v7/appwrite"
-	"github.com/appwrite/sdk-for-go/v7/functions"
 	"github.com/appwrite/sdk-for-go/v7/id"
+	"github.com/appwrite/sdk-for-go/v7/messaging"
 	"github.com/appwrite/sdk-for-go/v7/query"
 	"github.com/appwrite/sdk-for-go/v7/tablesdb"
 	"github.com/appwrite/sdk-for-go/v7/teams"
@@ -51,7 +50,7 @@ type createUserResponse struct {
 }
 
 // operations is the seam over the Appwrite SDK (users, teams, tables and
-// functions) so the handler's validation, authorization and orchestration are
+// messaging) so the handler's validation, authorization and orchestration are
 // unit-testable without an SDK mock.
 type operations interface {
 	IsPlatformMember(userID string) (bool, error)
@@ -62,7 +61,7 @@ type operations interface {
 	AddMembership(teamID string, roles []string, email string) error
 	PermissionIDForKey(key string) (string, error)
 	CreateUserPermission(userID, organizationID, permissionID, grantedBy string) error
-	SendWelcomeEmail(to, name, password, callerID string) error
+	SendWelcomeEmail(userID, name, password string) error
 }
 
 // Main is the function entrypoint.
@@ -174,7 +173,7 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 
 	// The user already exists, so a failed welcome email must not fail the
 	// request (a retry would collide). Log it for follow-up instead.
-	if err := ops.SendWelcomeEmail(body.Email, body.Name, password, callerID); err != nil {
+	if err := ops.SendWelcomeEmail(userID, body.Name, password); err != nil {
 		ctx.Log("welcome email failed", "error", err.Error())
 	}
 
@@ -195,7 +194,7 @@ type appwriteOps struct {
 	users     *users.Users
 	teams     *teams.Teams
 	tables    *tablesdb.TablesDB
-	functions *functions.Functions
+	messaging *messaging.Messaging
 	repo      *appwrite.GrantRepo
 }
 
@@ -205,7 +204,7 @@ func newAppwriteOps(apiKey string) operations {
 		users:     sdk.NewUsers(clt),
 		teams:     sdk.NewTeams(clt),
 		tables:    sdk.NewTablesDB(clt),
-		functions: sdk.NewFunctions(clt),
+		messaging: sdk.NewMessaging(clt),
 		repo:      appwrite.NewGrantRepo(clt),
 	}
 }
@@ -368,19 +367,10 @@ func (o *appwriteOps) CreateUserPermission(userID, organizationID, permissionID,
 	return err
 }
 
-// SendWelcomeEmail invokes the send-email function with the temporary
-// password and set-password instructions. It forwards the caller's identity
-// so the target function's authentication check passes: a server-key
-// execution has no authenticated user, and send-email rejects a missing
-// x-appwrite-user-id header. CreateExecution returns the execution object even
-// when the target fails, so the status is inspected and a non-completed run is
-// surfaced as an error (the caller logs it).
-//
-// If Appwrite strips the reserved identity header from the forwarded headers,
-// this invocation would 401; the fallback is to call the Messaging API
-// directly (as send-email itself does). Confirm the header forwarding with the
-// live probe before relying on it.
-func (o *appwriteOps) SendWelcomeEmail(to, name, password, callerID string) error {
+// SendWelcomeEmail sends the temporary-password welcome email through Appwrite
+// Messaging, targeting the newly created user (whose email Appwrite registers
+// as a target). The content is Brazilian Portuguese HTML.
+func (o *appwriteOps) SendWelcomeEmail(userID, name, password string) error {
 	htmlBody := fmt.Sprintf(
 		"<p>Olá %s,</p>"+
 			"<p>Uma conta foi criada para você.</p>"+
@@ -388,35 +378,14 @@ func (o *appwriteOps) SendWelcomeEmail(to, name, password, callerID string) erro
 		html.EscapeString(name),
 		password,
 	)
-	textBody := fmt.Sprintf(
-		"Olá %s,\n\nUma conta foi criada para você.\n\n"+
-			"Entre com a senha temporária %s e altere-a após o primeiro acesso.",
-		name,
-		password,
+	_, err := o.messaging.CreateEmail(
+		id.Unique(),
+		"Sua conta foi criada",
+		htmlBody,
+		o.messaging.WithCreateEmailUsers([]string{userID}),
+		o.messaging.WithCreateEmailHtml(true),
 	)
-	body, err := json.Marshal(map[string]interface{}{
-		"to":       []string{to},
-		"subject":  "Sua conta foi criada",
-		"htmlBody": htmlBody,
-		"textBody": textBody,
-	})
-	if err != nil {
-		return err
-	}
-	execution, err := o.functions.CreateExecution(
-		"send-email",
-		o.functions.WithCreateExecutionBody(string(body)),
-		o.functions.WithCreateExecutionHeaders(map[string]string{
-			"x-appwrite-user-id": callerID,
-		}),
-	)
-	if err != nil {
-		return err
-	}
-	if execution.Status != "completed" {
-		return fmt.Errorf("send-email execution status %q: %s", execution.Status, execution.Errors)
-	}
-	return nil
+	return err
 }
 
 // isTeamMember reports whether the user belongs to the team, paging through

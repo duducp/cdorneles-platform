@@ -82,6 +82,11 @@ The generated directories are gitignored.
 | `update-user-permissions` | Reconciles a user's direct permissions for an organization (revokes the ones no longer requested, grants the new ones) | Authenticated; `users.manage_permissions` (platform team or organization role); non-platform callers may only grant a subset of their own effective permissions |
 | `list-users` | Lists the platform's users (`id`, `email`, `name`, `labels`), paging through every server `users.list` page | Authenticated; `users.read` (platform team or the caller's effective permissions) |
 
+`create-user` sends the temporary-password welcome email **directly** through
+Appwrite Messaging, targeting the newly created user id (Appwrite registers the
+user's email as a target). It does not delegate to another function.
+`send-email` is currently unused — it is kept as a generic transactional sender.
+
 ## Requirements
 
 - Go **1.26.5**.
@@ -165,7 +170,7 @@ Per-function scopes for the per-execution API key:
 | `send-email` | `messages.write` |
 | `get-organization-profile` | `teams.read rows.read` |
 | `provision-organization` | `teams.read rows.read rows.write` |
-| `create-user` | `users.write teams.read teams.write rows.read rows.write executions.write` |
+| `create-user` | `users.write teams.read teams.write rows.read rows.write messages.write` |
 | `update-user-permissions` | `teams.read rows.read rows.write` |
 | `list-users` | `users.read` |
 

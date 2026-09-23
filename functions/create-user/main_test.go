@@ -47,10 +47,9 @@ type fakeOps struct {
 	granted  []grantRecord
 	grantErr error
 
-	emailTo       string
+	emailUserID   string
 	emailName     string
 	emailPassword string
-	emailCallerID string
 	emailErr      error
 }
 
@@ -108,11 +107,10 @@ func (f *fakeOps) CreateUserPermission(userID, organizationID, permissionID, gra
 	return f.grantErr
 }
 
-func (f *fakeOps) SendWelcomeEmail(to, name, password, callerID string) error {
-	f.emailTo = to
+func (f *fakeOps) SendWelcomeEmail(userID, name, password string) error {
+	f.emailUserID = userID
 	f.emailName = name
 	f.emailPassword = password
-	f.emailCallerID = callerID
 	return f.emailErr
 }
 
@@ -230,14 +228,11 @@ func TestMainCreatesUserWithRoleAndDirectPermissions(t *testing.T) {
 		t.Fatalf("expected grant %+v, got %+v", want, ops.granted)
 	}
 
-	if ops.emailTo != "new@example.com" || ops.emailName != "New User" {
-		t.Fatalf("unexpected welcome email args: to=%q name=%q", ops.emailTo, ops.emailName)
+	if ops.emailUserID != "user-1" || ops.emailName != "New User" {
+		t.Fatalf("unexpected welcome email args: userID=%q name=%q", ops.emailUserID, ops.emailName)
 	}
 	if ops.emailPassword != ops.createdPass {
 		t.Fatal("welcome email must carry the same temporary password that was set")
-	}
-	if ops.emailCallerID != "caller-1" {
-		t.Fatalf("welcome email must forward the caller identity, got %q", ops.emailCallerID)
 	}
 }
 
