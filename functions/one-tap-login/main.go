@@ -49,12 +49,13 @@ const (
 
 // Stable error codes the frontend maps to user-facing messages.
 const (
-	errInvalidToken     = "invalid_token"
-	errUnknownEmail     = "unknown_email"
-	errUserDisabled     = "user_disabled"
-	errEmailNotVerified = "email_not_verified"
-	errConfigMissing    = "config_missing"
-	errInternal         = "internal_error"
+	errInvalidToken       = "invalid_token"
+	errUnknownEmail       = "unknown_email"
+	errUserDisabled       = "user_disabled"
+	errEmailNotVerified   = "email_not_verified"
+	errConfigMissing      = "config_missing"
+	errGoogleAuthDisabled = "google_auth_disabled"
+	errInternal           = "internal_error"
 )
 
 // clock is the time source for claim validation. Overridden in tests.
@@ -103,6 +104,10 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 // through the injected operations seam. The ID token and the session secret
 // are never logged.
 func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
+	if googleAuthDisabled() {
+		return errorBody(ctx, http.StatusForbidden, errGoogleAuthDisabled, "Google auth is disabled")
+	}
+
 	var body oneTapLoginRequest
 	if err := ctx.Req.BodyJson(&body); err != nil {
 		return httpx.BadRequest(ctx, "invalid JSON")
@@ -161,6 +166,16 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 		UserID: session.UserId,
 		Secret: session.Secret,
 	})
+}
+
+// googleAuthDisabled reports whether Google auth was turned off for the
+// project. Only an explicit "false" (trimmed, case-insensitive) disables it, so
+// an unset or malformed value never turns Google off by accident.
+func googleAuthDisabled() bool {
+	return strings.EqualFold(
+		strings.TrimSpace(os.Getenv("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED")),
+		"false",
+	)
 }
 
 // validateClaims enforces the claims the signature check cannot: a known

@@ -130,6 +130,24 @@ func TestMainRejectsUnconfiguredClientID(t *testing.T) {
 	assertError(t, resp, 500, "config_missing", "GOOGLE_CLIENT_ID is not configured")
 }
 
+func TestMainRejectsWhenGoogleAuthDisabled(t *testing.T) {
+	t.Setenv("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED", "false")
+	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
+	ops := &fakeOps{verifyErr: errors.New("verification must not run")}
+	resp := handle(newContext(`{"idToken":"x"}`), ops)
+	assertError(t, resp, 403, "google_auth_disabled", "Google auth is disabled")
+	if ops.sessionCalls != 0 {
+		t.Fatal("no session may be created when Google auth is disabled")
+	}
+}
+
+func TestMainAllowsWhenGoogleAuthFlagIsNotFalse(t *testing.T) {
+	t.Setenv("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED", "true")
+	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
+	resp := handle(newContext(`{"idToken":"x"}`), &fakeOps{verifyErr: errors.New("bad signature")})
+	assertError(t, resp, 401, "invalid_token", "invalid Google ID token")
+}
+
 func TestMainRejectsFailedVerification(t *testing.T) {
 	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
 	ops := &fakeOps{verifyErr: errors.New("bad signature")}
