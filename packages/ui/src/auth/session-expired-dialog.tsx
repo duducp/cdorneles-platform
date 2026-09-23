@@ -37,7 +37,9 @@ function ReauthModal({
       title={title}
     >
       <Box pos="relative">
-        {children}
+        <Box inert={loading || undefined} aria-busy={loading || undefined}>
+          {children}
+        </Box>
         <BlockingOverlay visible={loading ?? false} />
       </Box>
     </Modal>

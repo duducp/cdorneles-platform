@@ -14,17 +14,18 @@ export function BlockingOverlay({ visible, label = "Entrando…" }: BlockingOver
     <Box
       pos="absolute"
       inset={0}
-      bg="var(--mantine-color-body)"
+      role="status"
+      aria-live="polite"
+      bg="color-mix(in srgb, var(--mantine-color-body) 85%, transparent)"
       style={{
         zIndex: 300,
-        opacity: 0.85,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
       <Stack align="center" gap="xs">
-        <Loader size="sm" />
+        <Loader size="sm" aria-hidden />
         <Text size="sm" c="dimmed">
           {label}
         </Text>

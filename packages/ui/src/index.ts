@@ -10,6 +10,7 @@ export * from "./auth/social-login";
 export * from "./components/data-table";
 export * from "./components/app-version";
 export * from "./components/badge";
+export * from "./components/blocking-overlay";
 export * from "./components/button";
 export * from "./components/card";
 export * from "./components/form-error";

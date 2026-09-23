@@ -29,14 +29,25 @@ describe("AuthCard", () => {
     expect(screen.queryByText("visual-slot")).not.toBeInTheDocument();
   });
 
-  it("shows a blocking overlay while loading", () => {
+  it("shows a blocking overlay while loading and makes the content inert", () => {
     render(
       <ThemeProvider>
-        <AuthCard form={<span>form-slot</span>} loading />
+        <AuthCard
+          form={
+            <form>
+              <button type="button">Entrar</button>
+            </form>
+          }
+          loading
+        />
       </ThemeProvider>,
     );
 
     expect(screen.getByText("Entrando…")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    const button = screen.getByRole("button", { name: "Entrar" });
+    expect(button.closest("[inert]")).not.toBeNull();
   });
 
   it("has no overlay when not loading", () => {

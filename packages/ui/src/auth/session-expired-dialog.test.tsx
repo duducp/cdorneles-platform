@@ -85,10 +85,13 @@ describe("SessionExpiredDialog", () => {
     expect(onGoogleClick).toHaveBeenCalledOnce();
   });
 
-  it("shows a blocking overlay while loading", () => {
+  it("shows a blocking overlay while loading and makes the content inert", () => {
     renderDialog({ loading: true });
 
     expect(screen.getByText("Entrando…")).toBeInTheDocument();
+
+    const signOut = screen.getByRole("button", { name: /outra conta/i });
+    expect(signOut.closest("[inert]")).not.toBeNull();
   });
 
   it("renders no Google option by default", () => {
