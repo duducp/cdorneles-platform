@@ -151,6 +151,24 @@ describe("createAppwriteAuthService", () => {
         "Google One Tap is not available",
       );
     });
+
+    it("throws MfaRequiredError when the session still needs MFA factors", async () => {
+      const account = createMockAccountApi();
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.oneTapLogin).mockResolvedValue({ userId: "u1", secret: "the-secret" });
+      vi.mocked(account.createSessionFromToken).mockRejectedValue(
+        new ApiError("More factors are required", {
+          code: "user_more_factors_required",
+          status: 401,
+        }),
+      );
+
+      const service = createAppwriteAuthService(account, functions);
+
+      await expect(service.loginWithOneTap({ idToken: "jwt" })).rejects.toBeInstanceOf(
+        MfaRequiredError,
+      );
+    });
   });
 
   describe("logout", () => {
