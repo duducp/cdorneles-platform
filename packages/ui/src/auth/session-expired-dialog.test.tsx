@@ -112,6 +112,27 @@ describe("SessionExpiredDialog", () => {
       "Esta conta Google não corresponde à conta bloqueada.",
     );
   });
+
+  it("lets the local error take precedence and clears it for the caller", async () => {
+    const onSubmit = vi.fn().mockRejectedValue(new Error("Senha incorreta."));
+    const onGoogleClick = vi.fn();
+    renderDialog({
+      onSubmit,
+      google: { onClick: onGoogleClick },
+      errorMessage: "Esta conta Google não corresponde à conta bloqueada.",
+    });
+
+    await userEvent.type(passwordField(), "errada");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Senha incorreta.");
+
+    await userEvent.click(screen.getByRole("button", { name: "Continuar com Google" }));
+
+    expect(onGoogleClick).toHaveBeenCalledOnce();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Esta conta Google não corresponde à conta bloqueada.",
+    );
+  });
 });
 
 describe("LockScreen", () => {

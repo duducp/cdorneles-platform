@@ -51,7 +51,7 @@ export interface SessionExpiredDialogProps {
   submitLabel?: string;
   /** Shows Google re-auth below the password form when present. */
   google?: GoogleReauthOption;
-  /** A message owned by the caller (Google failures), shown with `error`. */
+  /** A caller-owned message (Google failures). A local submit error takes precedence. */
   errorMessage?: string | null;
 }
 
@@ -127,7 +127,10 @@ export function SessionExpiredDialog({
             <>
               <Divider label="ou" labelPosition="center" />
               <SocialLogin
-                onGoogleClick={google.onClick}
+                onGoogleClick={() => {
+                  setError(null);
+                  google.onClick();
+                }}
                 disabled={google.disabled}
                 label={google.label ?? "Continuar com Google"}
               />
