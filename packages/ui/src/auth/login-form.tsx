@@ -16,6 +16,7 @@ export interface LoginFormProps {
   showSignUp?: boolean;
   heading?: string;
   googleLabel?: string;
+  showGoogle?: boolean;
   onGoogleClick?: () => void;
   onForgotPassword?: (email: string) => void;
   onSignUp?: () => void;
@@ -28,6 +29,7 @@ export function LoginForm({
   showSignUp = false,
   heading = "Bem-vindo de volta",
   googleLabel,
+  showGoogle = true,
   onGoogleClick,
   onForgotPassword,
   onSignUp,
@@ -82,9 +84,12 @@ export function LoginForm({
       </Stack>
 
       <Stack gap="md" mt="lg">
-        <SocialLogin onGoogleClick={onGoogleClick} disabled={loading} label={googleLabel} />
-
-        <Divider label="OU CONTINUE COM" labelPosition="center" />
+        {showGoogle ? (
+          <>
+            <SocialLogin onGoogleClick={onGoogleClick} disabled={loading} label={googleLabel} />
+            <Divider label="OU CONTINUE COM" labelPosition="center" />
+          </>
+        ) : null}
 
         <TextInput
           label="E-mail"

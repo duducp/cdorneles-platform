@@ -143,6 +143,20 @@ describe("LoginForm", () => {
     expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
   });
 
+  it("hides the Google button and divider when showGoogle is false", () => {
+    renderForm({ onSubmit: vi.fn(), showGoogle: false });
+
+    expect(screen.queryByRole("button", { name: "Entrar com Google" })).not.toBeInTheDocument();
+    expect(screen.queryByText("OU CONTINUE COM")).not.toBeInTheDocument();
+  });
+
+  it("shows the Google button and divider by default", () => {
+    renderForm({ onSubmit: vi.fn() });
+
+    expect(screen.getByRole("button", { name: "Entrar com Google" })).toBeInTheDocument();
+    expect(screen.getByText("OU CONTINUE COM")).toBeInTheDocument();
+  });
+
   it("aligns 'Esqueci minha senha' to the left", () => {
     renderForm({ onSubmit: vi.fn() });
 
