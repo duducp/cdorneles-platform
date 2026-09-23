@@ -3,9 +3,15 @@ import "@testing-library/jest-dom/vitest";
 import { ApiError } from "@cdorneles/api-client";
 import { ThemeProvider } from "@cdorneles/theme";
 import { render, waitFor } from "@testing-library/react";
+import { createRef, type RefObject } from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-import { GoogleOneTap, describeOneTapError } from "./google-one-tap";
+import {
+  GoogleOneTap,
+  describeOneTapError,
+  readIdTokenEmail,
+  type GoogleOneTapHandle,
+} from "./google-one-tap";
 
 const { loginWithOneTapMock } = vi.hoisted(() => ({ loginWithOneTapMock: vi.fn() }));
 
@@ -18,8 +24,14 @@ type InitConfig = {
   callback: (response: { credential?: string }) => void;
 };
 
+type PromptListener = (notification: {
+  isNotDisplayed?: () => boolean;
+  isSkippedMoment?: () => boolean;
+}) => void;
+
 const initCalls: InitConfig[] = [];
 const promptCalls: number[] = [];
+const promptListeners: PromptListener[] = [];
 
 // A minimal GSI stub: initialize records its config; prompt is observable.
 // Installing it before render makes loadGsiScript resolve immediately (the
@@ -32,24 +44,34 @@ function installGsi() {
         initialize: (config: InitConfig) => {
           initCalls.push(config);
         },
-        prompt: () => {
+        prompt: (listener: PromptListener) => {
           promptCalls.push(promptCalls.length);
+          if (listener) promptListeners.push(listener);
         },
       },
     },
   };
 }
 
-function renderOneTap(overrides?: Partial<{ enabled: boolean; clientId: string }>) {
+function renderOneTap(
+  overrides?: Partial<{
+    enabled: boolean;
+    clientId: string;
+    ref: RefObject<GoogleOneTapHandle | null>;
+    onCredential: (idToken: string) => void;
+  }>,
+) {
   const onSuccess = vi.fn();
   const onError = vi.fn();
   render(
     <ThemeProvider>
       <GoogleOneTap
+        ref={overrides?.ref}
         clientId={overrides?.clientId ?? "client-id.apps.googleusercontent.com"}
         enabled={overrides?.enabled ?? true}
         onSuccess={onSuccess}
         onError={onError}
+        onCredential={overrides?.onCredential}
       />
     </ThemeProvider>,
   );
@@ -60,6 +82,7 @@ beforeEach(() => {
   loginWithOneTapMock.mockReset();
   initCalls.length = 0;
   promptCalls.length = 0;
+  promptListeners.length = 0;
   delete (window as unknown as { google?: unknown }).google;
 });
 
@@ -135,6 +158,53 @@ describe("GoogleOneTap", () => {
     await waitFor(() => expect(onError).toHaveBeenCalledOnce());
     expect(onError).toHaveBeenCalledWith(null);
   });
+
+  it("hands the raw token to onCredential instead of logging in", async () => {
+    installGsi();
+    const onCredential = vi.fn();
+    renderOneTap({ onCredential });
+
+    await waitFor(() => expect(initCalls).toHaveLength(1));
+    initCalls[0].callback({ credential: "the-jwt" });
+
+    expect(onCredential).toHaveBeenCalledWith("the-jwt");
+    expect(loginWithOneTapMock).not.toHaveBeenCalled();
+  });
+
+  it("re-opens the prompt through the ref", async () => {
+    installGsi();
+    const ref = createRef<GoogleOneTapHandle>();
+    renderOneTap({ ref });
+
+    await waitFor(() => expect(initCalls).toHaveLength(1));
+    await waitFor(() => expect(promptCalls).toHaveLength(1));
+    ref.current?.prompt();
+
+    expect(promptCalls).toHaveLength(2);
+  });
+
+  it("reports unavailability when the SDK is not ready", () => {
+    const ref = createRef<GoogleOneTapHandle>();
+    renderOneTap({ enabled: false, ref });
+    const onUnavailable = vi.fn();
+
+    ref.current?.prompt(onUnavailable);
+
+    expect(onUnavailable).toHaveBeenCalledOnce();
+  });
+
+  it("reports unavailability when Google skips the prompt", async () => {
+    installGsi();
+    const ref = createRef<GoogleOneTapHandle>();
+    renderOneTap({ ref });
+
+    await waitFor(() => expect(initCalls).toHaveLength(1));
+    const onUnavailable = vi.fn();
+    ref.current?.prompt(onUnavailable);
+    promptListeners.at(-1)?.({ isNotDisplayed: () => false, isSkippedMoment: () => true });
+
+    expect(onUnavailable).toHaveBeenCalledOnce();
+  });
 });
 
 describe("describeOneTapError", () => {
@@ -152,5 +222,27 @@ describe("describeOneTapError", () => {
 
   it("falls back to a generic message", () => {
     expect(describeOneTapError(new Error("boom"))).toContain("Não foi possível entrar");
+  });
+
+  it("maps a disabled Google auth response", () => {
+    expect(
+      describeOneTapError(new ApiError("disabled", { code: "google_auth_disabled" })),
+    ).toContain("desativado");
+  });
+});
+
+describe("readIdTokenEmail", () => {
+  it("decodes the e-mail from the token payload", () => {
+    const payload = btoa(JSON.stringify({ email: "ana@exemplo.com" }))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+    expect(readIdTokenEmail(`header.${payload}.signature`)).toBe("ana@exemplo.com");
+  });
+
+  it("returns null when there is no usable payload", () => {
+    expect(readIdTokenEmail("not-a-jwt")).toBeNull();
+    expect(readIdTokenEmail("a.b")).toBeNull();
+    expect(readIdTokenEmail(`a.${btoa("{}")}.c`)).toBeNull();
   });
 });
