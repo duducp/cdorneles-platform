@@ -13,6 +13,7 @@ import {
 
 import { isUnauthorized } from "@cdorneles/api-client";
 
+import { MfaRequiredError } from "./errors";
 import type { SessionSignal } from "./session-signal";
 import type {
   AuthService,
@@ -141,6 +142,15 @@ export function AuthProvider({
     window.location.href = `${loginPath}?redirect=${encodeURIComponent(pathname)}`;
   }, [loginPath]);
 
+  const redirectToMfa = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const { pathname } = window.location;
+    // Already on the challenge page: getSession/getCurrentUser stay blocked
+    // while the pending-MFA cookie exists — redirecting again would loop.
+    if (pathname.startsWith("/mfa")) return;
+    window.location.href = `/mfa?redirect=${encodeURIComponent(pathname)}`;
+  }, []);
+
   const refresh = useCallback(async () => {
     setStatus("loading");
     try {
@@ -172,14 +182,17 @@ export function AuthProvider({
           redirectToLogin();
         }
       }
-    } catch {
+    } catch (error) {
       setSession(null);
       setUser(null);
       setStatus("anonymous");
       setSessionState("active");
       clearSessionCookie();
+      if (error instanceof MfaRequiredError) {
+        redirectToMfa();
+      }
     }
-  }, [service, redirectToLogin]);
+  }, [service, redirectToLogin, redirectToMfa]);
 
   // Bootstrap session on mount
   useEffect(() => {

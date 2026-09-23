@@ -479,6 +479,44 @@ describe("session state", () => {
     await waitFor(() => expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"));
     expect(window.location.href).toBe("");
   });
+
+  it("redirects to /mfa when the bootstrap session needs more factors", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockRejectedValue(new MfaRequiredError()),
+      getCurrentUser: vi.fn().mockResolvedValue(null),
+    });
+    stubLocation("/dashboard");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
+    );
+    expect(window.location.href).toBe("/mfa?redirect=%2Fdashboard");
+  });
+
+  it("does not redirect to /mfa when already on the MFA page", async () => {
+    const service = createMockService({
+      getSession: vi.fn().mockRejectedValue(new MfaRequiredError()),
+      getCurrentUser: vi.fn().mockResolvedValue(null),
+    });
+    stubLocation("/mfa");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
+    );
+    expect(window.location.href).toBe("");
+  });
 });
 
 describe("reauthentication", () => {
