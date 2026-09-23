@@ -162,13 +162,14 @@ describe("GoogleOneTap", () => {
   it("hands the raw token to onCredential instead of logging in", async () => {
     installGsi();
     const onCredential = vi.fn();
-    renderOneTap({ onCredential });
+    const { onSuccess } = renderOneTap({ onCredential });
 
     await waitFor(() => expect(initCalls).toHaveLength(1));
     initCalls[0].callback({ credential: "the-jwt" });
 
     expect(onCredential).toHaveBeenCalledWith("the-jwt");
     expect(loginWithOneTapMock).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 
   it("re-opens the prompt through the ref", async () => {
@@ -232,12 +233,17 @@ describe("describeOneTapError", () => {
 });
 
 describe("readIdTokenEmail", () => {
-  it("decodes the e-mail from the token payload", () => {
-    const payload = btoa(JSON.stringify({ email: "ana@exemplo.com" }))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-    expect(readIdTokenEmail(`header.${payload}.signature`)).toBe("ana@exemplo.com");
+  it("decodes a URL-safe, unpadded payload (base64url)", () => {
+    const standard = btoa(JSON.stringify({ email: "test?@x.com" }));
+    const payload = standard.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+    expect(standard).toMatch(/[/=]/);
+    expect(payload).toMatch(/_/);
+    expect(readIdTokenEmail(`header.${payload}.signature`)).toBe("test?@x.com");
+  });
+
+  it("returns null when the payload is not JSON", () => {
+    expect(readIdTokenEmail(`a.${btoa("nope")}.c`)).toBeNull();
   });
 
   it("returns null when there is no usable payload", () => {

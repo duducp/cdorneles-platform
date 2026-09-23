@@ -165,11 +165,15 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(
             onUnavailable?.();
             return;
           }
-          idApi.prompt((notification) => {
-            if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-              onUnavailable?.();
-            }
-          });
+          try {
+            idApi.prompt((notification) => {
+              if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+                onUnavailable?.();
+              }
+            });
+          } catch {
+            onUnavailable?.();
+          }
         },
       }),
       [],
@@ -194,7 +198,11 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(
               const idToken = response?.credential;
               if (!idToken) return;
               if (onCredentialRef.current) {
-                onCredentialRef.current(idToken);
+                try {
+                  onCredentialRef.current(idToken);
+                } catch (error) {
+                  onErrorRef.current(error);
+                }
                 return;
               }
               loginWithOneTapRef
@@ -217,6 +225,7 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(
 
       return () => {
         cancelled = true;
+        idApiRef.current = null;
         if (promptTimer) clearTimeout(promptTimer);
       };
     }, [enabled, clientId]);
