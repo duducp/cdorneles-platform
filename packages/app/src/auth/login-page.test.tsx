@@ -54,12 +54,12 @@ describe("LoginPage", () => {
     expect(screen.getByRole("button", { name: "Entrar com Google" })).toBeInTheDocument();
   });
 
-  it("shows 'Continuar com Google novamente' when last login was Google", () => {
+  it("shows 'Continuar com Google' when last login was Google", () => {
     localStorage.setItem("cdorneles-last-login-method", "google");
     renderPage();
 
     expect(
-      screen.getByRole("button", { name: "Continuar com Google novamente" }),
+      screen.getByRole("button", { name: "Continuar com Google" }),
     ).toBeInTheDocument();
   });
 

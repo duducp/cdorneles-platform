@@ -11,12 +11,12 @@ describe("SocialLogin", () => {
   it("renders a custom label when provided", () => {
     render(
       <ThemeProvider>
-        <SocialLogin label="Continuar com Google novamente" />
+        <SocialLogin label="Continuar com Google" />
       </ThemeProvider>,
     );
 
     expect(
-      screen.getByRole("button", { name: "Continuar com Google novamente" }),
+      screen.getByRole("button", { name: "Continuar com Google" }),
     ).toBeInTheDocument();
   });
 
@@ -35,12 +35,12 @@ describe("SocialLogin", () => {
   it("renders a custom label when provided", () => {
     render(
       <ThemeProvider>
-        <SocialLogin label="Continuar com Google novamente" />
+        <SocialLogin label="Continuar com Google" />
       </ThemeProvider>,
     );
 
     expect(
-      screen.getByRole("button", { name: "Continuar com Google novamente" }),
+      screen.getByRole("button", { name: "Continuar com Google" }),
     ).toBeInTheDocument();
   });
 });

@@ -43,7 +43,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   });
   const enableSignUp = process.env.NEXT_PUBLIC_ENABLE_SIGN_UP === "true";
   const heading = lastMethod ? "Bem-vindo de volta" : "Bem vindo";
-  const googleLabel = lastMethod === "google" ? "Continuar com Google novamente" : undefined;
+  const googleLabel = lastMethod === "google" ? "Continuar com Google" : undefined;
 
   // Carry a valid e-mail to the recovery screen so it does not have to be
   // retyped; anything else goes to the plain screen and is validated there.

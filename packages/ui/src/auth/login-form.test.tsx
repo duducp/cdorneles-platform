@@ -138,10 +138,10 @@ describe("LoginForm", () => {
   });
 
   it("passes googleLabel to SocialLogin", () => {
-    renderForm({ onSubmit: vi.fn(), googleLabel: "Continuar com Google novamente" });
+    renderForm({ onSubmit: vi.fn(), googleLabel: "Continuar com Google" });
 
     expect(
-      screen.getByRole("button", { name: "Continuar com Google novamente" }),
+      screen.getByRole("button", { name: "Continuar com Google" }),
     ).toBeInTheDocument();
   });
 
