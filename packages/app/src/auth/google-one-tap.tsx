@@ -127,6 +127,8 @@ export interface GoogleOneTapProps {
    * exchanged here, so the parent owns the login policy.
    */
   onCredential?: (idToken: string) => void;
+  /** Called as soon as a credential arrives, before any exchange. */
+  onStart?: () => void;
 }
 
 /**
@@ -141,7 +143,7 @@ export interface GoogleOneTapProps {
  * "Entrar com Google" button stays untouched as the fallback.
  */
 export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(
-  function GoogleOneTap({ clientId, enabled, onSuccess, onError, onCredential }, ref) {
+  function GoogleOneTap({ clientId, enabled, onSuccess, onError, onCredential, onStart }, ref) {
     const { loginWithOneTap } = useAuth();
     const idApiRef = useRef<GsiIdApi | null>(null);
 
@@ -150,10 +152,12 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(
     const onSuccessRef = useRef(onSuccess);
     const onErrorRef = useRef(onError);
     const onCredentialRef = useRef(onCredential);
+    const onStartRef = useRef(onStart);
     const loginWithOneTapRef = useRef(loginWithOneTap);
     onSuccessRef.current = onSuccess;
     onErrorRef.current = onError;
     onCredentialRef.current = onCredential;
+    onStartRef.current = onStart;
     loginWithOneTapRef.current = loginWithOneTap;
 
     useImperativeHandle(
@@ -197,6 +201,7 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(
             callback: (response) => {
               const idToken = response?.credential;
               if (!idToken) return;
+              onStartRef.current?.();
               if (onCredentialRef.current) {
                 Promise.resolve()
                   .then(() => onCredentialRef.current?.(idToken))

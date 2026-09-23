@@ -34,6 +34,7 @@ export function SessionExpiredGate() {
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factor, setFactor] = useState<"email" | "totp" | null>(null);
   const [googleMessage, setGoogleMessage] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const oneTapRef = useRef<GoogleOneTapHandle>(null);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const googleAvailable = isGoogleAuthEnabled() && !!googleClientId;
@@ -123,6 +124,7 @@ export function SessionExpiredGate() {
         return;
       }
       setGoogleMessage(null);
+      setGoogleLoading(true);
       try {
         await loginWithOneTap({ idToken });
         await finish();
@@ -141,6 +143,8 @@ export function SessionExpiredGate() {
           return;
         }
         setGoogleMessage(describeAuthError(error));
+      } finally {
+        setGoogleLoading(false);
       }
     },
     [user, loginWithOneTap, beginMfaChallenge, finish],
@@ -179,6 +183,7 @@ export function SessionExpiredGate() {
           onSubmit={handlePassword}
           onSignOut={handleSignOut}
           errorMessage={googleMessage}
+          loading={googleLoading}
           google={
             googleAvailable
               ? {

@@ -59,10 +59,12 @@ function renderOneTap(
     clientId: string;
     ref: RefObject<GoogleOneTapHandle | null>;
     onCredential: (idToken: string) => void;
+    onStart: () => void;
   }>,
 ) {
   const onSuccess = vi.fn();
   const onError = vi.fn();
+  const onStart = vi.fn();
   render(
     <ThemeProvider>
       <GoogleOneTap
@@ -72,10 +74,11 @@ function renderOneTap(
         onSuccess={onSuccess}
         onError={onError}
         onCredential={overrides?.onCredential}
+        onStart={overrides?.onStart ?? onStart}
       />
     </ThemeProvider>,
   );
-  return { onSuccess, onError };
+  return { onSuccess, onError, onStart };
 }
 
 beforeEach(() => {
@@ -125,6 +128,18 @@ describe("GoogleOneTap", () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
     expect(loginWithOneTapMock).toHaveBeenCalledWith({ idToken: "the-jwt" });
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("signals the start as soon as the credential arrives", async () => {
+    installGsi();
+    loginWithOneTapMock.mockResolvedValue({ id: "s1", userId: "u1", expiresAt: "2030" });
+    const { onStart } = renderOneTap();
+
+    await waitFor(() => expect(initCalls).toHaveLength(1));
+    initCalls[0].callback({ credential: "the-jwt" });
+
+    // Called synchronously inside the callback, before the exchange resolves.
+    expect(onStart).toHaveBeenCalledOnce();
   });
 
   it("forwards the raw error to onError", async () => {

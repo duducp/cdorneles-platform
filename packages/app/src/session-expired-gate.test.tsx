@@ -167,6 +167,39 @@ describe("SessionExpiredGate", () => {
     expect(window.localStorage.getItem("cdorneles-session-renewed")).not.toBeNull();
   });
 
+  it("shows the loading overlay while the Google exchange runs", async () => {
+    let resolveLogin: (value: unknown) => void = () => {};
+    const loginWithOneTap = vi.fn(
+      () => new Promise((resolve) => { resolveLogin = resolve; }),
+    );
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        loginWithOneTap,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("user@example.com");
+    });
+
+    await waitFor(() => {
+      const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { loading?: boolean };
+      expect(props.loading).toBe(true);
+    });
+
+    await act(async () => {
+      resolveLogin({});
+    });
+
+    await waitFor(() => {
+      const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { loading?: boolean };
+      expect(props.loading).toBe(false);
+    });
+  });
+
   it("rejects a Google account that does not match the expired one", async () => {
     const loginWithOneTap = vi.fn();
     useAuthMock.mockReturnValue(

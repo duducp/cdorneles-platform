@@ -38,6 +38,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [oneTapLoading, setOneTapLoading] = useState(false);
   const [lastMethod] = useState<LoginMethod | null>(() => {
     if (typeof window === "undefined") return null;
     const stored = localStorage.getItem(LAST_METHOD_KEY);
@@ -68,6 +69,8 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   // everything else becomes display text via the module's mapper.
   const handleOneTapError = useCallback(
     (err: unknown) => {
+      setOneTapLoading(false);
+      setAnnouncement("");
       if (err instanceof MfaRequiredError) {
         router.push(
           `/mfa?redirect=${encodeURIComponent(resolvePostAuthRedirect(window.location.search))}`,
@@ -139,6 +142,10 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
             // Same destination as the OAuth fallback button.
             router.replace(resolvePostAuthRedirect(window.location.search));
           }}
+          onStart={() => {
+            setOneTapLoading(true);
+            setAnnouncement("Entrando...");
+          }}
           onError={handleOneTapError}
         />
       ) : null}
@@ -164,6 +171,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
               />
             }
             visual={<AuthVisual />}
+            loading={oneTapLoading}
           />
 
           <Stack component="footer" align="center" gap="sm">
