@@ -11,6 +11,7 @@ import {
 } from "@cdorneles/auth";
 import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
 import { describeOneTapError, GoogleOneTap } from "./google-one-tap";
+import { isGoogleAuthEnabled } from "./google-auth-enabled";
 import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -47,6 +48,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   // anonymous visitors — never while the session is still being resolved and
   // never for an authenticated user (requirement 5).
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const googleEnabled = isGoogleAuthEnabled();
   const heading = lastMethod ? "Bem-vindo de volta" : "Bem vindo";
   const googleLabel = lastMethod === "google" ? "Continuar com Google" : undefined;
 
@@ -129,15 +131,17 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
 
   return (
     <Flex direction="column" mih="100dvh">
-      <GoogleOneTap
-        clientId={googleClientId ?? ""}
-        enabled={canRender && status === "anonymous" && !!googleClientId}
-        onSuccess={() => {
-          // Same destination as the OAuth fallback button.
-          router.replace(resolvePostAuthRedirect(window.location.search));
-        }}
-        onError={handleOneTapError}
-      />
+      {googleEnabled ? (
+        <GoogleOneTap
+          clientId={googleClientId ?? ""}
+          enabled={canRender && status === "anonymous" && !!googleClientId}
+          onSuccess={() => {
+            // Same destination as the OAuth fallback button.
+            router.replace(resolvePostAuthRedirect(window.location.search));
+          }}
+          onError={handleOneTapError}
+        />
+      ) : null}
       <Flex justify="flex-end" p="sm">
         <ThemeToggle />
       </Flex>
@@ -154,6 +158,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
                 showSignUp={enableSignUp}
                 heading={heading}
                 googleLabel={googleLabel}
+                showGoogle={googleEnabled}
                 onGoogleClick={handleGoogleClick}
                 onForgotPassword={handleForgotPassword}
               />

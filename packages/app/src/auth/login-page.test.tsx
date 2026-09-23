@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { ThemeProvider } from "@cdorneles/theme";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 const { loginWithGoogleMock, loginWithOneTapMock, pushMock, replaceMock, oneTapProps } =
   vi.hoisted(() => ({
@@ -50,6 +50,10 @@ function renderPage() {
 }
 
 describe("LoginPage", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   beforeEach(() => {
     localStorage.clear();
     oneTapProps.current = null;
@@ -130,5 +134,13 @@ describe("LoginPage", () => {
 
     expect(pushMock).not.toHaveBeenCalled();
     expect(await screen.findByText("mapped:Error: boom")).toBeInTheDocument();
+  });
+
+  it("hides Google entirely when the kill switch is off", () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED", "false");
+    renderPage();
+
+    expect(oneTapProps.current).toBeNull();
+    expect(screen.queryByRole("button", { name: "Entrar com Google" })).not.toBeInTheDocument();
   });
 });
