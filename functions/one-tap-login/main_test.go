@@ -139,7 +139,7 @@ func TestMainRejectsWhenGoogleAuthDisabled(t *testing.T) {
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 403, "google_auth_disabled", "Google auth is disabled")
 	if ops.tokenCalls != 0 {
-		t.Fatal("no session may be created when Google auth is disabled")
+		t.Fatal("no login token may be created when Google auth is disabled")
 	}
 	if ops.verifyCalls != 0 {
 		t.Fatal("verification must not run when Google auth is disabled")
@@ -159,7 +159,7 @@ func TestMainRejectsFailedVerification(t *testing.T) {
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 401, "invalid_token", "invalid Google ID token")
 	if ops.tokenCalls != 0 {
-		t.Fatal("no session may be created for an unverified token")
+		t.Fatal("no login token may be created for an unverified token")
 	}
 }
 
@@ -225,7 +225,7 @@ func TestMainRejectsUnknownEmail(t *testing.T) {
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 403, "unknown_email", "no platform user for this Google account")
 	if ops.tokenCalls != 0 {
-		t.Fatal("no session may be created for an unknown e-mail")
+		t.Fatal("no login token may be created for an unknown e-mail")
 	}
 }
 
@@ -300,6 +300,17 @@ func TestMainRejectsAnEmptyLoginTokenSecret(t *testing.T) {
 		verifyToken:  googleToken(t, nil),
 		usersByEmail: map[string]*models.User{"user@example.com": activeUser("u1", "user@example.com")},
 		token:        &models.Token{Id: "t1", UserId: "u1", Secret: ""},
+	}
+	resp := handle(newContext(`{"idToken":"x"}`), ops)
+	assertError(t, resp, 500, "internal_error", "failed to create login token")
+}
+
+func TestMainRejectsANilLoginToken(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
+	ops := &fakeOps{
+		verifyToken:  googleToken(t, nil),
+		usersByEmail: map[string]*models.User{"user@example.com": activeUser("u1", "user@example.com")},
+		token:        nil,
 	}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 500, "internal_error", "failed to create login token")

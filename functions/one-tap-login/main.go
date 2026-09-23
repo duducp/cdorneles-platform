@@ -158,7 +158,7 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 		ctx.Error(err)
 		return errorBody(ctx, http.StatusInternalServerError, errInternal, "failed to create login token")
 	}
-	if strings.TrimSpace(loginToken.Secret) == "" {
+	if loginToken == nil || strings.TrimSpace(loginToken.Secret) == "" {
 		ctx.Error(errors.New("appwrite returned an empty login token secret"))
 		return errorBody(ctx, http.StatusInternalServerError, errInternal, "failed to create login token")
 	}
