@@ -6,8 +6,6 @@ package handler
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
-	"html"
 	"os"
 	"sort"
 
@@ -21,6 +19,7 @@ import (
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
 	"openruntimes/handler/internal/appwrite"
+	"openruntimes/handler/internal/email"
 	"openruntimes/handler/internal/httpx"
 )
 
@@ -369,20 +368,18 @@ func (o *appwriteOps) CreateUserPermission(userID, organizationID, permissionID,
 
 // SendWelcomeEmail sends the temporary-password welcome email through Appwrite
 // Messaging, targeting the newly created user (whose email Appwrite registers
-// as a target). The content is Brazilian Portuguese HTML. Delivery is
-// asynchronous: CreateEmail only queues the message, so a provider failure is
-// not observable here — only the synchronous error is returned.
+// as a target). The content is Brazilian Portuguese HTML rendered with the
+// shared email package, which mirrors the Appwrite default email theme (card,
+// Inter typography, light/dark support, dark action button). The login URL
+// comes from WELCOME_LOGIN_URL when configured; without it the email carries
+// only the temporary password. Delivery is asynchronous: CreateEmail only
+// queues the message, so a provider failure is not observable here — only the
+// synchronous error is returned.
 //
 // The password is interpolated unescaped: generatePassword emits base64
 // raw-URL characters (A-Z a-z 0-9 - _), which contain no HTML metacharacters.
 func (o *appwriteOps) SendWelcomeEmail(userID, name, password string) error {
-	htmlBody := fmt.Sprintf(
-		"<p>Olá %s,</p>"+
-			"<p>Uma conta foi criada para você.</p>"+
-			"<p>Entre com a senha temporária <strong>%s</strong> e altere-a após o primeiro acesso.</p>",
-		html.EscapeString(name),
-		password,
-	)
+	htmlBody := email.Welcome(name, password, os.Getenv("WELCOME_LOGIN_URL"))
 	_, err := o.messaging.CreateEmail(
 		id.Unique(),
 		"Sua conta foi criada",

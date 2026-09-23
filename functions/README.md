@@ -47,6 +47,7 @@ functions/
 ├── shared/                    # source of truth for shared packages
 │   ├── authz/                 # effective-access evaluation (ADR-005)
 │   ├── appwrite/              # SDK client + authz.GrantRepo implementation
+│   ├── email/                 # Appwrite-default email theme for direct sends
 │   └── httpx/                 # JSON error helpers
 ├── resolve-grants/            # module openruntimes/handler
 │   ├── main.go
@@ -86,7 +87,13 @@ The generated directories are gitignored.
 
 `create-user` sends the temporary-password welcome email **directly** through
 Appwrite Messaging, targeting the newly created user id (Appwrite registers the
-user's email as a target).
+user's email as a target). The body is rendered by `shared/email`, which
+mirrors the Appwrite default email theme (white card, Inter typography,
+light/dark support, dark rounded action button, security-phrase footer), so it
+looks like the platform's recovery/verification emails. Set the optional
+`WELCOME_LOGIN_URL` environment variable on the function to include a
+"Entrar agora" button; without it the email carries only the temporary
+password.
 
 ## Requirements
 

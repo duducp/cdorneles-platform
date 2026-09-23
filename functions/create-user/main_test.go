@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
+	"openruntimes/handler/internal/email"
 	"openruntimes/handler/internal/httpx"
 )
 
@@ -50,6 +52,7 @@ type fakeOps struct {
 	emailUserID   string
 	emailName     string
 	emailPassword string
+	emailBody     string
 	emailErr      error
 }
 
@@ -111,6 +114,7 @@ func (f *fakeOps) SendWelcomeEmail(userID, name, password string) error {
 	f.emailUserID = userID
 	f.emailName = name
 	f.emailPassword = password
+	f.emailBody = email.Welcome(name, password, "")
 	return f.emailErr
 }
 
@@ -233,6 +237,11 @@ func TestMainCreatesUserWithRoleAndDirectPermissions(t *testing.T) {
 	}
 	if ops.emailPassword != ops.createdPass {
 		t.Fatal("welcome email must carry the same temporary password that was set")
+	}
+	// The email is rendered with the shared Appwrite-style theme, so the body
+	// must be a full document (not the old bare paragraphs).
+	if !strings.Contains(ops.emailBody, "Olá New User,") || !strings.Contains(ops.emailBody, "<html>") {
+		t.Fatal("expected a themed full-document welcome email")
 	}
 }
 
