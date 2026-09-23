@@ -30,6 +30,8 @@
 #   SITE_BUILD_RUNTIME   build runtime (default node-24; LTS, and it still
 #                        ships corepack. node-25+ dropped corepack, so those
 #                        would need a different install command.)
+#   SITE_BUILD_SPECIFICATION  build specification (default s-4vcpu-4gb; the
+#                        Next.js builds OOM at the smaller default)
 #   SITE_VCS_BRANCH      branch to deploy from (default main)
 #   SITE_DOMAIN_SUFFIX   domain suffix for the per-site proxy rule
 #                        (default sites.cdorneles.com.br). Set it empty to skip
@@ -56,6 +58,9 @@ FRAMEWORK="nextjs"
 # node-24 is LTS and matches the Node version CI builds with. It still ships
 # corepack, which the install command relies on (corepack was removed in 25).
 BUILD_RUNTIME="${SITE_BUILD_RUNTIME:-node-24}"
+# The Next.js builds are memory-hungry (admin OOM'd at s-2vcpu-2gb). Build with a
+# spec that leaves headroom instead of relying on the flaky default.
+BUILD_SPECIFICATION="${SITE_BUILD_SPECIFICATION:-s-4vcpu-4gb}"
 ADAPTER="ssr"
 INSTALL_COMMAND="corepack enable && pnpm install --frozen-lockfile"
 VCS_BRANCH="${SITE_VCS_BRANCH:-main}"
@@ -184,6 +189,7 @@ for site in "${SITES[@]}"; do
   base_args=(
     --framework "$FRAMEWORK"
     --build-runtime "$BUILD_RUNTIME"
+    --build-specification "$BUILD_SPECIFICATION"
     --adapter "$ADAPTER"
     --install-command "$INSTALL_COMMAND"
     --build-command "$build_cmd"
