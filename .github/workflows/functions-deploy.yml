@@ -33,7 +33,6 @@ on:
           - all
           - resolve-grants
           - update-organization-profile
-          - send-email
           - get-organization-profile
           - provision-organization
   workflow_call:

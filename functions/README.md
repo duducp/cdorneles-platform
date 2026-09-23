@@ -54,7 +54,6 @@ functions/
 │   ├── go.sum
 │   └── internal/              # GENERATED from shared/ — do not edit
 ├── update-organization-profile/
-├── send-email/
 ├── get-organization-profile/
 ├── provision-organization/
 ├── create-user/
@@ -75,7 +74,6 @@ The generated directories are gitignored.
 |---|---|---|
 | `resolve-grants` | Resolves a user's effective permissions and features for an organization + application | Authenticated; identity must match the body `userId`; membership required |
 | `update-organization-profile` | Updates organization branding (display name, colors, logos) | Full `authorize()`: membership, active org, application, `organizations.update`, `white-label` |
-| `send-email` | Sends transactional email via Appwrite Messaging | Authenticated |
 | `get-organization-profile` | Returns an organization's branding profile | Authenticated; membership required |
 | `provision-organization` | Idempotently bootstraps an organization's profile, roles, mappings and features | Authenticated; membership required |
 | `create-user` | Creates a user, adds them to an organization with a role, grants direct permissions and emails a temporary password | Authenticated; `users.create` (platform team or organization role), plus `users.manage_permissions` when direct permissions are requested |
@@ -84,8 +82,7 @@ The generated directories are gitignored.
 
 `create-user` sends the temporary-password welcome email **directly** through
 Appwrite Messaging, targeting the newly created user id (Appwrite registers the
-user's email as a target). It does not delegate to another function.
-`send-email` is currently unused — it is kept as a generic transactional sender.
+user's email as a target).
 
 ## Requirements
 
@@ -131,7 +128,7 @@ Both call `scripts/deploy.sh`, which also accepts explicit names:
 ```bash
 ./scripts/deploy.sh                     # every function
 ./scripts/deploy.sh resolve-grants      # one function
-./scripts/deploy.sh resolve-grants send-email
+./scripts/deploy.sh resolve-grants create-user
 ```
 
 An unknown function name is rejected before anything is uploaded.
@@ -167,7 +164,6 @@ Per-function scopes for the per-execution API key:
 |---|---|
 | `resolve-grants` | `teams.read rows.read` |
 | `update-organization-profile` | `teams.read rows.read rows.write` |
-| `send-email` | `messages.write` |
 | `get-organization-profile` | `teams.read rows.read` |
 | `provision-organization` | `teams.read rows.read rows.write` |
 | `create-user` | `users.write teams.read teams.write rows.read rows.write messages.write` |

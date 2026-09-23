@@ -4,7 +4,7 @@
 # Usage:
 #   ./scripts/deploy.sh                     # every function
 #   ./scripts/deploy.sh resolve-grants      # one function
-#   ./scripts/deploy.sh resolve-grants send-email
+#   ./scripts/deploy.sh resolve-grants create-user
 #
 # Appwrite's Go runtime builds each function from source, so the function's own
 # directory (main.go, go.mod, go.sum, internal/) is what gets uploaded.
@@ -28,7 +28,6 @@ EXECUTE="users"
 ALL_FUNCTIONS=(
   resolve-grants
   update-organization-profile
-  send-email
   get-organization-profile
   provision-organization
   create-user
@@ -41,7 +40,6 @@ scopes_for() {
   case "$1" in
     resolve-grants)              echo "teams.read rows.read" ;;
     update-organization-profile) echo "teams.read rows.read rows.write" ;;
-    send-email)                  echo "messages.write" ;;
     get-organization-profile)    echo "teams.read rows.read" ;;
     provision-organization)      echo "teams.read rows.read rows.write" ;;
     create-user)                 echo "users.write teams.read teams.write rows.read rows.write messages.write" ;;
