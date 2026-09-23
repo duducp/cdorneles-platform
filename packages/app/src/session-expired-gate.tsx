@@ -29,6 +29,7 @@ export function SessionExpiredGate() {
   const queryClient = useQueryClient();
   const [step, setStep] = useState<"password" | "mfa">("password");
   const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [factor, setFactor] = useState<"email" | "totp" | null>(null);
   const [googleMessage, setGoogleMessage] = useState<string | null>(null);
   const oneTapRef = useRef<GoogleOneTapHandle>(null);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -38,6 +39,7 @@ export function SessionExpiredGate() {
     await queryClient.invalidateQueries();
     setStep("password");
     setChallengeId(null);
+    setFactor(null);
     setGoogleMessage(null);
   }, [queryClient]);
 
@@ -51,6 +53,18 @@ export function SessionExpiredGate() {
     return () => window.removeEventListener("storage", onStorage);
   }, [refresh]);
 
+  const beginMfaChallenge = useCallback(async () => {
+    const factors = await service.listMfaFactors();
+    const preferred = factors.email ? "email" : factors.totp ? "totp" : null;
+    if (!preferred) {
+      throw new Error("Nenhum fator de verificação disponível para esta conta.");
+    }
+    const challenge = await service.createMfaChallenge({ factor: preferred });
+    setFactor(preferred);
+    setChallengeId(challenge.challengeId);
+    setStep("mfa");
+  }, [service]);
+
   const handlePassword = useCallback(
     async (password: string) => {
       if (!user) return;
@@ -60,15 +74,19 @@ export function SessionExpiredGate() {
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
       } catch (error) {
         if (error instanceof MfaRequiredError) {
-          const challenge = await service.createMfaChallenge({ factor: "totp" });
-          setChallengeId(challenge.challengeId);
-          setStep("mfa");
+          try {
+            await beginMfaChallenge();
+          } catch (mfaError) {
+            setGoogleMessage(
+              describeAuthError(mfaError, "Nenhum fator de verificação disponível para esta conta."),
+            );
+          }
           return;
         }
         throw new Error(describeAuthError(error), { cause: error });
       }
     },
-    [user, reauthenticate, service, finish],
+    [user, reauthenticate, beginMfaChallenge, finish],
   );
 
   const handleMfa = useCallback(
@@ -80,6 +98,12 @@ export function SessionExpiredGate() {
     },
     [challengeId, completeReauthMfa, finish],
   );
+
+  const handleResend = useCallback(async () => {
+    if (!factor) return;
+    const challenge = await service.createMfaChallenge({ factor });
+    setChallengeId(challenge.challengeId);
+  }, [service, factor]);
 
   const handleGoogleCredential = useCallback(
     async (idToken: string) => {
@@ -100,15 +124,19 @@ export function SessionExpiredGate() {
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
       } catch (error) {
         if (error instanceof MfaRequiredError) {
-          const challenge = await service.createMfaChallenge({ factor: "totp" });
-          setChallengeId(challenge.challengeId);
-          setStep("mfa");
+          try {
+            await beginMfaChallenge();
+          } catch (mfaError) {
+            setGoogleMessage(
+              describeAuthError(mfaError, "Nenhum fator de verificação disponível para esta conta."),
+            );
+          }
           return;
         }
         setGoogleMessage(describeAuthError(error));
       }
     },
-    [user, loginWithOneTap, service, finish],
+    [user, loginWithOneTap, beginMfaChallenge, finish],
   );
 
   const handleSignOut = useCallback(() => {
@@ -133,7 +161,11 @@ export function SessionExpiredGate() {
         />
       ) : null}
       {step === "mfa" && challengeId ? (
-        <SessionExpiredMfaDialog onSubmit={handleMfa} onSignOut={handleSignOut} />
+        <SessionExpiredMfaDialog
+          onSubmit={handleMfa}
+          onResend={factor === "email" ? handleResend : undefined}
+          onSignOut={handleSignOut}
+        />
       ) : (
         <SessionExpiredDialog
           email={user.email}

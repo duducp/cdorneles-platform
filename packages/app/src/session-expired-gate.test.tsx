@@ -72,7 +72,10 @@ const { SessionExpiredGate } = await import("./session-expired-gate");
 
 function authState(
   overrides: Partial<
-    Record<"sessionState" | "user" | "service" | "refresh" | "loginWithOneTap", unknown>
+    Record<
+      "sessionState" | "user" | "service" | "refresh" | "reauthenticate" | "loginWithOneTap",
+      unknown
+    >
   > = {},
 ) {
   return {
@@ -85,6 +88,7 @@ function authState(
     logout: vi.fn(),
     service: {
       createMfaChallenge: vi.fn().mockResolvedValue({ challengeId: "ch1", factor: "totp" }),
+      listMfaFactors: vi.fn().mockResolvedValue({ totp: true, email: false }),
     },
     ...overrides,
   };
@@ -277,5 +281,88 @@ describe("SessionExpiredGate", () => {
 
     const latest = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
     expect(latest.errorMessage).toMatch(/Não foi possível abrir o Google/i);
+  });
+
+  it("prefers the email factor and offers resend", async () => {
+    const createMfaChallenge = vi.fn().mockResolvedValue({ challengeId: "ch1", factor: "email" });
+    const listMfaFactors = vi.fn().mockResolvedValue({ totp: true, email: true });
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate: vi.fn().mockRejectedValue(new MfaRequiredErrorMock()),
+        service: { createMfaChallenge, listMfaFactors },
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+    await act(async () => {
+      await dialogProps.onSubmit("secret").catch(() => {});
+    });
+
+    await waitFor(() => expect(createMfaChallenge).toHaveBeenCalledWith({ factor: "email" }));
+    const mfaProps = SessionExpiredMfaDialogMock.mock.calls.at(-1)?.[0] as {
+      onResend?: () => Promise<void>;
+    };
+    expect(mfaProps.onResend).toBeTypeOf("function");
+
+    await act(async () => {
+      await mfaProps.onResend?.();
+    });
+    expect(createMfaChallenge).toHaveBeenCalledTimes(2);
+    expect(createMfaChallenge).toHaveBeenLastCalledWith({ factor: "email" });
+  });
+
+  it("does not offer resend for the totp factor", async () => {
+    const createMfaChallenge = vi.fn().mockResolvedValue({ challengeId: "ch1", factor: "totp" });
+    const listMfaFactors = vi.fn().mockResolvedValue({ totp: true, email: false });
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate: vi.fn().mockRejectedValue(new MfaRequiredErrorMock()),
+        service: { createMfaChallenge, listMfaFactors },
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+    await act(async () => {
+      await dialogProps.onSubmit("secret").catch(() => {});
+    });
+
+    await waitFor(() => expect(createMfaChallenge).toHaveBeenCalledWith({ factor: "totp" }));
+    const mfaProps = SessionExpiredMfaDialogMock.mock.calls.at(-1)?.[0] as { onResend?: unknown };
+    expect(mfaProps.onResend).toBeUndefined();
+  });
+
+  it("surfaces an error when the account has no MFA factor", async () => {
+    const listMfaFactors = vi.fn().mockResolvedValue({ totp: false, email: false });
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate: vi.fn().mockRejectedValue(new MfaRequiredErrorMock()),
+        service: { createMfaChallenge: vi.fn(), listMfaFactors },
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+    await act(async () => {
+      await dialogProps.onSubmit("secret").catch(() => {});
+    });
+
+    await waitFor(() => {
+      const latest = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
+      expect(latest.errorMessage).toMatch(/fator de verificação/i);
+    });
   });
 });
