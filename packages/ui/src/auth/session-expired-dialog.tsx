@@ -45,10 +45,6 @@ export interface SessionExpiredDialogProps {
   onSubmit: (password: string) => Promise<void>;
   /** Leaves for the login page. The only way out without authenticating. */
   onSignOut: () => void;
-  /** Defaults to the session-expired copy. */
-  title?: string;
-  description?: string;
-  submitLabel?: string;
   /** Shows Google re-auth below the password form when present. */
   google?: GoogleReauthOption;
   /** A caller-owned message (Google failures). A local submit error takes precedence. */
@@ -60,9 +56,6 @@ export function SessionExpiredDialog({
   email,
   onSubmit,
   onSignOut,
-  title = "Sua sessão expirou",
-  description = "Entre novamente para continuar de onde parou. Nada do que está na tela foi perdido.",
-  submitLabel = "Entrar",
   google,
   errorMessage,
 }: SessionExpiredDialogProps) {
@@ -88,9 +81,9 @@ export function SessionExpiredDialog({
   );
 
   return (
-    <ReauthModal title={title}>
+    <ReauthModal title="Sua sessão expirou">
       <Text c="dimmed" fz="sm" mb="md">
-        {description}
+        Entre novamente para continuar de onde parou. Nada do que está na tela foi perdido.
       </Text>
 
       <form onSubmit={handleSubmit} noValidate>
@@ -120,7 +113,7 @@ export function SessionExpiredDialog({
           />
 
           <Button type="submit" fullWidth loading={submitting}>
-            {submitLabel}
+            Entrar
           </Button>
 
           {google ? (

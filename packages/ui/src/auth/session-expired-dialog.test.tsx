@@ -76,13 +76,6 @@ describe("SessionExpiredDialog", () => {
     expect(onSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it("lets the caller override the title and description", () => {
-    renderDialog({ title: "Tela bloqueada", description: "Inativo por muito tempo." });
-
-    expect(screen.getByText("Tela bloqueada")).toBeInTheDocument();
-    expect(screen.getByText("Inativo por muito tempo.")).toBeInTheDocument();
-  });
-
   it("renders the Google option when provided", async () => {
     const onGoogleClick = vi.fn();
     renderDialog({ google: { onClick: onGoogleClick } });

@@ -90,7 +90,7 @@ export function SessionExpiredGate() {
         return;
       }
       if (email.toLowerCase() !== user.email.toLowerCase()) {
-        setGoogleMessage("Esta conta Google não corresponde à conta bloqueada.");
+        setGoogleMessage("Esta conta Google não corresponde à sua conta.");
         return;
       }
       setGoogleMessage(null);
