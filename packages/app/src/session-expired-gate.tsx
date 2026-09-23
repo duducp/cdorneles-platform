@@ -77,16 +77,16 @@ export function SessionExpiredGate() {
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
       } catch (error) {
         if (error instanceof MfaRequiredError) {
-        try {
-          await beginMfaChallenge();
-        } catch (mfaError) {
-          setGoogleMessage(
-            mfaError instanceof NoMfaFactorError
-              ? mfaError.message
-              : "Erro ao iniciar a verificação em duas etapas.",
-          );
-        }
-        return;
+          try {
+            await beginMfaChallenge();
+          } catch (mfaError) {
+            setGoogleMessage(
+              mfaError instanceof NoMfaFactorError
+                ? mfaError.message
+                : "Erro ao iniciar a verificação em duas etapas.",
+            );
+          }
+          return;
         }
         throw new Error(describeAuthError(error), { cause: error });
       }
@@ -129,16 +129,16 @@ export function SessionExpiredGate() {
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
       } catch (error) {
         if (error instanceof MfaRequiredError) {
-        try {
-          await beginMfaChallenge();
-        } catch (mfaError) {
-          setGoogleMessage(
-            mfaError instanceof NoMfaFactorError
-              ? mfaError.message
-              : "Erro ao iniciar a verificação em duas etapas.",
-          );
-        }
-        return;
+          try {
+            await beginMfaChallenge();
+          } catch (mfaError) {
+            setGoogleMessage(
+              mfaError instanceof NoMfaFactorError
+                ? mfaError.message
+                : "Erro ao iniciar a verificação em duas etapas.",
+            );
+          }
+          return;
         }
         setGoogleMessage(describeAuthError(error));
       }
