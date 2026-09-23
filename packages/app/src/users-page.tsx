@@ -13,6 +13,7 @@ import {
   type DataTableProps,
 } from "@cdorneles/ui";
 import { PermissionGate, useAccess } from "@cdorneles/ui/permissions";
+import { CreateOrganizationForm } from "@cdorneles/ui/tenant";
 import { Checkbox, Group, Modal, Select, Stack, Text, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Plus } from "lucide-react";
@@ -241,7 +242,7 @@ function CreateUserForm({
 
 export function UsersPage() {
   const functionsApi = useFunctionsApi();
-  const { currentOrganization } = useTenant();
+  const { currentOrganization, createOrganization } = useTenant();
   const access = useAccess();
   const canRead = access.hasPermission(permissionKey("users.read"));
   const canManagePermissions = access.hasPermission(permissionKey("users.manage_permissions"));
@@ -251,6 +252,7 @@ export function UsersPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationsError, setOrganizationsError] = useState<string | null>(null);
   const [opened, { open, close }] = useDisclosure(false);
+  const [createOrgOpened, { open: openCreateOrg, close: closeCreateOrg }] = useDisclosure(false);
 
   const load = useCallback(() => {
     if (!functionsApi) {
@@ -297,17 +299,31 @@ export function UsersPage() {
     [functionsApi, close, load],
   );
 
+  const handleCreateOrganization = useCallback(
+    async (name: string) => {
+      await createOrganization(name);
+      closeCreateOrg();
+      loadOrganizations();
+    },
+    [createOrganization, closeCreateOrg, loadOrganizations],
+  );
+
   return (
     <PageContainer py="xl">
       <PageHeader
         title="Users"
         description="Manage platform users and their permissions."
         actions={
-          <PermissionGate permission={permissionKey("users.create")}>
-            <Button leftSection={<Plus size={16} />} onClick={open}>
-              New user
-            </Button>
-          </PermissionGate>
+          <Group gap="xs">
+            <PermissionGate permission={permissionKey("organizations.create")}>
+              <Button onClick={openCreateOrg}>New organization</Button>
+            </PermissionGate>
+            <PermissionGate permission={permissionKey("users.create")}>
+              <Button leftSection={<Plus size={16} />} onClick={open}>
+                New user
+              </Button>
+            </PermissionGate>
+          </Group>
         }
       />
 
@@ -342,6 +358,10 @@ export function UsersPage() {
           onCreate={handleCreate}
           onCancel={close}
         />
+      </Modal>
+
+      <Modal opened={createOrgOpened} onClose={closeCreateOrg} title="New organization" centered>
+        <CreateOrganizationForm onCreate={handleCreateOrganization} onCancel={closeCreateOrg} />
       </Modal>
     </PageContainer>
   );

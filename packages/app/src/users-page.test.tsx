@@ -109,6 +109,14 @@ const READ_CREATE_NO_MANAGE: GrantedAccess = {
   permissions: [permissionKey("users.read"), permissionKey("users.create")],
   features: [],
 };
+const READ_CREATE_ORG: GrantedAccess = {
+  permissions: [
+    permissionKey("users.read"),
+    permissionKey("users.create"),
+    permissionKey("organizations.create"),
+  ],
+  features: [],
+};
 const DENIED: GrantedAccess = { permissions: [], features: [] };
 
 function tenantState() {
@@ -247,6 +255,48 @@ describe("UsersPage", () => {
 
     expect(await screen.findByText("ada@example.com")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /new user/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the 'New organization' action when organizations.create is granted", async () => {
+    renderPage(READ_CREATE_ORG, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
+
+    expect(await screen.findByRole("button", { name: /new organization/i })).toBeInTheDocument();
+  });
+
+  it("hides the 'New organization' action without organizations.create", async () => {
+    renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
+
+    expect(await screen.findByText("ada@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /new organization/i })).not.toBeInTheDocument();
+  });
+
+  it("creates an organization and refreshes the platform list", async () => {
+    const listOrganizations = vi
+      .fn()
+      .mockResolvedValueOnce({ organizations: [{ id: "org-1", name: "Acme" }] })
+      .mockResolvedValueOnce({
+        organizations: [
+          { id: "org-1", name: "Acme" },
+          { id: "org-9", name: "New Org" },
+        ],
+      });
+    const createOrganization = vi.fn().mockResolvedValue({ id: "org-9", name: "New Org" });
+    useTenantMock.mockReturnValue({ ...tenantState(), createOrganization });
+
+    renderPage(READ_CREATE_ORG, {
+      listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      listOrganizations,
+    });
+
+    await userEvent.click(await screen.findByRole("button", { name: /new organization/i }));
+    await userEvent.type(await screen.findByLabelText(/^Organization name/), "New Org");
+    await userEvent.click(screen.getByRole("button", { name: /create organization/i }));
+
+    expect(createOrganization).toHaveBeenCalledWith("New Org");
+    await waitFor(() => expect(listOrganizations).toHaveBeenCalledTimes(2));
+
+    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+    expect(await screen.findByRole("option", { name: "New Org" })).toBeInTheDocument();
   });
 
   it("hides the permission checklist without users.manage_permissions", async () => {
