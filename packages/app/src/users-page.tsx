@@ -116,12 +116,14 @@ const columns: DataTableProps<UserRow>["columns"] = [
 
 function CreateUserForm({
   organizations,
+  organizationsError,
   defaultOrganizationId,
   canManagePermissions,
   onCreate,
   onCancel,
 }: {
   organizations: Organization[];
+  organizationsError: string | null;
   defaultOrganizationId: string | null;
   canManagePermissions: boolean;
   onCreate: (input: CreateUserInput) => Promise<void>;
@@ -175,6 +177,11 @@ function CreateUserForm({
           value={name}
           onChange={(event) => setName(event.currentTarget.value)}
         />
+        {organizationsError ? (
+          <Text c="red" role="alert">
+            {organizationsError}
+          </Text>
+        ) : null}
         <Select
           label="Organization"
           required
@@ -234,13 +241,15 @@ function CreateUserForm({
 
 export function UsersPage() {
   const functionsApi = useFunctionsApi();
-  const { organizations, currentOrganization } = useTenant();
+  const { currentOrganization } = useTenant();
   const access = useAccess();
   const canRead = access.hasPermission(permissionKey("users.read"));
   const canManagePermissions = access.hasPermission(permissionKey("users.manage_permissions"));
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizationsError, setOrganizationsError] = useState<string | null>(null);
   const [opened, { open, close }] = useDisclosure(false);
 
   const load = useCallback(() => {
@@ -257,9 +266,26 @@ export function UsersPage() {
       .finally(() => setLoading(false));
   }, [functionsApi]);
 
+  const loadOrganizations = useCallback(() => {
+    if (!functionsApi) return;
+    setOrganizationsError(null);
+    void functionsApi
+      .listOrganizations()
+      .then((result) => setOrganizations(result.organizations))
+      .catch((cause) =>
+        setOrganizationsError(
+          cause instanceof Error ? cause.message : "Could not load organizations.",
+        ),
+      );
+  }, [functionsApi]);
+
   useEffect(() => {
     if (canRead) load();
   }, [canRead, load]);
+
+  useEffect(() => {
+    if (canRead) loadOrganizations();
+  }, [canRead, loadOrganizations]);
 
   const handleCreate = useCallback(
     async (input: CreateUserInput) => {
@@ -310,6 +336,7 @@ export function UsersPage() {
       <Modal opened={opened} onClose={close} title="New user" centered>
         <CreateUserForm
           organizations={organizations}
+          organizationsError={organizationsError}
           defaultOrganizationId={currentOrganization?.id ?? null}
           canManagePermissions={canManagePermissions}
           onCreate={handleCreate}

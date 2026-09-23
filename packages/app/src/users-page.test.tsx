@@ -6,7 +6,7 @@ import { permissionKey } from "@cdorneles/permissions";
 import { AccessProvider } from "@cdorneles/ui/permissions";
 import { MantineProvider } from "@mantine/core";
 import type * as MantineCore from "@mantine/core";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -122,9 +122,18 @@ function tenantState() {
 }
 
 function renderPage(granted: GrantedAccess, functionsApi: Partial<FunctionsApi> | null) {
+  const value =
+    functionsApi === null
+      ? null
+      : ({
+          listOrganizations: vi.fn().mockResolvedValue({
+            organizations: [{ id: "org-1", name: "Acme" }],
+          }),
+          ...functionsApi,
+        } as FunctionsApi);
   return render(
     <MantineProvider>
-      <FunctionsApiProvider value={functionsApi as FunctionsApi | null}>
+      <FunctionsApiProvider value={value}>
         <AccessProvider granted={granted}>
           <UsersPage />
         </AccessProvider>
@@ -176,6 +185,55 @@ describe("UsersPage", () => {
 
     expect(() => render(<Probe />)).toThrow(/FunctionsApiProvider/);
     errorSpy.mockRestore();
+  });
+
+  it("loads organizations from the platform API when users.read is granted", async () => {
+    const listOrganizations = vi.fn().mockResolvedValue({
+      organizations: [{ id: "org-1", name: "Acme" }],
+    });
+
+    renderPage(READ, { listUsers: vi.fn().mockResolvedValue(ONE_USER), listOrganizations });
+
+    await waitFor(() => expect(listOrganizations).toHaveBeenCalled());
+  });
+
+  it("does not load organizations without users.read", async () => {
+    const listOrganizations = vi.fn().mockResolvedValue({ organizations: [] });
+
+    renderPage(DENIED, { listUsers: vi.fn().mockResolvedValue(ONE_USER), listOrganizations });
+
+    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Access denied");
+    expect(listOrganizations).not.toHaveBeenCalled();
+  });
+
+  it("offers the platform organizations in the form, not the tenant's membership list", async () => {
+    const listOrganizations = vi.fn().mockResolvedValue({
+      organizations: [{ id: "org-9", name: "Globex" }],
+    });
+
+    renderPage(READ_CREATE, {
+      listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      listOrganizations,
+    });
+
+    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+
+    expect(await screen.findByRole("option", { name: "Globex" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Acme" })).not.toBeInTheDocument();
+  });
+
+  it("surfaces a load failure above the organization field", async () => {
+    const listOrganizations = vi.fn().mockRejectedValue(new Error("boom"));
+
+    renderPage(READ_CREATE, {
+      listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      listOrganizations,
+    });
+
+    await waitFor(() => expect(listOrganizations).toHaveBeenCalled());
+    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("boom");
   });
 
   it("shows the 'New user' action when users.create is granted", async () => {
