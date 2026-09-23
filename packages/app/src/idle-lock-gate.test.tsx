@@ -256,6 +256,29 @@ describe("IdleLockGate", () => {
     expect(loginWithOneTap).not.toHaveBeenCalled();
   });
 
+  it("does not carry a Google error into the next lock", async () => {
+    const reauthenticate = vi.fn().mockResolvedValue(undefined);
+    useAuthMock.mockReturnValue(authState({ reauthenticate }));
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("x@y.z");
+    });
+    expect(await screen.findByText(/não corresponde/i)).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText(/senha/i, { selector: "input" }), "segredo123");
+    await userEvent.click(screen.getByRole("button", { name: /desbloquear/i }));
+    await waitFor(() => expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument());
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    expect(screen.queryByText(/não corresponde/i)).not.toBeInTheDocument();
+  });
+
   it("shows a generic message when the Google token has no usable e-mail", async () => {
     const loginWithOneTap = vi.fn();
     useAuthMock.mockReturnValue(authState({ loginWithOneTap }));

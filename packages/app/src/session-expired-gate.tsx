@@ -38,6 +38,7 @@ export function SessionExpiredGate() {
     await queryClient.invalidateQueries();
     setStep("password");
     setChallengeId(null);
+    setGoogleMessage(null);
   }, [queryClient]);
 
   useEffect(() => {

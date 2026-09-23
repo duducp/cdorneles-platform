@@ -251,6 +251,18 @@ describe("SessionExpiredGate", () => {
     expect(oneTapProps.current).toBeNull();
   });
 
+  it("offers no Google when the kill switch is off", () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED", "false");
+    useAuthMock.mockReturnValue(
+      authState({ sessionState: "expired", user: { email: "user@example.com" } }),
+    );
+    render(<SessionExpiredGate />);
+
+    const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { google?: unknown };
+    expect(props.google).toBeUndefined();
+    expect(oneTapProps.current).toBeNull();
+  });
+
   it("surfaces the unavailable hint when the prompt cannot open", () => {
     useAuthMock.mockReturnValue(
       authState({ sessionState: "expired", user: { email: "user@example.com" } }),

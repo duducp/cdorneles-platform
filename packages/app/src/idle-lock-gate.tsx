@@ -104,6 +104,7 @@ export function IdleLockGate() {
     onIdle: () => {
       setPrompted(false);
       setLocked(true);
+      setGoogleMessage(null);
     },
   });
 
@@ -115,6 +116,7 @@ export function IdleLockGate() {
       setPrompted(false);
       setStep("password");
       setChallengeId(null);
+      setGoogleMessage(null);
     }
   }, [sessionState]);
 
@@ -126,6 +128,7 @@ export function IdleLockGate() {
         setPrompted(false);
         setStep("password");
         setChallengeId(null);
+        setGoogleMessage(null);
       }
     };
     window.addEventListener("storage", onStorage);
@@ -137,6 +140,7 @@ export function IdleLockGate() {
     setPrompted(false);
     setStep("password");
     setChallengeId(null);
+    setGoogleMessage(null);
     window.localStorage.setItem(UNLOCKED_KEY, String(Date.now()));
     await queryClient.invalidateQueries();
   }, [queryClient]);
