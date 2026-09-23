@@ -62,7 +62,7 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 	}
 
 	tables := appwrite.NewTablesDB(client)
-	row, err := appwrite.FindOne(
+	data, err := appwrite.FindOne(
 		tables,
 		"organization_profiles",
 		query.Equal("organizationId", body.OrganizationID),
@@ -71,14 +71,8 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 		ctx.Error(err)
 		return internalError(ctx, "failed to load organization profile")
 	}
-	if row == nil {
+	if data == nil {
 		return httpx.Forbidden(ctx, "organization is not provisioned")
-	}
-
-	data, err := appwrite.RowData(row)
-	if err != nil {
-		ctx.Error(err)
-		return internalError(ctx, "failed to decode organization profile")
 	}
 
 	defaultTheme := appwrite.StringField(data, "defaultTheme")

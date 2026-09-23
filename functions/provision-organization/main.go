@@ -185,7 +185,7 @@ func ensureRole(
 
 	roleID := ""
 	if row != nil {
-		roleID = row.Id
+		roleID = appwrite.StringField(row, "$id")
 	} else {
 		if _, err := appwrite.CreateRow(tables, "roles", id.Unique(), map[string]interface{}{
 			"organizationId": organizationID,
@@ -206,7 +206,7 @@ func ensureRole(
 		if row == nil {
 			return nil
 		}
-		roleID = row.Id
+		roleID = appwrite.StringField(row, "$id")
 	}
 
 	existingPerms, err := appwrite.FindOne(

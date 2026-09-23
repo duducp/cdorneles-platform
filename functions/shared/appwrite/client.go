@@ -29,9 +29,9 @@ func NewTablesDB(clt client.Client) *tablesdb.TablesDB {
 	return sdk.NewTablesDB(clt)
 }
 
-// FindOne returns the first row matching the given queries, or nil when no
+// FindOne returns the first row's columns matching the queries, or nil when no
 // row matches.
-func FindOne(tables *tablesdb.TablesDB, tableID string, queries ...string) (*models.Row, error) {
+func FindOne(tables *tablesdb.TablesDB, tableID string, queries ...string) (map[string]interface{}, error) {
 	result, err := tables.ListRows(
 		DatabaseID,
 		tableID,
@@ -40,10 +40,14 @@ func FindOne(tables *tablesdb.TablesDB, tableID string, queries ...string) (*mod
 	if err != nil {
 		return nil, err
 	}
-	if len(result.Rows) == 0 {
+	rows, err := RowsData(result)
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
 		return nil, nil
 	}
-	return &result.Rows[0], nil
+	return rows[0], nil
 }
 
 // CreateRow creates a row. It returns false when the row already exists
@@ -84,13 +88,31 @@ func NewClient(apiKey string) client.Client {
 	)
 }
 
-// RowData decodes a row's data payload into a map.
+// RowData decodes a single row's data payload into a map. It only works on
+// single-row responses such as GetRow, CreateRow and UpdateRow, which retain
+// the row's payload; a row from a list response has no retained data and must
+// be read with RowsData instead.
 func RowData(row *models.Row) (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	if err := row.Decode(&data); err != nil {
 		return nil, err
 	}
 	return data, nil
+}
+
+// RowsData returns the column data of every row in a list result. The SDK does
+// not retain a row's data for list responses — only single-row responses like
+// GetRow do — so Row.Decode fails on list rows. The whole RowList does retain
+// the raw payload, so decode it once here. Each returned map is a row with its
+// columns at the top level (e.g. row["key"]).
+func RowsData(result *models.RowList) ([]map[string]interface{}, error) {
+	var raw struct {
+		Rows []map[string]interface{} `json:"rows"`
+	}
+	if err := result.Decode(&raw); err != nil {
+		return nil, err
+	}
+	return raw.Rows, nil
 }
 
 // StringField reads a string field from a decoded row.
@@ -143,12 +165,12 @@ func (r *GrantRepo) ListOrganizationRoles(organizationID string) ([]authz.Role, 
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]authz.Role, 0, len(result.Rows))
-	for i := range result.Rows {
-		data, err := RowData(&result.Rows[i])
-		if err != nil {
-			return nil, err
-		}
+	rows, err := RowsData(result)
+	if err != nil {
+		return nil, err
+	}
+	roles := make([]authz.Role, 0, len(rows))
+	for i, data := range rows {
 		roles = append(roles, authz.Role{
 			ID:   result.Rows[i].Id,
 			Name: StringField(data, "name"),
@@ -170,11 +192,11 @@ func (r *GrantRepo) ListPermissionKeysForRoles(roleIDs []string) ([]string, erro
 		if err != nil {
 			return nil, err
 		}
-		for i := range result.Rows {
-			data, err := RowData(&result.Rows[i])
-			if err != nil {
-				return nil, err
-			}
+		rows, err := RowsData(result)
+		if err != nil {
+			return nil, err
+		}
+		for _, data := range rows {
 			permission, err := r.tables.GetRow(
 				DatabaseID,
 				"permissions",
@@ -210,11 +232,11 @@ func (r *GrantRepo) ListApplicationIDsForRoles(roleIDs []string) ([]string, erro
 		if err != nil {
 			return nil, err
 		}
-		for i := range result.Rows {
-			data, err := RowData(&result.Rows[i])
-			if err != nil {
-				return nil, err
-			}
+		rows, err := RowsData(result)
+		if err != nil {
+			return nil, err
+		}
+		for _, data := range rows {
 			application, err := r.tables.GetRow(
 				DatabaseID,
 				"applications",
@@ -248,13 +270,14 @@ func (r *GrantRepo) GetOrganizationProfile(organizationID string) (*authz.Profil
 	if err != nil {
 		return nil, err
 	}
-	if len(result.Rows) == 0 {
-		return nil, nil
-	}
-	data, err := RowData(&result.Rows[0])
+	rows, err := RowsData(result)
 	if err != nil {
 		return nil, err
 	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	data := rows[0]
 	active := true
 	if value, ok := data["active"].(bool); ok {
 		active = value
@@ -288,13 +311,13 @@ func (r *GrantRepo) IsFeatureEnabled(organizationID, featureKey string) (bool, e
 	if err != nil {
 		return false, err
 	}
-	if len(rows.Rows) == 0 {
-		return false, nil
-	}
-	data, err := RowData(&rows.Rows[0])
+	featureRows, err := RowsData(rows)
 	if err != nil {
 		return false, err
 	}
-	enabled, _ := data["enabled"].(bool)
+	if len(featureRows) == 0 {
+		return false, nil
+	}
+	enabled, _ := featureRows[0]["enabled"].(bool)
 	return enabled, nil
 }

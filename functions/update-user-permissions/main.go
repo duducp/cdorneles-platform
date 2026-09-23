@@ -10,7 +10,6 @@ import (
 
 	sdk "github.com/appwrite/sdk-for-go/v7/appwrite"
 	"github.com/appwrite/sdk-for-go/v7/id"
-	"github.com/appwrite/sdk-for-go/v7/models"
 	"github.com/appwrite/sdk-for-go/v7/query"
 	"github.com/appwrite/sdk-for-go/v7/tablesdb"
 	"github.com/appwrite/sdk-for-go/v7/teams"
@@ -243,8 +242,8 @@ func (o *appwriteOps) EffectivePermissions(organizationID, userID string) ([]str
 // userID), paging so a user with more direct permissions than one Appwrite page
 // (25 by default) is fully seen. Without this, a permission on a later page
 // would never be revoked.
-func (o *appwriteOps) listUserPermissionRows(organizationID, userID string) ([]models.Row, error) {
-	return pageAll(func(offset int) ([]models.Row, error) {
+func (o *appwriteOps) listUserPermissionRows(organizationID, userID string) ([]map[string]interface{}, error) {
+	return pageAll(func(offset int) ([]map[string]interface{}, error) {
 		result, err := o.tables.ListRows(
 			appwrite.DatabaseID,
 			"user_permissions",
@@ -258,15 +257,15 @@ func (o *appwriteOps) listUserPermissionRows(organizationID, userID string) ([]m
 		if err != nil {
 			return nil, err
 		}
-		return result.Rows, nil
+		return appwrite.RowsData(result)
 	})
 }
 
 // pageAll calls fetch with increasing offsets until it returns a short page,
 // accumulating every row. It is the same paging contract as resolve-grants's
 // allKeys, factored out so the loop itself is unit-testable.
-func pageAll(fetch func(offset int) ([]models.Row, error)) ([]models.Row, error) {
-	var rows []models.Row
+func pageAll[T any](fetch func(offset int) ([]T, error)) ([]T, error) {
+	var rows []T
 	for offset := 0; ; offset += pageSize {
 		page, err := fetch(offset)
 		if err != nil {
@@ -287,11 +286,7 @@ func (o *appwriteOps) directPermissionKeys(organizationID, userID string) ([]str
 		return nil, err
 	}
 	keys := make([]string, 0, len(rows))
-	for i := range rows {
-		data, err := appwrite.RowData(&rows[i])
-		if err != nil {
-			return nil, err
-		}
+	for _, data := range rows {
 		permission, err := o.tables.GetRow(
 			appwrite.DatabaseID,
 			"permissions",
@@ -320,7 +315,7 @@ func (o *appwriteOps) PermissionIDForKey(key string) (string, error) {
 	if row == nil {
 		return "", nil
 	}
-	return row.Id, nil
+	return appwrite.StringField(row, "$id"), nil
 }
 
 // ListUserPermissions returns the target user's existing direct permission rows
@@ -332,13 +327,9 @@ func (o *appwriteOps) ListUserPermissions(userID, organizationID string) ([]user
 		return nil, err
 	}
 	existing := make([]userPermission, 0, len(rows))
-	for i := range rows {
-		data, err := appwrite.RowData(&rows[i])
-		if err != nil {
-			return nil, err
-		}
+	for _, data := range rows {
 		existing = append(existing, userPermission{
-			RowID:        rows[i].Id,
+			RowID:        appwrite.StringField(data, "$id"),
 			PermissionID: appwrite.StringField(data, "permissionId"),
 		})
 	}

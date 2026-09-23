@@ -274,12 +274,12 @@ func (o *appwriteOps) directPermissionKeys(organizationID, userID string) ([]str
 	if err != nil {
 		return nil, err
 	}
-	keys := make([]string, 0, len(rows.Rows))
-	for i := range rows.Rows {
-		data, err := appwrite.RowData(&rows.Rows[i])
-		if err != nil {
-			return nil, err
-		}
+	rowData, err := appwrite.RowsData(rows)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(rowData))
+	for _, data := range rowData {
 		permission, err := o.tables.GetRow(
 			appwrite.DatabaseID,
 			"permissions",
@@ -339,7 +339,7 @@ func (o *appwriteOps) PermissionIDForKey(key string) (string, error) {
 	if row == nil {
 		return "", nil
 	}
-	return row.Id, nil
+	return appwrite.StringField(row, "$id"), nil
 }
 
 // RoleExists reports whether the role name is one of the organization's roles.

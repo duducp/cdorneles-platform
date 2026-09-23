@@ -104,13 +104,13 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 		ctx.Error(err)
 		return internalError(ctx)
 	}
-	roleIDs := make([]string, 0, len(roleRows.Rows))
-	for i := range roleRows.Rows {
-		data, err := appwrite.RowData(&roleRows.Rows[i])
-		if err != nil {
-			ctx.Error(err)
-			return internalError(ctx)
-		}
+	roleRowsData, err := appwrite.RowsData(roleRows)
+	if err != nil {
+		ctx.Error(err)
+		return internalError(ctx)
+	}
+	roleIDs := make([]string, 0, len(roleRowsData))
+	for i, data := range roleRowsData {
 		if contains(membershipRoles, appwrite.StringField(data, "name")) {
 			roleIDs = append(roleIDs, roleRows.Rows[i].Id)
 		}
@@ -135,12 +135,12 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 			ctx.Error(err)
 			return internalError(ctx)
 		}
-		for i := range permissionRows.Rows {
-			data, err := appwrite.RowData(&permissionRows.Rows[i])
-			if err != nil {
-				ctx.Error(err)
-				return internalError(ctx)
-			}
+		permissionRowData, err := appwrite.RowsData(permissionRows)
+		if err != nil {
+			ctx.Error(err)
+			return internalError(ctx)
+		}
+		for _, data := range permissionRowData {
 			permission, err := tables.GetRow(
 				appwrite.DatabaseID,
 				"permissions",
@@ -177,12 +177,12 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 			ctx.Error(err)
 			return internalError(ctx)
 		}
-		for i := range applicationRows.Rows {
-			data, err := appwrite.RowData(&applicationRows.Rows[i])
-			if err != nil {
-				ctx.Error(err)
-				return internalError(ctx)
-			}
+		applicationRowData, err := appwrite.RowsData(applicationRows)
+		if err != nil {
+			ctx.Error(err)
+			return internalError(ctx)
+		}
+		for _, data := range applicationRowData {
 			application, err := tables.GetRow(
 				appwrite.DatabaseID,
 				"applications",
@@ -219,12 +219,12 @@ func Main(ctx openruntimes.Context) openruntimes.Response {
 		ctx.Error(err)
 		return internalError(ctx)
 	}
-	for i := range orgFeatureRows.Rows {
-		data, err := appwrite.RowData(&orgFeatureRows.Rows[i])
-		if err != nil {
-			ctx.Error(err)
-			return internalError(ctx)
-		}
+	orgFeatureData, err := appwrite.RowsData(orgFeatureRows)
+	if err != nil {
+		ctx.Error(err)
+		return internalError(ctx)
+	}
+	for _, data := range orgFeatureData {
 		feature, err := tables.GetRow(
 			appwrite.DatabaseID,
 			"features",
@@ -312,11 +312,11 @@ func allKeys(tables *tablesdb.TablesDB, tableID string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		for i := range result.Rows {
-			data, err := appwrite.RowData(&result.Rows[i])
-			if err != nil {
-				return nil, err
-			}
+		rowData, err := appwrite.RowsData(result)
+		if err != nil {
+			return nil, err
+		}
+		for _, data := range rowData {
 			keys = append(keys, appwrite.StringField(data, "key"))
 		}
 		if len(result.Rows) < pageSize {
@@ -341,12 +341,12 @@ func directPermissionKeysForUser(tables *tablesdb.TablesDB, organizationID, user
 	if err != nil {
 		return nil, err
 	}
-	keys := make([]string, 0, len(rows.Rows))
-	for i := range rows.Rows {
-		data, err := appwrite.RowData(&rows.Rows[i])
-		if err != nil {
-			return nil, err
-		}
+	rowData, err := appwrite.RowsData(rows)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(rowData))
+	for _, data := range rowData {
 		permission, err := tables.GetRow(
 			appwrite.DatabaseID,
 			"permissions",
