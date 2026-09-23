@@ -2,16 +2,24 @@ import "@testing-library/jest-dom/vitest";
 
 import type * as AuthModule from "@cdorneles/auth";
 import { MantineProvider } from "@mantine/core";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { useAuthMock, invalidateMock, idleCallbacks, activateMock } = vi.hoisted(() => ({
-  useAuthMock: vi.fn(),
-  invalidateMock: vi.fn(),
-  idleCallbacks: { current: {} as Record<string, () => void> },
-  activateMock: vi.fn(),
-}));
+const { useAuthMock, invalidateMock, idleCallbacks, activateMock, oneTapProps, promptMock } =
+  vi.hoisted(() => ({
+    useAuthMock: vi.fn(),
+    invalidateMock: vi.fn(),
+    idleCallbacks: { current: {} as Record<string, () => void> },
+    activateMock: vi.fn(),
+    oneTapProps: {
+      current: null as null | {
+        onCredential?: (idToken: string) => void;
+        onError?: (error: unknown) => void;
+      },
+    },
+    promptMock: vi.fn(),
+  }));
 
 vi.mock("@cdorneles/auth", async () => {
   const actual = await vi.importActual<typeof AuthModule>("@cdorneles/auth");
@@ -27,8 +35,47 @@ vi.mock("react-idle-timer", () => ({
     return { activate: activateMock, getRemainingTime: () => 30_000 };
   },
 }));
+vi.mock("./auth/google-one-tap", async () => {
+  const { forwardRef, useImperativeHandle } = await import("react");
+  return {
+    GoogleOneTap: forwardRef<{ prompt: (onUnavailable?: () => void) => void }>(
+      function MockGoogleOneTap(props, ref) {
+        oneTapProps.current = props as {
+          onCredential?: (idToken: string) => void;
+          onError?: (error: unknown) => void;
+        };
+        useImperativeHandle(
+          ref,
+          () => ({ prompt: (onUnavailable?: () => void) => promptMock(onUnavailable) }),
+          [],
+        );
+        return null;
+      },
+    ),
+    describeOneTapError: () => "Não foi possível entrar com o Google. Tente novamente.",
+    // In these tests the ID token is the e-mail, which keeps the fixtures short.
+    readIdTokenEmail: (idToken: string) => idToken,
+  };
+});
 
 const { IdleLockGate, resolveIdleTimings } = await import("./idle-lock-gate");
+const { MfaRequiredError } = await import("@cdorneles/auth");
+
+function authState(overrides: Record<string, unknown> = {}) {
+  return {
+    status: "authenticated",
+    sessionState: "active",
+    user: { id: "u1", email: "a@b.c", name: "A", emailVerified: true, mfaEnabled: false },
+    reauthenticate: vi.fn().mockResolvedValue(undefined),
+    completeReauthMfa: vi.fn(),
+    loginWithOneTap: vi.fn().mockResolvedValue({}),
+    logout: vi.fn(),
+    service: {
+      createMfaChallenge: vi.fn().mockResolvedValue({ challengeId: "ch1", factor: "totp" }),
+    },
+    ...overrides,
+  };
+}
 
 function gateTree() {
   return (
@@ -46,6 +93,8 @@ function renderGate() {
 describe("IdleLockGate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "client-id.apps.googleusercontent.com");
+    oneTapProps.current = null;
     useAuthMock.mockReturnValue({
       status: "authenticated",
       sessionState: "active",
@@ -55,6 +104,10 @@ describe("IdleLockGate", () => {
       logout: vi.fn(),
       service: { createMfaChallenge: vi.fn() },
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("locks without unmounting the page", async () => {
@@ -165,6 +218,71 @@ describe("IdleLockGate", () => {
     window.dispatchEvent(new StorageEvent("storage", { key: "cdorneles-idle-unlocked" }));
 
     await waitFor(() => expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument());
+  });
+
+  it("unlocks when Google returns the locked account", async () => {
+    const loginWithOneTap = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue(authState({ loginWithOneTap }));
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("a@b.c");
+    });
+
+    await waitFor(() => expect(loginWithOneTap).toHaveBeenCalledWith({ idToken: "a@b.c" }));
+    await waitFor(() => expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument());
+  });
+
+  it("rejects a Google account that does not match the locked one", async () => {
+    const loginWithOneTap = vi.fn();
+    useAuthMock.mockReturnValue(authState({ loginWithOneTap }));
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("x@y.z");
+    });
+
+    expect(await screen.findByText(/não corresponde/i)).toBeInTheDocument();
+    expect(loginWithOneTap).not.toHaveBeenCalled();
+  });
+
+  it("routes a Google MFA challenge to the code step", async () => {
+    const loginWithOneTap = vi.fn().mockRejectedValue(new MfaRequiredError());
+    useAuthMock.mockReturnValue(authState({ loginWithOneTap }));
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("a@b.c");
+    });
+
+    expect(
+      await screen.findByLabelText(/código de verificação/i, { selector: "input" }),
+    ).toBeInTheDocument();
+  });
+
+  it("re-opens the Google prompt and hints when it cannot open", async () => {
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    await userEvent.click(screen.getByRole("button", { name: "Continuar com Google" }));
+    expect(promptMock).toHaveBeenCalledOnce();
+
+    act(() => {
+      promptMock.mock.calls.at(-1)?.[0]?.();
+    });
+
+    expect(await screen.findByText(/Não foi possível abrir o Google/i)).toBeInTheDocument();
   });
 });
 

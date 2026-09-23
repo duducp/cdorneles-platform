@@ -5,8 +5,15 @@ import { LockScreen, SessionExpiredMfaDialog, type MfaChallengeFormValues } from
 import { Button, Modal, Text } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useIdleTimer } from "react-idle-timer";
+import { isGoogleAuthEnabled } from "./auth/google-auth-enabled";
+import {
+  GoogleOneTap,
+  describeOneTapError,
+  readIdTokenEmail,
+  type GoogleOneTapHandle,
+} from "./auth/google-one-tap";
 
 const DEFAULT_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 const DEFAULT_PROMPT_BEFORE_IDLE_MS = 30 * 1000;
@@ -61,14 +68,26 @@ const UNLOCKED_KEY = "cdorneles-idle-unlocked";
  * so unsaved work survives.
  */
 export function IdleLockGate() {
-  const { status, sessionState, user, reauthenticate, completeReauthMfa, logout, service } =
-    useAuth();
+  const {
+    status,
+    sessionState,
+    user,
+    reauthenticate,
+    completeReauthMfa,
+    loginWithOneTap,
+    logout,
+    service,
+  } = useAuth();
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const [locked, setLocked] = useState(false);
   const [prompted, setPrompted] = useState(false);
   const [step, setStep] = useState<"password" | "mfa">("password");
   const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [googleMessage, setGoogleMessage] = useState<string | null>(null);
+  const oneTapRef = useRef<GoogleOneTapHandle>(null);
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const googleAvailable = isGoogleAuthEnabled() && !!googleClientId;
 
   const active =
     status === "authenticated" &&
@@ -150,6 +169,35 @@ export function IdleLockGate() {
     [challengeId, completeReauthMfa, reset],
   );
 
+  const handleGoogleCredential = useCallback(
+    async (idToken: string) => {
+      if (!user) return;
+      const email = readIdTokenEmail(idToken);
+      if (!email) {
+        setGoogleMessage("Não foi possível entrar com o Google. Tente novamente.");
+        return;
+      }
+      if (email.toLowerCase() !== user.email.toLowerCase()) {
+        setGoogleMessage("Esta conta Google não corresponde à conta bloqueada.");
+        return;
+      }
+      setGoogleMessage(null);
+      try {
+        await loginWithOneTap({ idToken });
+        await reset();
+      } catch (error) {
+        if (error instanceof MfaRequiredError) {
+          const challenge = await service.createMfaChallenge({ factor: "totp" });
+          setChallengeId(challenge.challengeId);
+          setStep("mfa");
+          return;
+        }
+        setGoogleMessage(describeAuthError(error));
+      }
+    },
+    [user, loginWithOneTap, service, reset],
+  );
+
   const handleSignOut = useCallback(() => {
     void logout().finally(() => {
       window.location.href = "/login";
@@ -159,10 +207,39 @@ export function IdleLockGate() {
   // The session-expired gate owns the dialog when the session is actually gone.
   if (!active || sessionState === "expired") return null;
   if (locked) {
-    if (step === "mfa" && challengeId) {
-      return <SessionExpiredMfaDialog onSubmit={handleMfa} onSignOut={handleSignOut} />;
-    }
-    return <LockScreen email={user.email} onSubmit={handlePassword} onSignOut={handleSignOut} />;
+    return (
+      <>
+        {googleAvailable ? (
+          <GoogleOneTap
+            ref={oneTapRef}
+            clientId={googleClientId ?? ""}
+            enabled
+            onCredential={handleGoogleCredential}
+            onError={(error) => setGoogleMessage(describeOneTapError(error))}
+          />
+        ) : null}
+        {step === "mfa" && challengeId ? (
+          <SessionExpiredMfaDialog onSubmit={handleMfa} onSignOut={handleSignOut} />
+        ) : (
+          <LockScreen
+            email={user.email}
+            onSubmit={handlePassword}
+            onSignOut={handleSignOut}
+            errorMessage={googleMessage}
+            google={
+              googleAvailable
+                ? {
+                    onClick: () =>
+                      oneTapRef.current?.prompt(() =>
+                        setGoogleMessage("Não foi possível abrir o Google. Use sua senha."),
+                      ),
+                  }
+                : undefined
+            }
+          />
+        )}
+      </>
+    );
   }
   return prompted ? <IdlePrompt onContinue={() => activate()} /> : null;
 }
