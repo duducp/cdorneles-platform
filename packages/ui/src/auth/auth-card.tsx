@@ -3,9 +3,15 @@
 import { Box, Flex, Paper } from "@mantine/core";
 import type { ReactNode } from "react";
 
+import { BlockingOverlay } from "../components/blocking-overlay";
+
 export interface AuthCardProps {
   form: ReactNode;
   visual?: ReactNode;
+  /** Blocks the card with an overlay while an external step runs. */
+  loading?: boolean;
+  /** Overlay label. Defaults to "Entrando…". */
+  loadingLabel?: string;
 }
 
 /**
@@ -13,7 +19,7 @@ export interface AuthCardProps {
  * right. Centered by the page; the visual is hidden below the `md` breakpoint.
  * The card owns the form panel padding — slots pass content only.
  */
-export function AuthCard({ form, visual }: AuthCardProps) {
+export function AuthCard({ form, visual, loading, loadingLabel }: AuthCardProps) {
   return (
     <Paper
       w="100%"
@@ -22,8 +28,10 @@ export function AuthCard({ form, visual }: AuthCardProps) {
       radius="lg"
       shadow="sm"
       withBorder
+      pos="relative"
       style={{ overflow: "hidden" }}
     >
+      <BlockingOverlay visible={loading ?? false} label={loadingLabel} />
       <Flex align="stretch" mih={{ base: "auto", sm: 560 }}>
         <Flex direction="column" justify="center" p="xl" flex="1.05 1 0" miw={0}>
           {form}

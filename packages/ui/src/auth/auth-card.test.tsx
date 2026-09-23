@@ -29,6 +29,26 @@ describe("AuthCard", () => {
     expect(screen.queryByText("visual-slot")).not.toBeInTheDocument();
   });
 
+  it("shows a blocking overlay while loading", () => {
+    render(
+      <ThemeProvider>
+        <AuthCard form={<span>form-slot</span>} loading />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText("Entrando…")).toBeInTheDocument();
+  });
+
+  it("has no overlay when not loading", () => {
+    render(
+      <ThemeProvider>
+        <AuthCard form={<span>form-slot</span>} />
+      </ThemeProvider>,
+    );
+
+    expect(screen.queryByText("Entrando…")).not.toBeInTheDocument();
+  });
+
   it("owns the form panel padding so slots pass content only", () => {
     render(
       <ThemeProvider>

@@ -1,9 +1,10 @@
 "use client";
 
-import { Button, Divider, Modal, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { Box, Button, Divider, Modal, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { LockIcon } from "lucide-react";
 import { useCallback, useState, type FormEvent, type ReactNode } from "react";
 
+import { BlockingOverlay } from "../components/blocking-overlay";
 import { FormError } from "../components/form-error";
 import { MfaChallengeForm, type MfaChallengeFormValues } from "./mfa-challenge-form";
 import { SocialLogin } from "./social-login";
@@ -16,7 +17,15 @@ import { SocialLogin } from "./social-login";
  * explicit. It is a modal rather than a navigation because the page behind it
  * must stay mounted — that is the whole point.
  */
-function ReauthModal({ title, children }: { title: string; children: ReactNode }) {
+function ReauthModal({
+  title,
+  children,
+  loading,
+}: {
+  title: string;
+  children: ReactNode;
+  loading?: boolean;
+}) {
   return (
     <Modal
       opened
@@ -27,7 +36,10 @@ function ReauthModal({ title, children }: { title: string; children: ReactNode }
       centered
       title={title}
     >
-      {children}
+      <Box pos="relative">
+        {children}
+        <BlockingOverlay visible={loading ?? false} />
+      </Box>
     </Modal>
   );
 }
@@ -49,6 +61,8 @@ export interface SessionExpiredDialogProps {
   google?: GoogleReauthOption;
   /** A caller-owned message (Google failures). A local submit error takes precedence. */
   errorMessage?: string | null;
+  /** Blocks the modal with an overlay while an external step runs. */
+  loading?: boolean;
 }
 
 /** First step: the password. */
@@ -58,6 +72,7 @@ export function SessionExpiredDialog({
   onSignOut,
   google,
   errorMessage,
+  loading,
 }: SessionExpiredDialogProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +96,7 @@ export function SessionExpiredDialog({
   );
 
   return (
-    <ReauthModal title="Sua sessão expirou">
+    <ReauthModal title="Sua sessão expirou" loading={loading}>
       <Text c="dimmed" fz="sm" mb="md">
         Entre novamente para continuar de onde parou. Nada do que está na tela foi perdido.
       </Text>

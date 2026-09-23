@@ -85,6 +85,12 @@ describe("SessionExpiredDialog", () => {
     expect(onGoogleClick).toHaveBeenCalledOnce();
   });
 
+  it("shows a blocking overlay while loading", () => {
+    renderDialog({ loading: true });
+
+    expect(screen.getByText("Entrando…")).toBeInTheDocument();
+  });
+
   it("renders no Google option by default", () => {
     renderDialog();
 
