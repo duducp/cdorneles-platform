@@ -15,6 +15,9 @@ import { isGoogleAuthEnabled } from "./auth/google-auth-enabled";
 
 const RENEWED_KEY = "cdorneles-session-renewed";
 
+/** The account has no usable MFA factor at all (distinct from a call failure). */
+class NoMfaFactorError extends Error {}
+
 export function SessionExpiredGate() {
   const {
     sessionState,
@@ -57,7 +60,7 @@ export function SessionExpiredGate() {
     const factors = await service.listMfaFactors();
     const preferred = factors.email ? "email" : factors.totp ? "totp" : null;
     if (!preferred) {
-      throw new Error("Nenhum fator de verificação disponível para esta conta.");
+      throw new NoMfaFactorError("Nenhum fator de verificação disponível para esta conta.");
     }
     const challenge = await service.createMfaChallenge({ factor: preferred });
     setFactor(preferred);
@@ -74,14 +77,16 @@ export function SessionExpiredGate() {
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
       } catch (error) {
         if (error instanceof MfaRequiredError) {
-          try {
-            await beginMfaChallenge();
-          } catch (mfaError) {
-            setGoogleMessage(
-              describeAuthError(mfaError, "Nenhum fator de verificação disponível para esta conta."),
-            );
-          }
-          return;
+        try {
+          await beginMfaChallenge();
+        } catch (mfaError) {
+          setGoogleMessage(
+            mfaError instanceof NoMfaFactorError
+              ? mfaError.message
+              : "Erro ao iniciar a verificação em duas etapas.",
+          );
+        }
+        return;
         }
         throw new Error(describeAuthError(error), { cause: error });
       }
@@ -124,14 +129,16 @@ export function SessionExpiredGate() {
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
       } catch (error) {
         if (error instanceof MfaRequiredError) {
-          try {
-            await beginMfaChallenge();
-          } catch (mfaError) {
-            setGoogleMessage(
-              describeAuthError(mfaError, "Nenhum fator de verificação disponível para esta conta."),
-            );
-          }
-          return;
+        try {
+          await beginMfaChallenge();
+        } catch (mfaError) {
+          setGoogleMessage(
+            mfaError instanceof NoMfaFactorError
+              ? mfaError.message
+              : "Erro ao iniciar a verificação em duas etapas.",
+          );
+        }
+        return;
         }
         setGoogleMessage(describeAuthError(error));
       }

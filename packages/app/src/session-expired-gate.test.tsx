@@ -365,4 +365,30 @@ describe("SessionExpiredGate", () => {
       expect(latest.errorMessage).toMatch(/fator de verificação/i);
     });
   });
+
+  it("does not report a missing factor when starting the challenge fails", async () => {
+    const listMfaFactors = vi.fn().mockRejectedValue(new Error("network"));
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate: vi.fn().mockRejectedValue(new MfaRequiredErrorMock()),
+        service: { createMfaChallenge: vi.fn(), listMfaFactors },
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+    await act(async () => {
+      await dialogProps.onSubmit("secret").catch(() => {});
+    });
+
+    await waitFor(() => {
+      const latest = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
+      expect(latest.errorMessage).toMatch(/Erro ao iniciar a verificação/i);
+      expect(latest.errorMessage).not.toMatch(/Nenhum fator/i);
+    });
+  });
 });
