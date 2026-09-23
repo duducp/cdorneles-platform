@@ -170,26 +170,3 @@ export function SessionExpiredMfaDialog({
     </ReauthModal>
   );
 }
-
-export interface LockScreenProps {
-  email: string;
-  onSubmit: (password: string) => Promise<void>;
-  onSignOut: () => void;
-  google?: GoogleReauthOption;
-  errorMessage?: string | null;
-}
-
-/**
- * The inactivity lock. Same shell as the expired-session step, different copy:
- * the session may still be valid, so it must not claim it expired.
- */
-export function LockScreen(props: LockScreenProps) {
-  return (
-    <SessionExpiredDialog
-      {...props}
-      title="Tela bloqueada"
-      description="Você ficou inativo por um tempo. Digite sua senha para continuar de onde parou."
-      submitLabel="Desbloquear"
-    />
-  );
-}

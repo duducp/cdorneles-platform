@@ -6,7 +6,6 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  LockScreen,
   SessionExpiredDialog,
   SessionExpiredMfaDialog,
 } from "./session-expired-dialog";
@@ -132,24 +131,6 @@ describe("SessionExpiredDialog", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Esta conta Google não corresponde à conta bloqueada.",
     );
-  });
-});
-
-describe("LockScreen", () => {
-  it("shows the lock copy and submits the password", async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(
-      <MantineProvider>
-        <LockScreen email="ana@exemplo.com" onSubmit={onSubmit} onSignOut={vi.fn()} />
-      </MantineProvider>,
-    );
-
-    expect(screen.getByText("Tela bloqueada")).toBeInTheDocument();
-
-    await userEvent.type(passwordField(), "segredo123");
-    await userEvent.click(screen.getByRole("button", { name: /desbloquear/i }));
-
-    expect(onSubmit).toHaveBeenCalledWith("segredo123");
   });
 });
 
