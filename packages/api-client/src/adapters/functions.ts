@@ -90,5 +90,17 @@ export function createFunctionsApi(client: Client): FunctionsApi {
       }>(execution);
       return { users: data.users };
     },
+
+    async listOrganizations() {
+      const execution = await execute({
+        functionId: "list-organizations",
+        body: {},
+        method: "POST",
+      });
+      const data = parseResponse<{
+        organizations: { id: string; name: string }[];
+      }>(execution);
+      return { organizations: data.organizations };
+    },
   };
 }

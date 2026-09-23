@@ -27,6 +27,7 @@ const services: AppwriteServices = {
     createUser: vi.fn(),
     updateUserPermissions: vi.fn(),
     listUsers: vi.fn(),
+    listOrganizations: vi.fn(),
   },
   storage: {
     getFilePreviewUrl: vi.fn(() => "https://example.com/preview"),

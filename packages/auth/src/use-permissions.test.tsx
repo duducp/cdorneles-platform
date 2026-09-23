@@ -23,6 +23,7 @@ function createMockFunctionsApi(responseBody: string): FunctionsApi {
     createUser: vi.fn(),
     updateUserPermissions: vi.fn(),
     listUsers: vi.fn(),
+    listOrganizations: vi.fn(),
   };
 }
 

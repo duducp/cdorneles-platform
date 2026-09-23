@@ -265,3 +265,40 @@ describe("createFunctionsApi user management", () => {
     await expect(promise).rejects.not.toBeInstanceOf(TypeError);
   });
 });
+
+describe("createFunctionsApi organizations", () => {
+  it("posts list-organizations and returns the organizations", async () => {
+    const organizations = [{ id: "org-1", name: "Acme" }];
+    mockExecution(JSON.stringify({ organizations }));
+    const api = createFunctionsApi(client);
+
+    const result = await api.listOrganizations();
+
+    expect(mocks.functions.createExecution).toHaveBeenCalledWith({
+      functionId: "list-organizations",
+      body: "{}",
+      async: false,
+      xpath: undefined,
+      method: "POST",
+    });
+    expect(result).toEqual({ organizations });
+  });
+
+  it("returns an empty list when the function reports none", async () => {
+    mockExecution(JSON.stringify({ organizations: [] }));
+    const api = createFunctionsApi(client);
+
+    await expect(api.listOrganizations()).resolves.toEqual({ organizations: [] });
+  });
+
+  it("throws the list-organizations error reason", async () => {
+    mockExecution(
+      JSON.stringify({ error: "forbidden", reason: "missing permission: organizations.read" }),
+    );
+    const api = createFunctionsApi(client);
+
+    await expect(api.listOrganizations()).rejects.toThrow(
+      "missing permission: organizations.read",
+    );
+  });
+});

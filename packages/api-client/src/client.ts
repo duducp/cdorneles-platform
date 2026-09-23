@@ -65,6 +65,9 @@ export interface FunctionsApi {
   listUsers(): Promise<{
     users: { id: string; email: string; name: string; labels: string[] }[];
   }>;
+  listOrganizations(): Promise<{
+    organizations: { id: string; name: string }[];
+  }>;
 }
 
 export interface StorageApi {
