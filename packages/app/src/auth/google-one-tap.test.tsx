@@ -167,9 +167,21 @@ describe("GoogleOneTap", () => {
     await waitFor(() => expect(initCalls).toHaveLength(1));
     initCalls[0].callback({ credential: "the-jwt" });
 
-    expect(onCredential).toHaveBeenCalledWith("the-jwt");
+    await waitFor(() => expect(onCredential).toHaveBeenCalledWith("the-jwt"));
     expect(loginWithOneTapMock).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it("routes a rejected parent exchange to onError", async () => {
+    installGsi();
+    const apiError = new Error("async boom");
+    const onCredential = vi.fn().mockRejectedValue(apiError);
+    const { onError } = renderOneTap({ onCredential });
+
+    await waitFor(() => expect(initCalls).toHaveLength(1));
+    initCalls[0].callback({ credential: "the-jwt" });
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith(apiError));
   });
 
   it("re-opens the prompt through the ref", async () => {

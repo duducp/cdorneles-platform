@@ -209,7 +209,7 @@ export function IdleLockGate() {
   if (locked) {
     return (
       <>
-        {googleAvailable ? (
+        {googleAvailable && step === "password" ? (
           <GoogleOneTap
             ref={oneTapRef}
             clientId={googleClientId ?? ""}

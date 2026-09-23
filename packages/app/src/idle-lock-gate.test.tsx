@@ -23,7 +23,11 @@ const { useAuthMock, invalidateMock, idleCallbacks, activateMock, oneTapProps, p
 
 vi.mock("@cdorneles/auth", async () => {
   const actual = await vi.importActual<typeof AuthModule>("@cdorneles/auth");
-  return { ...actual, useAuth: useAuthMock };
+  return {
+    ...actual,
+    useAuth: useAuthMock,
+    describeAuthError: (error: Error) => error.message,
+  };
 });
 vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({ invalidateQueries: invalidateMock }),
@@ -229,10 +233,10 @@ describe("IdleLockGate", () => {
     await screen.findByText("Tela bloqueada");
 
     act(() => {
-      oneTapProps.current?.onCredential?.("a@b.c");
+      oneTapProps.current?.onCredential?.("A@B.C");
     });
 
-    await waitFor(() => expect(loginWithOneTap).toHaveBeenCalledWith({ idToken: "a@b.c" }));
+    await waitFor(() => expect(loginWithOneTap).toHaveBeenCalledWith({ idToken: "A@B.C" }));
     await waitFor(() => expect(screen.queryByText("Tela bloqueada")).not.toBeInTheDocument());
   });
 
@@ -245,11 +249,64 @@ describe("IdleLockGate", () => {
     await screen.findByText("Tela bloqueada");
 
     act(() => {
-      oneTapProps.current?.onCredential?.("x@y.z");
+      oneTapProps.current?.onCredential?.("X@Y.Z");
     });
 
     expect(await screen.findByText(/não corresponde/i)).toBeInTheDocument();
     expect(loginWithOneTap).not.toHaveBeenCalled();
+  });
+
+  it("shows a generic message when the Google token has no usable e-mail", async () => {
+    const loginWithOneTap = vi.fn();
+    useAuthMock.mockReturnValue(authState({ loginWithOneTap }));
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("");
+    });
+
+    expect(await screen.findByText(/Não foi possível entrar com o Google/i)).toBeInTheDocument();
+    expect(loginWithOneTap).not.toHaveBeenCalled();
+  });
+
+  it("maps other Google failures to a message", async () => {
+    const loginWithOneTap = vi.fn().mockRejectedValue(new Error("boom"));
+    useAuthMock.mockReturnValue(authState({ loginWithOneTap }));
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("a@b.c");
+    });
+
+    expect(await screen.findByText("boom")).toBeInTheDocument();
+  });
+
+  it("offers no Google when the kill switch is off", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED", "false");
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    expect(oneTapProps.current).toBeNull();
+    expect(screen.queryByRole("button", { name: "Continuar com Google" })).not.toBeInTheDocument();
+  });
+
+  it("offers no Google when no client id is configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "");
+    renderGate();
+
+    idleCallbacks.current.onIdle();
+    await screen.findByText("Tela bloqueada");
+
+    expect(oneTapProps.current).toBeNull();
+    expect(screen.queryByRole("button", { name: "Continuar com Google" })).not.toBeInTheDocument();
   });
 
   it("routes a Google MFA challenge to the code step", async () => {

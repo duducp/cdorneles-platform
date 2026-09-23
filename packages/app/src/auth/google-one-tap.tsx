@@ -198,11 +198,9 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(
               const idToken = response?.credential;
               if (!idToken) return;
               if (onCredentialRef.current) {
-                try {
-                  onCredentialRef.current(idToken);
-                } catch (error) {
-                  onErrorRef.current(error);
-                }
+                Promise.resolve()
+                  .then(() => onCredentialRef.current?.(idToken))
+                  .catch((error: unknown) => onErrorRef.current(error));
                 return;
               }
               loginWithOneTapRef
