@@ -234,6 +234,20 @@ describe("createAppwriteAuthService", () => {
 
       await expect(service.getSession()).rejects.toThrow("Server error");
     });
+
+    it("throws MfaRequiredError when a MFA challenge is pending", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.getCurrentSession).mockRejectedValue(
+        new ApiError("More factors are required", {
+          code: "user_more_factors_required",
+          status: 401,
+        }),
+      );
+
+      const service = createAppwriteAuthService(api);
+
+      await expect(service.getSession()).rejects.toBeInstanceOf(MfaRequiredError);
+    });
   });
 
   describe("renewSession", () => {

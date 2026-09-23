@@ -103,6 +103,9 @@ export function createAppwriteAuthService(
         const session = await accountApi.getCurrentSession();
         return mapSession(session);
       } catch (error) {
+        if (isApiError(error) && error.code === "user_more_factors_required") {
+          throw new MfaRequiredError();
+        }
         if (isApiError(error) && error.status === 401) {
           return null;
         }
