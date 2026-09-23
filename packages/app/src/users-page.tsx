@@ -301,7 +301,7 @@ export function UsersPage() {
 
   const handleCreateOrganization = useCallback(
     async (name: string) => {
-      await createOrganization(name);
+      await createOrganization(name, { makeActive: false });
       closeCreateOrg();
       loadOrganizations();
     },

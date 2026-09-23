@@ -14,6 +14,16 @@ import type { Branding } from "@cdorneles/types";
 
 import type { Organization } from "./types";
 
+export interface CreateOrganizationOptions {
+  /**
+   * Make the new organization the active one (and persist that choice).
+   * Defaults to `true`. Pass `false` for flows that create an organization
+   * as an administrative action without switching the caller into it
+   * (e.g. the admin /users page).
+   */
+  makeActive?: boolean;
+}
+
 export interface TenantContextValue {
   currentOrganization: Organization | null;
   organizations: Organization[];
@@ -22,8 +32,8 @@ export interface TenantContextValue {
   ready: boolean;
   /** Switches organization. Returns `false` for unknown/untrusted ids. */
   switchOrganization: (organizationId: string) => boolean;
-  /** Creates an organization and makes it active. */
-  createOrganization: (name: string) => Promise<Organization>;
+  /** Creates an organization. Unless `makeActive: false`, it also becomes active. */
+  createOrganization: (name: string, options?: CreateOrganizationOptions) => Promise<Organization>;
 }
 
 export const TenantContext = createContext<TenantContextValue | null>(null);
@@ -36,7 +46,10 @@ export interface TenantProviderProps {
   /** Whether the tenant data has been loaded. */
   ready?: boolean;
   onOrganizationChange?: (organization: Organization) => void;
-  onCreateOrganization?: (name: string) => Promise<Organization>;
+  onCreateOrganization?: (
+    name: string,
+    options?: CreateOrganizationOptions,
+  ) => Promise<Organization>;
   children: ReactNode;
 }
 
@@ -82,11 +95,11 @@ export function TenantProvider({
   );
 
   const createOrganization = useCallback(
-    async (name: string) => {
+    async (name: string, options?: CreateOrganizationOptions) => {
       if (!onCreateOrganization) {
         throw new Error("createOrganization is not configured.");
       }
-      return onCreateOrganization(name);
+      return onCreateOrganization(name, options);
     },
     [onCreateOrganization],
   );

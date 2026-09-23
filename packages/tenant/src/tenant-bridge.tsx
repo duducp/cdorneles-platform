@@ -5,7 +5,7 @@ import type { Branding } from "@cdorneles/types";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { resolveActiveOrganization } from "./active-organization";
-import { TenantProvider } from "./tenant-context";
+import { TenantProvider, type CreateOrganizationOptions } from "./tenant-context";
 import type { TenantService } from "./tenant-service";
 import type { Organization } from "./types";
 
@@ -124,12 +124,16 @@ export function TenantBridge({ tenantService, children }: TenantBridgeProps) {
   }, []);
 
   const handleCreateOrganization = useCallback(
-    async (name: string): Promise<Organization> => {
+    async (name: string, options?: CreateOrganizationOptions): Promise<Organization> => {
       const organization = await tenantService.createOrganization(name);
       const orgs = await tenantService.listOrganizations();
       setOrganizations(orgs);
-      setCurrentOrganizationId(organization.id);
-      persistOrganizationId(organization.id);
+      // Admin flows (e.g. /users) create an organization without moving the
+      // caller into it; select-org flows rely on the default switch.
+      if (options?.makeActive !== false) {
+        setCurrentOrganizationId(organization.id);
+        persistOrganizationId(organization.id);
+      }
       return organization;
     },
     [tenantService],

@@ -292,7 +292,7 @@ describe("UsersPage", () => {
     await userEvent.type(await screen.findByLabelText(/^Organization name/), "New Org");
     await userEvent.click(screen.getByRole("button", { name: /create organization/i }));
 
-    expect(createOrganization).toHaveBeenCalledWith("New Org");
+    expect(createOrganization).toHaveBeenCalledWith("New Org", { makeActive: false });
     await waitFor(() => expect(listOrganizations).toHaveBeenCalledTimes(2));
 
     await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
