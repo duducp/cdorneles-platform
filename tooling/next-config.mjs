@@ -53,7 +53,8 @@ export function createNextConfig(overrides = {}) {
       // the project variable `PLATFORM_TEAM_ID` directly; exposing it here as
       // NEXT_PUBLIC_* lets the sites read it from the same variable instead of
       // keeping a duplicated NEXT_PUBLIC_PLATFORM_TEAM_ID in the project.
-      NEXT_PUBLIC_PLATFORM_TEAM_ID: process.env.PLATFORM_TEAM_ID ?? "",
+      NEXT_PUBLIC_PLATFORM_TEAM_ID:
+        process.env.PLATFORM_TEAM_ID ?? process.env.NEXT_PUBLIC_PLATFORM_TEAM_ID ?? "",
       ...overrideEnv,
     },
     experimental: {
