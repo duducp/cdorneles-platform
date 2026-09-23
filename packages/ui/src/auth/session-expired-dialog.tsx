@@ -1,11 +1,12 @@
 "use client";
 
-import { Button, Modal, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { Button, Divider, Modal, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { LockIcon } from "lucide-react";
 import { useCallback, useState, type FormEvent, type ReactNode } from "react";
 
 import { FormError } from "../components/form-error";
 import { MfaChallengeForm, type MfaChallengeFormValues } from "./mfa-challenge-form";
+import { SocialLogin } from "./social-login";
 
 /**
  * The shell both re-authentication steps share.
@@ -31,6 +32,13 @@ function ReauthModal({ title, children }: { title: string; children: ReactNode }
   );
 }
 
+export interface GoogleReauthOption {
+  onClick: () => void;
+  /** Defaults to "Continuar com Google". */
+  label?: string;
+  disabled?: boolean;
+}
+
 export interface SessionExpiredDialogProps {
   /** The last known e-mail. Prefilled so only the password is typed. */
   email: string;
@@ -41,6 +49,10 @@ export interface SessionExpiredDialogProps {
   title?: string;
   description?: string;
   submitLabel?: string;
+  /** Shows Google re-auth below the password form when present. */
+  google?: GoogleReauthOption;
+  /** A message owned by the caller (Google failures), shown with `error`. */
+  errorMessage?: string | null;
 }
 
 /** First step: the password. */
@@ -51,6 +63,8 @@ export function SessionExpiredDialog({
   title = "Sua sessão expirou",
   description = "Entre novamente para continuar de onde parou. Nada do que está na tela foi perdido.",
   submitLabel = "Entrar",
+  google,
+  errorMessage,
 }: SessionExpiredDialogProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +94,7 @@ export function SessionExpiredDialog({
       </Text>
 
       <form onSubmit={handleSubmit} noValidate>
-        <FormError mb="md">{error}</FormError>
+        <FormError mb="md">{error ?? errorMessage}</FormError>
 
         <Stack gap="md">
           {/*
@@ -108,6 +122,17 @@ export function SessionExpiredDialog({
           <Button type="submit" fullWidth loading={submitting}>
             {submitLabel}
           </Button>
+
+          {google ? (
+            <>
+              <Divider label="ou" labelPosition="center" />
+              <SocialLogin
+                onGoogleClick={google.onClick}
+                disabled={google.disabled}
+                label={google.label ?? "Continuar com Google"}
+              />
+            </>
+          ) : null}
 
           <Button type="button" variant="subtle" fullWidth onClick={onSignOut}>
             Entrar com outra conta
@@ -147,6 +172,8 @@ export interface LockScreenProps {
   email: string;
   onSubmit: (password: string) => Promise<void>;
   onSignOut: () => void;
+  google?: GoogleReauthOption;
+  errorMessage?: string | null;
 }
 
 /**

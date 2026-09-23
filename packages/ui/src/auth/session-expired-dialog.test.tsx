@@ -83,6 +83,35 @@ describe("SessionExpiredDialog", () => {
     expect(screen.getByText("Tela bloqueada")).toBeInTheDocument();
     expect(screen.getByText("Inativo por muito tempo.")).toBeInTheDocument();
   });
+
+  it("renders the Google option when provided", async () => {
+    const onGoogleClick = vi.fn();
+    renderDialog({ google: { onClick: onGoogleClick } });
+
+    await userEvent.click(screen.getByRole("button", { name: "Continuar com Google" }));
+
+    expect(onGoogleClick).toHaveBeenCalledOnce();
+  });
+
+  it("renders no Google option by default", () => {
+    renderDialog();
+
+    expect(screen.queryByRole("button", { name: "Continuar com Google" })).not.toBeInTheDocument();
+  });
+
+  it("propagates label and disabled to the Google option", () => {
+    renderDialog({ google: { onClick: vi.fn(), label: "Entrar com Google", disabled: true } });
+
+    expect(screen.getByRole("button", { name: "Entrar com Google" })).toBeDisabled();
+  });
+
+  it("shows a caller-provided message", () => {
+    renderDialog({ errorMessage: "Esta conta Google não corresponde à conta bloqueada." });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Esta conta Google não corresponde à conta bloqueada.",
+    );
+  });
 });
 
 describe("LockScreen", () => {
