@@ -310,6 +310,20 @@ describe("createAppwriteAuthService", () => {
       const service = createAppwriteAuthService(api);
       await expect(service.getCurrentUser()).rejects.toThrow("user_unauthorized");
     });
+
+    it("rethrows MfaRequiredError when MFA is pending", async () => {
+      const api = createMockAccountApi();
+      vi.mocked(api.getCurrentUser).mockRejectedValue(
+        new ApiError("More factors are required", {
+          code: "user_more_factors_required",
+          status: 401,
+        }),
+      );
+
+      const service = createAppwriteAuthService(api);
+
+      await expect(service.getCurrentUser()).rejects.toBeInstanceOf(MfaRequiredError);
+    });
   });
 
   describe("requestPasswordRecovery", () => {

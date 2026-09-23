@@ -119,8 +119,15 @@ export function createAppwriteAuthService(
     },
 
     async getCurrentUser() {
-      const user = await accountApi.getCurrentUser();
-      return mapUser(user);
+      try {
+        const user = await accountApi.getCurrentUser();
+        return mapUser(user);
+      } catch (error) {
+        if (isApiError(error) && error.code === "user_more_factors_required") {
+          throw new MfaRequiredError();
+        }
+        throw error;
+      }
     },
 
     async requestPasswordRecovery(input) {
