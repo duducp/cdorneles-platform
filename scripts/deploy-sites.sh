@@ -48,7 +48,7 @@
 #                        Deploys therefore come only from this script and the
 #                        release workflow.
 # Build-time variables (NEXT_PUBLIC_APPWRITE_ENDPOINT, NEXT_PUBLIC_APPWRITE_PROJECT_ID,
-# NEXT_PUBLIC_GOOGLE_CLIENT_ID, NEXT_PUBLIC_GOOGLE_AUTH_ENABLED, NEXT_PUBLIC_IDLE_*,
+# NEXT_PUBLIC_GOOGLE_CLIENT_ID, NEXT_PUBLIC_GOOGLE_AUTH_ENABLED,
 # NEXT_PUBLIC_PLATFORM_TEAM_ID) are Appwrite *project* variables, inherited by every
 # site, so they are no longer set per site here. A site can still override one with
 # its own variable of the same key.
