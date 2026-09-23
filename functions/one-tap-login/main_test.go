@@ -391,6 +391,42 @@ func TestMainTreatsNilUserAsUnknownEmail(t *testing.T) {
 	assertError(t, resp, 403, "unknown_email", "no platform user for this Google account")
 }
 
+func TestVerifyIDTokenAcceptsARealSignedToken(t *testing.T) {
+	claims := googleClaims{
+		Email:         "user@example.com",
+		EmailVerified: true,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    issuerShort,
+			Audience:  jwt.ClaimStrings{testClientID},
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = "test-kid"
+	signed, err := token.SignedString(testKey)
+	if err != nil {
+		t.Fatalf("could not sign token: %v", err)
+	}
+
+	ops := &appwriteOps{
+		keys:          map[string]*rsa.PublicKey{"test-kid": &testKey.PublicKey},
+		keysFetchedAt: clock(),
+	}
+
+	parsed, err := ops.VerifyIDToken(signed)
+	if err != nil {
+		t.Fatalf("VerifyIDToken rejected a valid token: %v", err)
+	}
+	got, err := validateClaims(parsed, testClientID)
+	if err != nil {
+		t.Fatalf("validateClaims rejected a valid token: %v", err)
+	}
+	if got.Email != "user@example.com" {
+		t.Fatalf("expected the e-mail claim, got %q", got.Email)
+	}
+}
+
 func assertError(t *testing.T, resp openruntimes.Response, status int, kind, reason string) {
 	t.Helper()
 	if resp.StatusCode != status {

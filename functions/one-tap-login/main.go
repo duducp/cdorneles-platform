@@ -228,8 +228,10 @@ func newAppwriteOps(apiKey string) operations {
 // VerifyIDToken verifies the RS256 signature against Google's published keys.
 // The parser also enforces the token's exp/nbf claims.
 func (o *appwriteOps) VerifyIDToken(idToken string) (*jwt.Token, error) {
-	return jwt.Parse(
+	var claims googleClaims
+	return jwt.ParseWithClaims(
 		idToken,
+		&claims,
 		func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
