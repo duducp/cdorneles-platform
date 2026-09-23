@@ -15,9 +15,7 @@ describe("SocialLogin", () => {
       </ThemeProvider>,
     );
 
-    expect(
-      screen.getByRole("button", { name: "Continuar com Google" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
   });
 
   it("calls the handler when the Google button is clicked", async () => {
@@ -39,8 +37,6 @@ describe("SocialLogin", () => {
       </ThemeProvider>,
     );
 
-    expect(
-      screen.getByRole("button", { name: "Continuar com Google" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
   });
 });

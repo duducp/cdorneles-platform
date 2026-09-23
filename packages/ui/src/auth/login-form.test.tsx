@@ -140,9 +140,7 @@ describe("LoginForm", () => {
   it("passes googleLabel to SocialLogin", () => {
     renderForm({ onSubmit: vi.fn(), googleLabel: "Continuar com Google" });
 
-    expect(
-      screen.getByRole("button", { name: "Continuar com Google" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
   });
 
   it("aligns 'Esqueci minha senha' to the left", () => {
