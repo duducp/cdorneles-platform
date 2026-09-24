@@ -9,11 +9,10 @@ const {
   SessionExpiredMfaDialogMock,
   MfaRequiredErrorMock,
   oneTapProps,
-  promptMock,
 } = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
-  SessionExpiredDialogMock: vi.fn((_props: Record<string, unknown>) => (
-    <div data-testid="password-dialog" />
+  SessionExpiredDialogMock: vi.fn((props: Record<string, unknown>) => (
+    <div data-testid="password-dialog">{props.google as never}</div>
   )),
   SessionExpiredMfaDialogMock: vi.fn((_props: Record<string, unknown>) => (
     <div data-testid="mfa-dialog" />
@@ -23,11 +22,11 @@ const {
   },
   oneTapProps: {
     current: null as null | {
+      buttonParentRef?: { current: HTMLDivElement | null };
       onCredential?: (idToken: string) => void;
       onError?: (error: unknown) => void;
     },
   },
-  promptMock: vi.fn(),
 }));
 
 vi.mock("@cdorneles/auth", () => ({
@@ -45,28 +44,15 @@ vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 
-vi.mock("./auth/google-one-tap", async () => {
-  const { forwardRef, useImperativeHandle } = await import("react");
-  return {
-    GoogleOneTap: forwardRef<{ prompt: (onUnavailable?: () => void) => void }>(
-      function MockGoogleOneTap(props, ref) {
-        oneTapProps.current = props as {
-          onCredential?: (idToken: string) => void;
-          onError?: (error: unknown) => void;
-        };
-        useImperativeHandle(
-          ref,
-          () => ({ prompt: (onUnavailable?: () => void) => promptMock(onUnavailable) }),
-          [],
-        );
-        return null;
-      },
-    ),
-    describeOneTapError: () => "Não foi possível entrar com o Google. Tente novamente.",
-    // In these tests the ID token is the e-mail, which keeps the fixtures short.
-    readIdTokenEmail: (idToken: string) => idToken,
-  };
-});
+vi.mock("./auth/google-one-tap", () => ({
+  GoogleOneTap: (props: Record<string, unknown>) => {
+    oneTapProps.current = props as unknown as NonNullable<typeof oneTapProps.current>;
+    return null;
+  },
+  describeOneTapError: () => "Não foi possível entrar com o Google. Tente novamente.",
+  // In these tests the ID token is the e-mail, which keeps the fixtures short.
+  readIdTokenEmail: (idToken: string) => idToken,
+}));
 
 const { SessionExpiredGate } = await import("./session-expired-gate");
 
@@ -264,20 +250,15 @@ describe("SessionExpiredGate", () => {
     expect(await screen.findByTestId("mfa-dialog")).toBeInTheDocument();
   });
 
-  it("offers Google re-auth and opens the prompt", () => {
+  it("passes the Google container to the dialog and the One Tap component", () => {
     useAuthMock.mockReturnValue(
       authState({ sessionState: "expired", user: { email: "user@example.com" } }),
     );
     render(<SessionExpiredGate />);
 
-    const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
-      google?: { onClick: () => void };
-    };
+    const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { google?: unknown };
     expect(props.google).toBeDefined();
-
-    act(() => props.google?.onClick());
-
-    expect(promptMock).toHaveBeenCalledOnce();
+    expect(oneTapProps.current?.buttonParentRef?.current).toBeInstanceOf(HTMLDivElement);
   });
 
   it("matches the locked account case-insensitively", async () => {
@@ -322,22 +303,6 @@ describe("SessionExpiredGate", () => {
     const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { google?: unknown };
     expect(props.google).toBeUndefined();
     expect(oneTapProps.current).toBeNull();
-  });
-
-  it("surfaces the unavailable hint when the prompt cannot open", () => {
-    useAuthMock.mockReturnValue(
-      authState({ sessionState: "expired", user: { email: "user@example.com" } }),
-    );
-    render(<SessionExpiredGate />);
-
-    const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
-      google?: { onClick: () => void };
-    };
-    act(() => props.google?.onClick());
-    act(() => promptMock.mock.calls.at(-1)?.[0]?.());
-
-    const latest = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
-    expect(latest.errorMessage).toMatch(/Não foi possível abrir o Google/i);
   });
 
   it("prefers the email factor and offers resend", async () => {

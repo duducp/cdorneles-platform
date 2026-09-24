@@ -2,7 +2,7 @@
 
 import { isApiError } from "@cdorneles/api-client";
 import { useAuth } from "@cdorneles/auth";
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 
 const GSI_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 
@@ -13,12 +13,6 @@ interface GsiCredentialResponse {
   credential?: string;
 }
 
-/** The subset of GSI's prompt-moment notification this component reacts to. */
-interface GsiPromptNotification {
-  isNotDisplayed?: () => boolean;
-  isSkippedMoment?: () => boolean;
-}
-
 interface GsiIdApi {
   initialize: (config: {
     client_id: string;
@@ -27,7 +21,19 @@ interface GsiIdApi {
     cancel_on_tap_outside?: boolean;
     use_fedcm_for_prompt?: boolean;
   }) => void;
-  prompt: (listener?: (notification: GsiPromptNotification) => void) => void;
+  prompt: () => void;
+  renderButton: (
+    parent: HTMLElement,
+    options: {
+      type?: string;
+      theme?: string;
+      size?: string;
+      shape?: string;
+      text?: string;
+      locale?: string;
+      width?: number;
+    },
+  ) => void;
 }
 
 declare global {
@@ -101,15 +107,6 @@ export function readIdTokenEmail(idToken: string): string | null {
   }
 }
 
-export interface GoogleOneTapHandle {
-  /**
-   * Re-opens the Google prompt. Calls `onUnavailable` when the prompt could
-   * not be shown (SDK not ready, not displayed, or skipped) — never when the
-   * user simply dismisses it.
-   */
-  prompt(onUnavailable?: () => void): void;
-}
-
 export interface GoogleOneTapProps {
   /** The OAuth client id Google issues for this origin. */
   clientId: string;
@@ -129,23 +126,33 @@ export interface GoogleOneTapProps {
   onCredential?: (idToken: string) => void;
   /** Called as soon as a credential arrives, before any exchange. */
   onStart?: () => void;
+  /** When provided, Google's own button is rendered into this element. */
+  buttonParentRef?: RefObject<HTMLElement | null>;
+  /** Google button label. Defaults to "signin_with". */
+  buttonText?: "signin_with" | "continue_with";
 }
 
 /**
  * Google One Tap for the login screen.
  *
  * Loads the Google Identity Services SDK, initializes it with the platform's
- * client id and prompts the returning visitor to sign in with one tap. The
- * returned ID token (JWT) is exchanged for an Appwrite session by the
+ * client id and prompts the returning visitor to sign in with one tap. When a
+ * container ref is provided it also renders Google's own button there, so the
+ * visitor can sign in through the button's popup even when the automatic One
+ * Tap prompt is unavailable (one-shot / FedCM disabled). Both routes deliver
+ * the same ID token (JWT), which is exchanged for an Appwrite session by the
  * one-tap-login function (server-side verification), never trusted here.
- *
- * Renders nothing: Google draws the prompt itself. The classic
- * "Entrar com Google" button re-opens this prompt.
  */
-export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(function GoogleOneTap(
-  { clientId, enabled, onSuccess, onError, onCredential, onStart },
-  ref,
-) {
+export function GoogleOneTap({
+  clientId,
+  enabled,
+  onSuccess,
+  onError,
+  onCredential,
+  onStart,
+  buttonParentRef,
+  buttonText,
+}: GoogleOneTapProps) {
   const { loginWithOneTap } = useAuth();
   const idApiRef = useRef<GsiIdApi | null>(null);
 
@@ -156,34 +163,13 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(fu
   const onCredentialRef = useRef(onCredential);
   const onStartRef = useRef(onStart);
   const loginWithOneTapRef = useRef(loginWithOneTap);
+  const buttonTextRef = useRef(buttonText);
   onSuccessRef.current = onSuccess;
   onErrorRef.current = onError;
   onCredentialRef.current = onCredential;
   onStartRef.current = onStart;
   loginWithOneTapRef.current = loginWithOneTap;
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      prompt(onUnavailable) {
-        const idApi = idApiRef.current;
-        if (!idApi) {
-          onUnavailable?.();
-          return;
-        }
-        try {
-          idApi.prompt((notification) => {
-            if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-              onUnavailable?.();
-            }
-          });
-        } catch {
-          onUnavailable?.();
-        }
-      },
-    }),
-    [],
-  );
+  buttonTextRef.current = buttonText;
 
   useEffect(() => {
     if (!enabled || !clientId) return;
@@ -220,6 +206,19 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(fu
           use_fedcm_for_prompt: true,
         });
 
+        const buttonParent = buttonParentRef?.current;
+        if (buttonParent) {
+          idApi.renderButton(buttonParent, {
+            type: "standard",
+            theme: "outline",
+            size: "large",
+            shape: "rectangular",
+            text: buttonTextRef.current ?? "signin_with",
+            locale: "pt-BR",
+            width: Math.min(Math.max(buttonParent.clientWidth, 200), 400),
+          });
+        }
+
         promptTimer = setTimeout(() => {
           if (!cancelled) idApi.prompt();
         }, PROMPT_DELAY_MS);
@@ -236,4 +235,4 @@ export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(fu
   }, [enabled, clientId]);
 
   return null;
-});
+}

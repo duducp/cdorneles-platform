@@ -2,20 +2,20 @@ import "@testing-library/jest-dom/vitest";
 
 import { ThemeProvider } from "@cdorneles/theme";
 import { act, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-const { pushMock, replaceMock, oneTapProps, promptMock } = vi.hoisted(() => ({
+const { pushMock, replaceMock, oneTapProps } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   replaceMock: vi.fn(),
   oneTapProps: {
     current: null as null | {
+      buttonText?: string;
+      buttonParentRef?: { current: HTMLDivElement | null };
       onError: (error: unknown) => void;
       onSuccess?: () => void;
       onStart?: () => void;
     },
   },
-  promptMock: vi.fn(),
 }));
 
 vi.mock("@cdorneles/auth", () => ({
@@ -28,23 +28,13 @@ vi.mock("@cdorneles/auth", () => ({
   MfaRequiredError: class MfaRequiredError extends Error {},
 }));
 
-vi.mock("./google-one-tap", async () => {
-  const { forwardRef, useImperativeHandle } = await import("react");
-  return {
-    GoogleOneTap: forwardRef<{ prompt: (onUnavailable?: () => void) => void }>(
-      function MockGoogleOneTap(props, ref) {
-        oneTapProps.current = props as unknown as NonNullable<typeof oneTapProps.current>;
-        useImperativeHandle(
-          ref,
-          () => ({ prompt: (onUnavailable?: () => void) => promptMock(onUnavailable) }),
-          [],
-        );
-        return null;
-      },
-    ),
-    describeOneTapError: (error: unknown) => `mapped:${String(error)}`,
-  };
-});
+vi.mock("./google-one-tap", () => ({
+  GoogleOneTap: (props: Record<string, unknown>) => {
+    oneTapProps.current = props as unknown as NonNullable<typeof oneTapProps.current>;
+    return null;
+  },
+  describeOneTapError: (error: unknown) => `mapped:${String(error)}`,
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock, push: pushMock }),
@@ -87,17 +77,25 @@ describe("LoginPage", () => {
     expect(screen.getByRole("heading", { name: "Bem-vindo de volta" })).toBeInTheDocument();
   });
 
-  it("shows 'Entrar com Google' when last login was not Google", () => {
+  it("mounts the Google slot container and hands it to One Tap when enabled", () => {
     renderPage();
 
-    expect(screen.getByRole("button", { name: "Entrar com Google" })).toBeInTheDocument();
+    expect(oneTapProps.current).not.toBeNull();
+    expect(oneTapProps.current?.buttonParentRef?.current).toBeInstanceOf(HTMLDivElement);
+    expect(screen.getByText("OU CONTINUE COM")).toBeInTheDocument();
   });
 
-  it("shows 'Continuar com Google' when last login was Google", () => {
+  it("asks Google for the 'signin_with' label by default", () => {
+    renderPage();
+
+    expect(oneTapProps.current?.buttonText).toBe("signin_with");
+  });
+
+  it("asks Google for the 'continue_with' label when last login was Google", () => {
     localStorage.setItem("cdorneles-last-login-method", "google");
     renderPage();
 
-    expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
+    expect(oneTapProps.current?.buttonText).toBe("continue_with");
   });
 
   it("does not render the terms footer text", () => {
@@ -106,24 +104,15 @@ describe("LoginPage", () => {
     expect(screen.queryByText(/Termos de Uso/)).not.toBeInTheDocument();
   });
 
-  it("opens the One Tap prompt from the Google button", async () => {
+  it("records the Google method when One Tap starts", () => {
     renderPage();
 
-    await userEvent.click(screen.getByRole("button", { name: "Entrar com Google" }));
-
-    expect(promptMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem("cdorneles-last-login-method")).toBe("google");
-  });
-
-  it("hints to use email and password when the prompt cannot open", async () => {
-    renderPage();
-
-    await userEvent.click(screen.getByRole("button", { name: "Entrar com Google" }));
+    expect(oneTapProps.current).not.toBeNull();
     act(() => {
-      promptMock.mock.calls.at(-1)?.[0]?.();
+      oneTapProps.current?.onStart?.();
     });
 
-    expect(await screen.findByText(/Não foi possível abrir o Google/i)).toBeInTheDocument();
+    expect(localStorage.getItem("cdorneles-last-login-method")).toBe("google");
   });
 
   it("routes a One Tap MFA challenge to the MFA page", async () => {
@@ -185,7 +174,7 @@ describe("LoginPage", () => {
     renderPage();
 
     expect(oneTapProps.current).toBeNull();
-    expect(screen.queryByRole("button", { name: "Entrar com Google" })).not.toBeInTheDocument();
+    expect(screen.queryByText("OU CONTINUE COM")).not.toBeInTheDocument();
   });
 
   it("hides Google entirely when the kill switch is off", () => {
@@ -193,6 +182,6 @@ describe("LoginPage", () => {
     renderPage();
 
     expect(oneTapProps.current).toBeNull();
-    expect(screen.queryByRole("button", { name: "Entrar com Google" })).not.toBeInTheDocument();
+    expect(screen.queryByText("OU CONTINUE COM")).not.toBeInTheDocument();
   });
 });

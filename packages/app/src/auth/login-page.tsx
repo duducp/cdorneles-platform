@@ -10,7 +10,7 @@ import {
   useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
 import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
-import { type GoogleOneTapHandle, describeOneTapError, GoogleOneTap } from "./google-one-tap";
+import { describeOneTapError, GoogleOneTap } from "./google-one-tap";
 import { isGoogleAuthEnabled } from "./google-auth-enabled";
 import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
@@ -39,7 +39,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [oneTapLoading, setOneTapLoading] = useState(false);
-  const oneTapRef = useRef<GoogleOneTapHandle>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
   const [lastMethod] = useState<LoginMethod | null>(() => {
     if (typeof window === "undefined") return null;
     const stored = localStorage.getItem(LAST_METHOD_KEY);
@@ -52,7 +52,6 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const googleEnabled = isGoogleAuthEnabled();
   const heading = lastMethod ? "Bem-vindo de volta" : "Bem vindo";
-  const googleLabel = lastMethod === "google" ? "Continuar com Google" : undefined;
 
   // Carry a valid e-mail to the recovery screen so it does not have to be
   // retyped; anything else goes to the plain screen and is validated there.
@@ -81,15 +80,6 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
     },
     [router],
   );
-
-  const handleGoogleClick = useCallback(() => {
-    localStorage.setItem(LAST_METHOD_KEY, "google");
-    // No OAuth redirect: Appwrite would auto-create the user. Re-open the One
-    // Tap prompt instead — its exchange denies accounts that do not exist.
-    oneTapRef.current?.prompt(() => {
-      setError("Não foi possível abrir o Google. Use e-mail e senha.");
-    });
-  }, []);
 
   async function handleSubmit(credentials: { email: string; password: string }) {
     setError(null);
@@ -126,9 +116,10 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
     <Flex direction="column" mih="100dvh">
       {googleEnabled && !!googleClientId ? (
         <GoogleOneTap
-          ref={oneTapRef}
           clientId={googleClientId ?? ""}
           enabled={canRender && status === "anonymous" && !!googleClientId}
+          buttonParentRef={googleButtonRef}
+          buttonText={lastMethod === "google" ? "continue_with" : "signin_with"}
           onSuccess={() => {
             // Clear before navigating: a redirect to the same route (e.g.
             // `/login?redirect=/login`) fires no unmount, so the overlay would
@@ -137,7 +128,10 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
             // Land where a successful e-mail/password login would.
             router.replace(resolvePostAuthRedirect(window.location.search));
           }}
-          onStart={() => setOneTapLoading(true)}
+          onStart={() => {
+            setOneTapLoading(true);
+            localStorage.setItem(LAST_METHOD_KEY, "google");
+          }}
           onError={handleOneTapError}
         />
       ) : null}
@@ -156,9 +150,8 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
                 error={error}
                 showSignUp={enableSignUp}
                 heading={heading}
-                googleLabel={googleLabel}
                 showGoogle={googleEnabled && !!googleClientId && status === "anonymous"}
-                onGoogleClick={handleGoogleClick}
+                googleSlot={<div ref={googleButtonRef} />}
                 onForgotPassword={handleForgotPassword}
               />
             }

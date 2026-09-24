@@ -3,6 +3,7 @@
 import { loginSchema, type LoginFormValues } from "@cdorneles/schemas";
 import { Anchor, Box, Divider, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import type { ReactNode } from "react";
 import { Button } from "../components/button";
 import { FormError } from "../components/form-error";
 import { SocialLogin } from "./social-login";
@@ -17,6 +18,8 @@ export interface LoginFormProps {
   heading?: string;
   googleLabel?: string;
   showGoogle?: boolean;
+  /** Replaces the built-in SocialLogin button with caller-owned content. */
+  googleSlot?: ReactNode;
   onGoogleClick?: () => void;
   onForgotPassword?: (email: string) => void;
   onSignUp?: () => void;
@@ -30,6 +33,7 @@ export function LoginForm({
   heading = "Bem-vindo de volta",
   googleLabel,
   showGoogle = true,
+  googleSlot,
   onGoogleClick,
   onForgotPassword,
   onSignUp,
@@ -86,7 +90,9 @@ export function LoginForm({
       <Stack gap="md" mt="lg">
         {showGoogle ? (
           <>
-            <SocialLogin onGoogleClick={onGoogleClick} disabled={loading} label={googleLabel} />
+            {googleSlot ?? (
+              <SocialLogin onGoogleClick={onGoogleClick} disabled={loading} label={googleLabel} />
+            )}
             <Divider label="OU CONTINUE COM" labelPosition="center" />
           </>
         ) : null}

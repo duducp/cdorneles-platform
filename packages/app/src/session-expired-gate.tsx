@@ -5,12 +5,7 @@ import { SessionExpiredDialog, SessionExpiredMfaDialog } from "@cdorneles/ui";
 import type { MfaChallengeFormValues } from "@cdorneles/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  GoogleOneTap,
-  describeOneTapError,
-  readIdTokenEmail,
-  type GoogleOneTapHandle,
-} from "./auth/google-one-tap";
+import { GoogleOneTap, describeOneTapError, readIdTokenEmail } from "./auth/google-one-tap";
 import { isGoogleAuthEnabled } from "./auth/google-auth-enabled";
 
 const RENEWED_KEY = "cdorneles-session-renewed";
@@ -35,7 +30,7 @@ export function SessionExpiredGate() {
   const [factor, setFactor] = useState<"email" | "totp" | null>(null);
   const [googleMessage, setGoogleMessage] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const oneTapRef = useRef<GoogleOneTapHandle>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const googleAvailable = isGoogleAuthEnabled() && !!googleClientId;
 
@@ -164,9 +159,10 @@ export function SessionExpiredGate() {
     <>
       {googleAvailable && step === "password" ? (
         <GoogleOneTap
-          ref={oneTapRef}
           clientId={googleClientId ?? ""}
           enabled
+          buttonParentRef={googleButtonRef}
+          buttonText="continue_with"
           onCredential={handleGoogleCredential}
           onError={(error) => setGoogleMessage(describeOneTapError(error))}
         />
@@ -184,16 +180,7 @@ export function SessionExpiredGate() {
           onSignOut={handleSignOut}
           errorMessage={googleMessage}
           loading={googleLoading}
-          google={
-            googleAvailable
-              ? {
-                  onClick: () =>
-                    oneTapRef.current?.prompt(() =>
-                      setGoogleMessage("Não foi possível abrir o Google. Use sua senha."),
-                    ),
-                }
-              : undefined
-          }
+          google={googleAvailable ? <div ref={googleButtonRef} /> : undefined}
         />
       )}
     </>

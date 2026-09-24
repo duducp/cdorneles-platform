@@ -143,6 +143,14 @@ describe("LoginForm", () => {
     expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
   });
 
+  it("renders the provided google slot instead of the SocialLogin button", () => {
+    renderForm({ onSubmit: vi.fn(), googleSlot: <div data-testid="google-slot" /> });
+
+    expect(screen.getByTestId("google-slot")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Entrar com Google" })).not.toBeInTheDocument();
+    expect(screen.getByText("OU CONTINUE COM")).toBeInTheDocument();
+  });
+
   it("hides the Google button and divider when showGoogle is false", () => {
     renderForm({ onSubmit: vi.fn(), showGoogle: false });
 

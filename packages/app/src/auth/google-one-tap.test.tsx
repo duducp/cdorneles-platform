@@ -2,16 +2,11 @@ import "@testing-library/jest-dom/vitest";
 
 import { ApiError } from "@cdorneles/api-client";
 import { ThemeProvider } from "@cdorneles/theme";
-import { render, waitFor } from "@testing-library/react";
-import { createRef, type RefObject } from "react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { createRef } from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-import {
-  GoogleOneTap,
-  describeOneTapError,
-  readIdTokenEmail,
-  type GoogleOneTapHandle,
-} from "./google-one-tap";
+import { GoogleOneTap, describeOneTapError, readIdTokenEmail } from "./google-one-tap";
 
 const { loginWithOneTapMock } = vi.hoisted(() => ({ loginWithOneTapMock: vi.fn() }));
 
@@ -24,19 +19,15 @@ type InitConfig = {
   callback: (response: { credential?: string }) => void;
 };
 
-type PromptListener = (notification: {
-  isNotDisplayed?: () => boolean;
-  isSkippedMoment?: () => boolean;
-}) => void;
+type RenderButtonCall = { parent: HTMLElement; options: Record<string, unknown> };
 
 const initCalls: InitConfig[] = [];
-const promptCalls: number[] = [];
-const promptListeners: PromptListener[] = [];
+const renderButtonCalls: RenderButtonCall[] = [];
 
-// A minimal GSI stub: initialize records its config; prompt is observable.
-// Installing it before render makes loadGsiScript resolve immediately (the
-// SDK is "already present"), which is how the callback flows are exercised —
-// jsdom never actually loads external scripts.
+// A minimal GSI stub: initialize records its config; renderButton is
+// observable. Installing it before render makes loadGsiScript resolve
+// immediately (the SDK is "already present"), which is how the callback flows
+// are exercised — jsdom never actually loads external scripts.
 function installGsi() {
   (window as unknown as { google?: unknown }).google = {
     accounts: {
@@ -44,9 +35,9 @@ function installGsi() {
         initialize: (config: InitConfig) => {
           initCalls.push(config);
         },
-        prompt: (listener: PromptListener) => {
-          promptCalls.push(promptCalls.length);
-          if (listener) promptListeners.push(listener);
+        prompt: () => {},
+        renderButton: (parent: HTMLElement, options: Record<string, unknown>) => {
+          renderButtonCalls.push({ parent, options });
         },
       },
     },
@@ -57,7 +48,8 @@ function renderOneTap(
   overrides?: Partial<{
     enabled: boolean;
     clientId: string;
-    ref: RefObject<GoogleOneTapHandle | null>;
+    buttonParent: boolean;
+    buttonText: "signin_with" | "continue_with";
     onCredential: (idToken: string) => void;
     onStart: () => void;
   }>,
@@ -65,12 +57,16 @@ function renderOneTap(
   const onSuccess = vi.fn();
   const onError = vi.fn();
   const onStart = vi.fn();
+  const buttonParentRef = createRef<HTMLDivElement>();
+  const withParent = overrides?.buttonParent ?? true;
   render(
     <ThemeProvider>
+      {withParent ? <div ref={buttonParentRef} data-testid="google-button" /> : null}
       <GoogleOneTap
-        ref={overrides?.ref}
         clientId={overrides?.clientId ?? "client-id.apps.googleusercontent.com"}
         enabled={overrides?.enabled ?? true}
+        buttonParentRef={withParent ? buttonParentRef : undefined}
+        buttonText={overrides?.buttonText}
         onSuccess={onSuccess}
         onError={onError}
         onCredential={overrides?.onCredential}
@@ -78,14 +74,13 @@ function renderOneTap(
       />
     </ThemeProvider>,
   );
-  return { onSuccess, onError, onStart };
+  return { onSuccess, onError, onStart, buttonParentRef };
 }
 
 beforeEach(() => {
   loginWithOneTapMock.mockReset();
   initCalls.length = 0;
-  promptCalls.length = 0;
-  promptListeners.length = 0;
+  renderButtonCalls.length = 0;
   delete (window as unknown as { google?: unknown }).google;
 });
 
@@ -96,25 +91,53 @@ afterEach(() => {
 });
 
 describe("GoogleOneTap", () => {
-  it("prompts through GSI when enabled and the SDK is available", async () => {
+  it("initializes GSI and renders Google's button into the container", async () => {
     installGsi();
     const { onError } = renderOneTap();
 
-    await waitFor(() => expect(promptCalls).toHaveLength(1));
+    await waitFor(() => expect(renderButtonCalls).toHaveLength(1));
 
     expect(initCalls).toHaveLength(1);
     expect(initCalls[0].client_id).toBe("client-id.apps.googleusercontent.com");
+    expect(renderButtonCalls[0].parent).toBe(screen.getByTestId("google-button"));
+    expect(renderButtonCalls[0].options).toMatchObject({
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      shape: "rectangular",
+      text: "signin_with",
+      locale: "pt-BR",
+    });
+    expect(renderButtonCalls[0].options.client_id).toBeUndefined();
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it("never prompts while the session is still being resolved", async () => {
+  it("uses the requested button label", async () => {
+    installGsi();
+    renderOneTap({ buttonText: "continue_with" });
+
+    await waitFor(() => expect(renderButtonCalls).toHaveLength(1));
+
+    expect(renderButtonCalls[0].options.text).toBe("continue_with");
+  });
+
+  it("does not render the button when no container is provided", async () => {
+    installGsi();
+    renderOneTap({ buttonParent: false });
+
+    await waitFor(() => expect(initCalls).toHaveLength(1));
+
+    expect(renderButtonCalls).toHaveLength(0);
+  });
+
+  it("never initializes or renders the button while disabled", async () => {
     installGsi();
     renderOneTap({ enabled: false });
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(initCalls).toHaveLength(0);
-    expect(promptCalls).toHaveLength(0);
+    expect(renderButtonCalls).toHaveLength(0);
   });
 
   it("exchanges the ID token for a session and reports success", async () => {
@@ -210,41 +233,6 @@ describe("GoogleOneTap", () => {
     initCalls[0].callback({ credential: "the-jwt" });
 
     await waitFor(() => expect(onError).toHaveBeenCalledWith(apiError));
-  });
-
-  it("re-opens the prompt through the ref", async () => {
-    installGsi();
-    const ref = createRef<GoogleOneTapHandle>();
-    renderOneTap({ ref });
-
-    await waitFor(() => expect(initCalls).toHaveLength(1));
-    await waitFor(() => expect(promptCalls).toHaveLength(1));
-    ref.current?.prompt();
-
-    expect(promptCalls).toHaveLength(2);
-  });
-
-  it("reports unavailability when the SDK is not ready", () => {
-    const ref = createRef<GoogleOneTapHandle>();
-    renderOneTap({ enabled: false, ref });
-    const onUnavailable = vi.fn();
-
-    ref.current?.prompt(onUnavailable);
-
-    expect(onUnavailable).toHaveBeenCalledOnce();
-  });
-
-  it("reports unavailability when Google skips the prompt", async () => {
-    installGsi();
-    const ref = createRef<GoogleOneTapHandle>();
-    renderOneTap({ ref });
-
-    await waitFor(() => expect(initCalls).toHaveLength(1));
-    const onUnavailable = vi.fn();
-    ref.current?.prompt(onUnavailable);
-    promptListeners.at(-1)?.({ isNotDisplayed: () => false, isSkippedMoment: () => true });
-
-    expect(onUnavailable).toHaveBeenCalledOnce();
   });
 });
 

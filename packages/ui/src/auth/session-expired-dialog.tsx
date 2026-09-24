@@ -7,7 +7,6 @@ import { useCallback, useState, type FormEvent, type ReactNode } from "react";
 import { BlockingOverlay } from "../components/blocking-overlay";
 import { FormError } from "../components/form-error";
 import { MfaChallengeForm, type MfaChallengeFormValues } from "./mfa-challenge-form";
-import { SocialLogin } from "./social-login";
 
 /**
  * The shell both re-authentication steps share.
@@ -46,21 +45,14 @@ function ReauthModal({
   );
 }
 
-export interface GoogleReauthOption {
-  onClick: () => void;
-  /** Defaults to "Continuar com Google". */
-  label?: string;
-  disabled?: boolean;
-}
-
 export interface SessionExpiredDialogProps {
   /** The last known e-mail. Prefilled so only the password is typed. */
   email: string;
   onSubmit: (password: string) => Promise<void>;
   /** Leaves for the login page. The only way out without authenticating. */
   onSignOut: () => void;
-  /** Shows Google re-auth below the password form when present. */
-  google?: GoogleReauthOption;
+  /** Shows caller-owned Google re-auth content below the password form. */
+  google?: ReactNode;
   /** A caller-owned message (Google failures). A local submit error takes precedence. */
   errorMessage?: string | null;
   /** Blocks the modal with an overlay while an external step runs. */
@@ -136,14 +128,7 @@ export function SessionExpiredDialog({
           {google ? (
             <>
               <Divider label="ou" labelPosition="center" />
-              <SocialLogin
-                onGoogleClick={() => {
-                  setError(null);
-                  google.onClick();
-                }}
-                disabled={google.disabled}
-                label={google.label ?? "Continuar com Google"}
-              />
+              {google}
             </>
           ) : null}
 

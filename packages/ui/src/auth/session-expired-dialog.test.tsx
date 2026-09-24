@@ -73,13 +73,10 @@ describe("SessionExpiredDialog", () => {
     expect(onSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the Google option when provided", async () => {
-    const onGoogleClick = vi.fn();
-    renderDialog({ google: { onClick: onGoogleClick } });
+  it("renders the provided Google node", () => {
+    renderDialog({ google: <button>g</button> });
 
-    await userEvent.click(screen.getByRole("button", { name: "Continuar com Google" }));
-
-    expect(onGoogleClick).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "g" })).toBeInTheDocument();
   });
 
   it("shows a blocking overlay while loading and makes the content inert", () => {
@@ -94,13 +91,7 @@ describe("SessionExpiredDialog", () => {
   it("renders no Google option by default", () => {
     renderDialog();
 
-    expect(screen.queryByRole("button", { name: "Continuar com Google" })).not.toBeInTheDocument();
-  });
-
-  it("propagates label and disabled to the Google option", () => {
-    renderDialog({ google: { onClick: vi.fn(), label: "Entrar com Google", disabled: true } });
-
-    expect(screen.getByRole("button", { name: "Entrar com Google" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "g" })).not.toBeInTheDocument();
   });
 
   it("shows a caller-provided message", () => {
@@ -111,25 +102,17 @@ describe("SessionExpiredDialog", () => {
     );
   });
 
-  it("lets the local error take precedence and clears it for the caller", async () => {
+  it("lets the local error take precedence over the caller message", async () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error("Senha incorreta."));
-    const onGoogleClick = vi.fn();
     renderDialog({
       onSubmit,
-      google: { onClick: onGoogleClick },
       errorMessage: "Esta conta Google não corresponde à conta bloqueada.",
     });
 
     await userEvent.type(passwordField(), "errada");
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
     expect(await screen.findByRole("alert")).toHaveTextContent("Senha incorreta.");
-
-    await userEvent.click(screen.getByRole("button", { name: "Continuar com Google" }));
-
-    expect(onGoogleClick).toHaveBeenCalledOnce();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Esta conta Google não corresponde à conta bloqueada.",
-    );
   });
 });
 
