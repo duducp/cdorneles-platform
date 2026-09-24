@@ -6,11 +6,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"math/big"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/appwrite/sdk-for-go/v7/models"
+	"github.com/appwrite/sdk-for-go/v7/users"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 
@@ -239,6 +243,9 @@ func TestMainRejectsDisabledUser(t *testing.T) {
 	}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 403, "user_disabled", "account is disabled")
+	if ops.tokenCalls != 0 {
+		t.Fatal("no login token may be created for a disabled account")
+	}
 }
 
 func TestMainRejectsAppwriteUnverifiedEmail(t *testing.T) {
@@ -251,6 +258,9 @@ func TestMainRejectsAppwriteUnverifiedEmail(t *testing.T) {
 	}
 	resp := handle(newContext(`{"idToken":"x"}`), ops)
 	assertError(t, resp, 403, "email_not_verified", "account e-mail is not verified")
+	if ops.tokenCalls != 0 {
+		t.Fatal("no login token may be created for an Appwrite-unverified e-mail")
+	}
 }
 
 func TestMainLogsInAndReturnsCredentials(t *testing.T) {
@@ -388,9 +398,13 @@ func TestAppwriteOpsVerifyIDTokenRejectsForeignSignature(t *testing.T) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
 		},
 	}
-	// Signed with a local key that is not in Google's JWKS, and the JWKS fetch
-	// will fail in the test environment (no network stub), so the parse must
-	// return an error either way.
+	// Signed with a local key that is not in Google's JWKS. The JWKS fetch is
+	// stubbed to fail, so the parse must return an error without any network.
+	original := httpGet
+	httpGet = func(string) (*http.Response, error) {
+		return nil, errors.New("no network in tests")
+	}
+	t.Cleanup(func() { httpGet = original })
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	signed, err := token.SignedString(testKey)
 	if err != nil {
@@ -446,6 +460,124 @@ func TestVerifyIDTokenAcceptsARealSignedToken(t *testing.T) {
 	}
 	if got.Email != "user@example.com" {
 		t.Fatalf("expected the e-mail claim, got %q", got.Email)
+	}
+}
+
+// signedTokenWithKid signs a token whose header carries the given kid, so
+// VerifyIDToken's key selection can be exercised without a real Google key.
+func signedTokenWithKid(t *testing.T, kid string) string {
+	t.Helper()
+	claims := googleClaims{
+		Email:         "user@example.com",
+		EmailVerified: true,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    issuerShort,
+			Audience:  jwt.ClaimStrings{testClientID},
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = kid
+	signed, err := token.SignedString(testKey)
+	if err != nil {
+		t.Fatalf("could not sign token: %v", err)
+	}
+	return signed
+}
+
+// jwksBody renders a valid JWKS document containing one RSA key under kid.
+func jwksBody(t *testing.T, kid string) string {
+	t.Helper()
+	body, err := json.Marshal(map[string]interface{}{
+		"keys": []map[string]string{{
+			"kid": kid,
+			"n":   base64.RawURLEncoding.EncodeToString(testKey.PublicKey.N.Bytes()),
+			"e":   base64.RawURLEncoding.EncodeToString(big.NewInt(65537).Bytes()),
+		}},
+	})
+	if err != nil {
+		t.Fatalf("could not marshal JWKS: %v", err)
+	}
+	return string(body)
+}
+
+// stubHTTPGet replaces the JWKS fetch seam and returns a counter of the calls.
+func stubHTTPGet(t *testing.T, body string) *int {
+	t.Helper()
+	calls := 0
+	original := httpGet
+	httpGet = func(string) (*http.Response, error) {
+		calls++
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	}
+	t.Cleanup(func() { httpGet = original })
+	return &calls
+}
+
+// An unknown kid on a fresh cache is attacker-controlled, so it must not force
+// an outbound JWKS fetch more than once per cooldown.
+func TestVerifyIDTokenCooldownBoundsForcedRefreshes(t *testing.T) {
+	calls := stubHTTPGet(t, jwksBody(t, "rotated-kid"))
+
+	ops := &appwriteOps{
+		keys:              map[string]*rsa.PublicKey{"known-kid": &testKey.PublicKey},
+		keysFetchedAt:     clock(),
+		lastForcedRefresh: clock(),
+	}
+
+	if _, err := ops.VerifyIDToken(signedTokenWithKid(t, "attacker-kid")); err == nil {
+		t.Fatal("expected verification to fail for an unknown kid")
+	}
+	if *calls != 0 {
+		t.Fatalf("unknown kid on a fresh cache within the cooldown must not fetch, got %d", *calls)
+	}
+
+	// Once the cooldown has elapsed, one forced refresh is allowed so a real
+	// rotation can be picked up.
+	ops.lastForcedRefresh = clock().Add(-(forcedRefreshCooldown + time.Second))
+	if _, err := ops.VerifyIDToken(signedTokenWithKid(t, "attacker-kid")); err == nil {
+		t.Fatal("expected verification to fail for an unknown kid")
+	}
+	if *calls != 1 {
+		t.Fatalf("expected exactly one forced refresh after the cooldown, got %d", *calls)
+	}
+
+	// A second unknown kid immediately afterwards stays inside the cooldown.
+	if _, err := ops.VerifyIDToken(signedTokenWithKid(t, "another-attacker-kid")); err == nil {
+		t.Fatal("expected verification to fail for an unknown kid")
+	}
+	if *calls != 1 {
+		t.Fatalf("a second unknown kid within the cooldown must not fetch again, got %d", *calls)
+	}
+}
+
+// Appwrite stores normalised lower-case e-mails, so a mixed-case Google claim
+// must be normalised before the lookup or a real user would fail to match.
+func TestFindUserByEmailQueriesWithNormalisedEmail(t *testing.T) {
+	var gotQueries []string
+	original := listUsers
+	listUsers = func(_ *users.Users, queries []string) (*models.UserList, error) {
+		gotQueries = queries
+		return &models.UserList{Users: []models.User{*activeUser("u1", "user@example.com")}}, nil
+	}
+	t.Cleanup(func() { listUsers = original })
+
+	user, err := (&appwriteOps{}).FindUserByEmail("  User@Example.COM ")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if user == nil || user.Id != "u1" {
+		t.Fatalf("expected the normalised lookup to find u1, got %+v", user)
+	}
+	joined := strings.Join(gotQueries, " ")
+	if !strings.Contains(joined, "user@example.com") {
+		t.Fatalf("expected a lower-cased e-mail query, got %q", joined)
+	}
+	if strings.Contains(joined, "User@Example.COM") {
+		t.Fatalf("query must not use the raw mixed-case e-mail: %q", joined)
 	}
 }
 

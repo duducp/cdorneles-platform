@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"os"
@@ -39,6 +40,23 @@ const googleCertsURL = "https://www.googleapis.com/oauth2/v3/certs"
 // refresh. Rotation is also handled on demand: an unknown kid triggers one
 // forced refresh.
 const keysTTL = 12 * time.Hour
+
+// forcedRefreshCooldown bounds how often an unknown kid can force an outbound
+// JWKS refresh. A token's kid is attacker-controlled until the signature is
+// verified, so without a cooldown a stream of arbitrary kids would turn this
+// function into a request amplifier pointed at Google.
+const forcedRefreshCooldown = 30 * time.Second
+
+// maxJWKSBodyBytes caps how much of the certs response is read, so a hostile
+// or misbehaving endpoint cannot exhaust the function's memory.
+const maxJWKSBodyBytes = 1 << 20 // 1 MiB
+
+// httpClient bounds the outbound JWKS request; httpGet is the seam tests stub
+// so the refresh path is exercisable without a live Google endpoint.
+var (
+	httpClient = &http.Client{Timeout: 5 * time.Second}
+	httpGet    = func(url string) (*http.Response, error) { return httpClient.Get(url) }
+)
 
 // Issuer values Google signs ID tokens with. Both spellings are valid per the
 // Google Identity documentation.
@@ -220,9 +238,10 @@ func errorBody(ctx openruntimes.Context, status int, code, reason string) openru
 type appwriteOps struct {
 	users *users.Users
 
-	mu            sync.Mutex
-	keys          map[string]*rsa.PublicKey
-	keysFetchedAt time.Time
+	mu                sync.Mutex
+	keys              map[string]*rsa.PublicKey
+	keysFetchedAt     time.Time
+	lastForcedRefresh time.Time
 }
 
 func newAppwriteOps(apiKey string) operations {
@@ -242,15 +261,21 @@ func (o *appwriteOps) VerifyIDToken(idToken string) (*jwt.Token, error) {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			kid, _ := token.Header["kid"].(string)
-			if key := o.cachedKey(kid); key != nil {
+			key, fresh := o.cachedKey(kid)
+			if key != nil {
 				return key, nil
 			}
-			// Unknown kid: the keys may have rotated since the last fetch, so
-			// refresh once and retry before rejecting.
+			// A fresh cache with an unknown kid is the rotation path, but the
+			// kid is attacker-controlled until the signature is verified: bound
+			// how often it can force an outbound refresh. A genuinely stale
+			// cache is not subject to the cooldown.
+			if fresh && !o.beginForcedRefresh() {
+				return nil, fmt.Errorf("unknown key id %q", kid)
+			}
 			if err := o.loadKeys(); err != nil {
 				return nil, err
 			}
-			if key := o.cachedKey(kid); key != nil {
+			if key, _ := o.cachedKey(kid); key != nil {
 				return key, nil
 			}
 			return nil, fmt.Errorf("unknown key id %q", kid)
@@ -259,20 +284,35 @@ func (o *appwriteOps) VerifyIDToken(idToken string) (*jwt.Token, error) {
 	)
 }
 
-// cachedKey returns the key for kid while the cache is fresh, or nil. A nil
-// (or stale-cache miss) forces loadKeys to refresh from Google.
-func (o *appwriteOps) cachedKey(kid string) *rsa.PublicKey {
+// cachedKey returns the key for kid and whether the cache was fresh. A nil key
+// with a fresh cache means the kid is unknown; a nil key with a stale cache
+// means loadKeys must refresh from Google.
+func (o *appwriteOps) cachedKey(kid string) (*rsa.PublicKey, bool) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	if o.keys == nil || clock().Sub(o.keysFetchedAt) >= keysTTL {
-		return nil
+		return nil, false
 	}
-	return o.keys[kid]
+	return o.keys[kid], true
+}
+
+// beginForcedRefresh reports whether an unknown-kid refresh is allowed now,
+// recording the attempt so repeated untrusted kids cannot force a fetch on
+// every request. Only a fresh cache reaches this path; a stale cache always
+// refreshes.
+func (o *appwriteOps) beginForcedRefresh() bool {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if clock().Sub(o.lastForcedRefresh) < forcedRefreshCooldown {
+		return false
+	}
+	o.lastForcedRefresh = clock()
+	return true
 }
 
 // loadKeys fetches Google's JWKS document and parses every RSA signing key.
 func (o *appwriteOps) loadKeys() error {
-	resp, err := http.Get(googleCertsURL)
+	resp, err := httpGet(googleCertsURL)
 	if err != nil {
 		return err
 	}
@@ -287,7 +327,7 @@ func (o *appwriteOps) loadKeys() error {
 			E   string `json:"e"`
 		} `json:"keys"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&set); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxJWKSBodyBytes)).Decode(&set); err != nil {
 		return err
 	}
 	keys := make(map[string]*rsa.PublicKey, len(set.Keys))
@@ -309,13 +349,18 @@ func (o *appwriteOps) loadKeys() error {
 	return nil
 }
 
-// FindUserByEmail resolves the platform user for an e-mail. The users list is
-// queried with an exact e-mail match; Appwrite returns an empty page when no
-// user matches, which becomes a nil user (not an error).
+// listUsers is the seam over the SDK's users.List so FindUserByEmail's query
+// is unit-testable without an Appwrite backend.
+var listUsers = func(u *users.Users, queries []string) (*models.UserList, error) {
+	return u.List(u.WithListQueries(queries))
+}
+
+// FindUserByEmail resolves the platform user for an e-mail. Appwrite stores
+// normalised lower-case e-mails, so the claim is trimmed and lower-cased before
+// the exact-match query; an empty page becomes a nil user (not an error).
 func (o *appwriteOps) FindUserByEmail(email string) (*models.User, error) {
-	result, err := o.users.List(
-		o.users.WithListQueries([]string{query.Equal("email", email), query.Limit(2)}),
-	)
+	normalised := strings.ToLower(strings.TrimSpace(email))
+	result, err := listUsers(o.users, []string{query.Equal("email", normalised), query.Limit(2)})
 	if err != nil {
 		return nil, err
 	}
