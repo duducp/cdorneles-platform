@@ -4,6 +4,8 @@ import { ApiError } from "@cdorneles/api-client";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as AuthModule from "@cdorneles/auth";
+
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, "location");
 
 const {
@@ -49,7 +51,7 @@ const {
 }));
 
 vi.mock("@cdorneles/auth", async () => {
-  const actual = await vi.importActual<typeof import("@cdorneles/auth")>("@cdorneles/auth");
+  const actual = await vi.importActual<typeof AuthModule>("@cdorneles/auth");
   return {
     useAuth: useAuthMock,
     MfaRequiredError: MfaRequiredErrorMock,
@@ -557,9 +559,8 @@ describe("SessionExpiredGate", () => {
       oneTapProps.current?.onStart?.();
     });
 
-    const after = (
-      SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { googleResetToken?: number }
-    ).googleResetToken;
+    const after = (SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { googleResetToken?: number })
+      .googleResetToken;
 
     expect(after).not.toBe(before);
     expect(after).toBe((before ?? 0) + 1);

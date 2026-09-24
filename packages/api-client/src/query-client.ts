@@ -34,16 +34,16 @@ export interface CancellableQueryClient extends QueryClient {
  * still appear in the query cache as failed). With the option, a single
  * callback is invoked for every 401 across all queries and mutations.
  */
-export function createQueryClient(
-  options: CreateQueryClientOptions = {},
-): CancellableQueryClient {
+export function createQueryClient(options: CreateQueryClientOptions = {}): CancellableQueryClient {
   const handleError = (error: unknown) => {
     if (isUnauthorized(error)) {
       options.onUnauthorized?.();
     }
   };
 
-  let client: CancellableQueryClient | undefined;
+  // Mutable holder: the MutationCache onError below must see the finished
+  // client, but the cache is built while `queryClient` is still initializing.
+  const clientRef: { current: CancellableQueryClient | undefined } = { current: undefined };
 
   const queryClient = new QueryClient({
     queryCache: new QueryCache({ onError: handleError }),
@@ -51,7 +51,13 @@ export function createQueryClient(
       onError: (error, _variables, _context, mutation) => {
         // A mutation evicted by cancelMutations() is stale: its 401 belongs to
         // the session that already expired, not the one that replaced it.
-        if (!client?.getMutationCache().getAll().some((m) => m === mutation)) return;
+        if (
+          !clientRef.current
+            ?.getMutationCache()
+            .getAll()
+            .some((m) => m === mutation)
+        )
+          return;
         handleError(error);
       },
     }),
@@ -67,7 +73,7 @@ export function createQueryClient(
     },
   }) as CancellableQueryClient;
 
-  client = queryClient;
+  clientRef.current = queryClient;
 
   queryClient.cancelMutations = async () => {
     const cache = queryClient.getMutationCache();

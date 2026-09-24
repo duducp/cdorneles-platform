@@ -85,6 +85,7 @@ export function SessionExpiredGate() {
               mfaError instanceof NoMfaFactorError
                 ? mfaError.message
                 : "Erro ao iniciar a verificação em duas etapas.",
+              { cause: mfaError },
             );
           }
           return;

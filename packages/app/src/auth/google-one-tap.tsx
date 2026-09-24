@@ -276,7 +276,7 @@ export function GoogleOneTap({
       idApiRef.current = null;
       if (promptTimer) clearTimeout(promptTimer);
     };
-  }, [enabled, clientId]);
+  }, [enabled, clientId, renderGoogleButton]);
 
   // Repaint Google's button for the new scheme only — GSI was already
   // initialized, so this neither re-initializes nor re-triggers the prompt.
