@@ -210,4 +210,33 @@ describe("MfaChallengeForm", () => {
 
     expect(screen.queryByRole("button", { name: /reenviar código/i })).not.toBeInTheDocument();
   });
+
+  it("renders the cancel button when onCancel is given", () => {
+    const onSubmit = vi.fn();
+    const onCancel = vi.fn();
+    renderForm({ onSubmit, onCancel });
+
+    const cancel = screen.getByRole("button", { name: /^cancelar$/i });
+    expect(cancel).toBeInTheDocument();
+    expect(cancel).toHaveAttribute("type", "button");
+  });
+
+  it("omits the cancel button when onCancel is omitted", () => {
+    const onSubmit = vi.fn();
+    renderForm({ onSubmit });
+
+    expect(screen.queryByRole("button", { name: /^cancelar$/i })).not.toBeInTheDocument();
+  });
+
+  it("calls onCancel without submitting the form", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const onCancel = vi.fn();
+    renderForm({ onSubmit, onCancel });
+
+    await user.click(screen.getByRole("button", { name: /^cancelar$/i }));
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });

@@ -15,9 +15,10 @@ export const RESEND_COOLDOWN_SECONDS = 30;
 export interface MfaChallengeFormProps {
   onSubmit: (values: MfaChallengeFormValues) => Promise<void>;
   onResend?: () => Promise<void>;
+  onCancel?: () => void;
 }
 
-export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) {
+export function MfaChallengeForm({ onSubmit, onResend, onCancel }: MfaChallengeFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting">("idle");
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -168,6 +169,12 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
             loading={resending}
           >
             {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar código"}
+          </Button>
+        )}
+
+        {onCancel && (
+          <Button type="button" variant="subtle" fullWidth onClick={onCancel}>
+            Cancelar
           </Button>
         )}
       </Stack>
