@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
+import { ApiError } from "@cdorneles/api-client";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -41,11 +42,14 @@ const {
   },
 }));
 
-vi.mock("@cdorneles/auth", () => ({
-  useAuth: useAuthMock,
-  MfaRequiredError: MfaRequiredErrorMock,
-  describeAuthError: vi.fn((e: Error) => e.message),
-}));
+vi.mock("@cdorneles/auth", async () => {
+  const actual = await vi.importActual<typeof import("@cdorneles/auth")>("@cdorneles/auth");
+  return {
+    useAuth: useAuthMock,
+    MfaRequiredError: MfaRequiredErrorMock,
+    describeAuthError: actual.describeAuthError,
+  };
+});
 
 vi.mock("@cdorneles/ui", () => ({
   SessionExpiredDialog: SessionExpiredDialogMock,
@@ -76,6 +80,7 @@ function authState(
       | "service"
       | "refresh"
       | "reauthenticate"
+      | "completeReauthMfa"
       | "loginWithOneTap"
       | "logout",
       unknown
@@ -95,6 +100,34 @@ function authState(
       listMfaFactors: vi.fn().mockResolvedValue({ totp: true, email: false }),
     },
     ...overrides,
+  };
+}
+
+async function openMfaDialog(overrides: Parameters<typeof authState>[0] = {}) {
+  useAuthMock.mockReturnValue(
+    authState({
+      sessionState: "expired",
+      user: { email: "user@example.com" },
+      reauthenticate: vi.fn().mockRejectedValue(new MfaRequiredErrorMock()),
+      service: {
+        createMfaChallenge: vi.fn().mockResolvedValue({ challengeId: "ch1", factor: "totp" }),
+        listMfaFactors: vi.fn().mockResolvedValue({ totp: true, email: false }),
+      },
+      ...overrides,
+    }),
+  );
+  render(<SessionExpiredGate />);
+
+  const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+    onSubmit: (password: string) => Promise<void>;
+  };
+  await act(async () => {
+    await dialogProps.onSubmit("secret").catch(() => {});
+  });
+
+  await waitFor(() => expect(SessionExpiredMfaDialogMock).toHaveBeenCalled());
+  return SessionExpiredMfaDialogMock.mock.calls.at(-1)?.[0] as {
+    onSubmit: (values: { code: string }) => Promise<void>;
   };
 }
 
@@ -684,5 +717,31 @@ describe("SessionExpiredGate", () => {
     await expect(dialogProps.onSubmit("secret")).rejects.toThrow(
       "Erro ao iniciar a verificação em duas etapas.",
     );
+  });
+
+  it("rejects an invalid MFA code with a specific Portuguese message", async () => {
+    const apiError = new ApiError("Invalid token passed in the request.", {
+      code: "user_invalid_token",
+      status: 401,
+    });
+    const mfaProps = await openMfaDialog({
+      completeReauthMfa: vi.fn().mockRejectedValue(apiError),
+    });
+
+    await expect(mfaProps.onSubmit({ code: "000000" })).rejects.toThrow(
+      "Código inválido ou expirado. Solicite um novo código.",
+    );
+    await expect(mfaProps.onSubmit({ code: "000000" })).rejects.not.toThrow(
+      "Invalid token passed in the request.",
+    );
+  });
+
+  it("rejects an unknown MFA failure with the generic Portuguese message", async () => {
+    const mfaProps = await openMfaDialog({
+      completeReauthMfa: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+
+    await expect(mfaProps.onSubmit({ code: "000000" })).rejects.toThrow("Código inválido.");
+    await expect(mfaProps.onSubmit({ code: "000000" })).rejects.not.toThrow("boom");
   });
 });

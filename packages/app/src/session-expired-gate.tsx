@@ -98,10 +98,14 @@ export function SessionExpiredGate() {
   const handleMfa = useCallback(
     async (values: MfaChallengeFormValues) => {
       if (!challengeId) return;
-      await cancelStaleRequests(queryClient);
-      await completeReauthMfa({ challengeId, code: values.code });
-      window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
-      finish();
+      try {
+        await cancelStaleRequests(queryClient);
+        await completeReauthMfa({ challengeId, code: values.code });
+        window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
+        finish();
+      } catch (error) {
+        throw new Error(describeAuthError(error, "Código inválido."), { cause: error });
+      }
     },
     [challengeId, queryClient, completeReauthMfa, finish],
   );

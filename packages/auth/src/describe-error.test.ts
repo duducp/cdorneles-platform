@@ -47,6 +47,21 @@ describe("describeAuthError", () => {
     expect(describeAuthError(error)).toBe("Esta conta Google não corresponde à sua conta.");
   });
 
+  it("maps an invalid MFA token to a specific message", () => {
+    const error = new ApiError("Invalid token passed in the request.", {
+      code: "user_invalid_token",
+      status: 401,
+    });
+    expect(describeAuthError(error, "Código inválido.")).toBe(
+      "Código inválido ou expirado. Solicite um novo código.",
+    );
+  });
+
+  it("uses the provided fallback for an unknown error", () => {
+    const error = new ApiError("odd", { code: "weird_thing", status: 500 });
+    expect(describeAuthError(error, "Código inválido.")).toBe("Código inválido.");
+  });
+
   it("falls back for an unknown error", () => {
     expect(describeAuthError(new Error("boom"))).toBe("Não foi possível entrar. Tente novamente.");
     expect(describeAuthError(new ApiError("odd", { code: "weird_thing", status: 500 }))).toBe(

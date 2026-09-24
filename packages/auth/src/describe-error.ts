@@ -28,6 +28,8 @@ export function describeAuthError(
         return "Verifique os dados informados.";
       case "account_mismatch":
         return "Esta conta Google não corresponde à sua conta.";
+      case "user_invalid_token":
+        return "Código inválido ou expirado. Solicite um novo código.";
       case "general_rate_limit_exceeded":
         return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
       default:
