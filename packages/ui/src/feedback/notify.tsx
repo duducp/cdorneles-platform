@@ -39,8 +39,9 @@ export interface NotifyOptions {
   /** Override the default duration for this kind. `false` keeps it open. */
   autoClose?: number | false;
   /**
-   * Stable id. Re-showing an id that is already visible is a no-op, so this is
-   * safe under repeated renders; it also lets `notifyHide` target the toast.
+   * Stable id. Re-showing an id that is already visible updates that toast in
+   * place instead of stacking a duplicate, so it is safe under repeated
+   * renders; it also lets `notifyHide` target the toast.
    */
   id?: string;
   /** Extra content below the message, e.g. an action button. */

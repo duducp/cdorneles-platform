@@ -470,7 +470,7 @@ describe("session state", () => {
     }
   });
 
-  it("does not label an already-expired session as expiring", async () => {
+  it("reports an already-expired session as active", async () => {
     const service = createMockService({
       getSession: vi
         .fn()
@@ -491,7 +491,7 @@ describe("session state", () => {
     );
   });
 
-  it("labels a session inside the warning window as expiring", async () => {
+  it("keeps a session inside the warning window active", async () => {
     const service = createMockService({
       getSession: vi
         .fn()
@@ -507,8 +507,10 @@ describe("session state", () => {
       </AuthProvider>,
     );
 
+    // The about-to-expire step lives on `expiryWarning`; `sessionState` only
+    // tracks validity, so an in-window session stays active.
     await waitFor(() =>
-      expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:expiring"),
+      expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:active"),
     );
   });
 
@@ -793,6 +795,35 @@ describe("expiry warning", () => {
       await vi.advanceTimersByTimeAsync(60_000);
     });
     expect(current().expiryWarning).toBe("5m");
+  });
+
+  it("clears the warning once the session expires", async () => {
+    vi.useFakeTimers();
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValue(
+          createMockSession({ expiresAt: new Date(Date.now() + 60_000).toISOString() }),
+        ),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await flushMicrotasks();
+
+    // Born inside the 5-minute window: the warning is already showing.
+    expect(current().expiryWarning).toBe("5m");
+
+    // Past the deadline the warning must drop, without waiting for the poll.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
+    expect(current().expiryWarning).toBe("none");
   });
 
   it("reschedules from the new expiry when the session is renewed", async () => {

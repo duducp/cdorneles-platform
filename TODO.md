@@ -105,8 +105,8 @@ capabilities. No business modules yet.
 - [x] Wire `usePermissions()` into all 4 app providers (replaces empty grants).
 - [x] Add Next.js middleware for cookie-based route protection.
 - [x] Session expiry handling: AuthProvider polls session validity every 4 min
-      against the server and reports `sessionState`
-      (`active`/`expiring`/`expired`); a session that dies while the app is
+      against the server and reports `sessionState` (`active`/`expired`);
+      a session that dies while the app is
       running keeps the page (no navigation). A bootstrap that finds the session
       cookie present but no server session redirects to `/login`, except on
       public auth routes (`/login`, `/mfa`, `/forgot-password`,

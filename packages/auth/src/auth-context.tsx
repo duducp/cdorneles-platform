@@ -92,20 +92,13 @@ function hasSessionCookie(): boolean {
   });
 }
 
-function isExpiringSoon(expiresAt: string): boolean {
-  const delta = new Date(expiresAt).getTime() - Date.now();
-  // A timestamp already in the past is gone, not "about to expire".
-  return delta > 0 && delta <= WARNING_5M_MS;
-}
-
 /**
  * Where the session stands.
  *
- * - `active`   — valid
- * - `expiring` — still valid, dies within five minutes; the toast warns
- * - `expired`  — gone while the app was running; the dialog asks for the password
+ * - `active`  — valid
+ * - `expired` — gone while the app was running; the dialog asks for the password
  */
-export type SessionState = "active" | "expiring" | "expired";
+export type SessionState = "active" | "expired";
 
 export interface AuthContextValue {
   service: AuthService;
@@ -152,7 +145,8 @@ export interface AuthProviderProps {
  *
  * - Bootstraps session on mount via `refresh()`
  * - Polls session validity every 4 minutes
- * - Reports `sessionState`: `expiring` within 5 minutes, `expired` once gone
+ * - Reports `sessionState`: `expired` once the session is gone; the
+ *   about-to-expire steps are reported through `expiryWarning` instead
  * - Redirects to `/login` only on bootstrap, when the session cookie was
  *   present but the server session is gone. A session that dies while the app
  *   is running stays on the page and is reported through `sessionState`.
@@ -252,7 +246,7 @@ export function AuthProvider({
       setStatus(isAuth ? "authenticated" : "anonymous");
       if (isAuth) {
         setSessionCookie();
-        setSessionState(isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active");
+        setSessionState("active");
       } else {
         setSessionState("active");
         clearSessionCookie();
@@ -362,7 +356,7 @@ export function AuthProvider({
         return;
       }
       setSession(nextSession);
-      setSessionState(isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active");
+      setSessionState("active");
     }, SESSION_POLL_INTERVAL);
 
     return () => {
@@ -379,16 +373,21 @@ export function AuthProvider({
   // marks. The crossing rule: only emit "15m" when the 15-minute mark is
   // actually crossed while watching. A session born inside the window (e.g. a
   // short-lived one) never observed that crossing, so it goes straight to "5m".
-  // Re-running on `expiresAt` makes a renewal reschedule from the new expiry and
-  // a logout return to "none".
+  // Depend on the whole `session`: a renewal (new expiry) or logout (null)
+  // must reschedule, while the poll's identity-only refresh (a fresh object
+  // with the same expiry every 4 minutes) must not. The crossing flag therefore
+  // lives in refs keyed by `expiresAt` and only resets when the expiry itself
+  // changes; each run re-derives the warning from the current position.
+  const lastExpiryKeyRef = useRef<string | undefined>(undefined);
+  const crossed15mRef = useRef(false);
   useEffect(() => {
     const expiresAt = session?.expiresAt;
-    if (!expiresAt) {
-      setExpiryWarning("none");
-      return;
+    if (lastExpiryKeyRef.current !== expiresAt) {
+      lastExpiryKeyRef.current = expiresAt;
+      crossed15mRef.current = false;
     }
 
-    const deadline = new Date(expiresAt).getTime();
+    const deadline = expiresAt ? new Date(expiresAt).getTime() : Number.NaN;
     if (!Number.isFinite(deadline)) {
       setExpiryWarning("none");
       return;
@@ -400,14 +399,27 @@ export function AuthProvider({
       return;
     }
 
+    if (remaining <= WARNING_5M_MS) {
+      crossed15mRef.current = true;
+      setExpiryWarning("5m");
+    } else if (remaining <= WARNING_15M_MS) {
+      // Inside the 15-minute window: keep the warning only if this expiry was
+      // observed crossing the mark; otherwise stay silent.
+      setExpiryWarning(crossed15mRef.current ? "15m" : "none");
+    } else {
+      setExpiryWarning("none");
+    }
+
     const timers = new Set<ReturnType<typeof setTimeout>>();
 
     // Arm a single threshold crossing. The wait is recomputed each time so a
     // capped (long) wait re-arms instead of firing early, and the warning only
-    // lands once the deadline actually reaches the threshold.
+    // lands once the deadline actually reaches the threshold. Observing the
+    // 15-minute mark records the crossing so later re-runs keep the warning.
     const armCrossing = (thresholdMs: number, warning: ExpiryWarning) => {
       const delay = deadline - Date.now() - thresholdMs;
       if (delay <= 0) {
+        if (warning === "15m") crossed15mRef.current = true;
         setExpiryWarning(warning);
         return;
       }
@@ -419,24 +431,25 @@ export function AuthProvider({
     };
 
     if (remaining > WARNING_15M_MS) {
-      setExpiryWarning("none");
       armCrossing(WARNING_15M_MS, "15m");
-    } else if (remaining > WARNING_5M_MS) {
-      // Inside the 15-minute window without having crossed it: stay silent.
-      setExpiryWarning("none");
-    } else {
-      setExpiryWarning("5m");
     }
 
     if (remaining > WARNING_5M_MS) {
       armCrossing(WARNING_5M_MS, "5m");
     }
 
+    // The deadline itself: drop the warning the moment the session dies
+    // instead of waiting for the next poll to notice.
+    const deadlineTimer = setTimeout(() => {
+      setExpiryWarning("none");
+    }, Math.min(remaining, MAX_TIMEOUT_MS));
+    timers.add(deadlineTimer);
+
     return () => {
       for (const timer of timers) clearTimeout(timer);
       timers.clear();
     };
-  }, [session?.expiresAt]);
+  }, [session]);
 
   // Every successful credential exchange lands here: one place decides what a
   // fresh identity means for session, user, status, cookie and dialog state.
@@ -503,7 +516,7 @@ export function AuthProvider({
     try {
       const nextSession = await service.renewSession();
       setSession(nextSession);
-      setSessionState(isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active");
+      setSessionState("active");
       return nextSession;
     } catch (error) {
       // A dead session cannot be extended. Move the provider to "expired" so the
