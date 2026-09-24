@@ -30,7 +30,6 @@ import { FunctionsApiProvider } from "./functions-api-context";
 import { initObservability } from "./observability";
 import { SessionExpiredGate } from "./session-expired-gate";
 import { SessionExpiryNotice } from "./session-expiry-notice";
-import { UserCacheGuard } from "./user-cache-guard";
 
 function ThemeBranding({ children }: { children: ReactNode }) {
   const { branding } = useTenant();
@@ -148,11 +147,16 @@ export function createProviders({ applicationId, observability }: CreateProvider
 
     return (
       <AppProvider queryClient={queryClient} organizationDefault="light">
-        <AuthProvider service={authService} sessionSignal={sessionSignal}>
+        {/* `queryClient.clear()` drops queries and mutations alike, so a
+            different account never reads the previous one's cached data. */}
+        <AuthProvider
+          service={authService}
+          sessionSignal={sessionSignal}
+          onUserChange={() => queryClient.clear()}
+        >
           <AppNotifications />
           <SessionExpiryNotice />
           <SessionExpiredGate />
-          <UserCacheGuard />
           {tenantService ? (
             <TenantBridge tenantService={tenantService}>{tenantContent}</TenantBridge>
           ) : (

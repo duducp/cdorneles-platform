@@ -57,7 +57,9 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <AppProvider queryClient={queryClient} organizationDefault="light">
-      <AuthProvider service={authService}>
+      {/* Drop per-user caches at the identity transition; `clear()` also
+          clears mutations. */}
+      <AuthProvider service={authService} onUserChange={() => queryClient.clear()}>
         <AppNotifications />
         <SessionExpiredGate />
         {tenantService ? (

@@ -257,6 +257,49 @@ describe("AuthProvider", () => {
   });
 });
 
+describe("onUserChange", () => {
+  it("fires on the identity transition at login and logout, but not on a same-user refresh", async () => {
+    const onUserChange = vi.fn();
+    const service = createMockService({
+      // Bootstrap resolves anonymous; the later refresh resolves the same user.
+      getSession: vi.fn().mockResolvedValueOnce(null).mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      login: vi.fn().mockResolvedValue(createMockSession()),
+      logout: vi.fn().mockResolvedValue(undefined),
+    });
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service} onUserChange={onUserChange}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("anonymous"));
+    expect(onUserChange).not.toHaveBeenCalled();
+
+    // The callback fires from the transition itself as login resolves, before
+    // any effect could run — not from a passive effect watching `user`.
+    await act(async () => {
+      await current().login({ email: "a@b.c", password: "pass" });
+    });
+    expect(onUserChange).toHaveBeenCalledTimes(1);
+    expect(onUserChange).toHaveBeenCalledWith(null, "u1");
+
+    // A refresh of the SAME identity is not a transition.
+    onUserChange.mockClear();
+    await act(async () => {
+      await current().refresh();
+    });
+    expect(onUserChange).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await current().logout();
+    });
+    expect(onUserChange).toHaveBeenCalledTimes(1);
+    expect(onUserChange).toHaveBeenCalledWith("u1", null);
+  });
+});
+
 function stubLocation(pathname: string) {
   let href = "";
   Object.defineProperty(window, "location", {

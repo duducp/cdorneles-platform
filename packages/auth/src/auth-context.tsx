@@ -119,6 +119,12 @@ export interface AuthProviderProps {
   loginPath?: string;
   /** Carries a 401 seen by the query client. */
   sessionSignal?: SessionSignal;
+  /**
+   * Fired synchronously whenever the authenticated identity changes (login,
+   * logout, or a different user), before the new state is committed. Use it to
+   * drop per-user caches so another account never reads the previous one's data.
+   */
+  onUserChange?: (previousUserId: string | null, nextUserId: string | null) => void;
 }
 
 /**
@@ -138,6 +144,7 @@ export function AuthProvider({
   initialSession = null,
   loginPath = "/login",
   sessionSignal,
+  onUserChange,
 }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(initialUser);
   const [session, setSession] = useState<AuthSession | null>(initialSession);
@@ -148,6 +155,23 @@ export function AuthProvider({
   const [status, setStatus] = useState<AuthStatus>(initialUser ? "authenticated" : "loading");
   const [sessionState, setSessionState] = useState<SessionState>("active");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // The identity transitions through a handful of paths (login, a restored
+  // bootstrap session, logout, a cleared identity). The callback that drops
+  // per-user caches fires on the transition itself, synchronously, rather than
+  // from a passive effect one render later. Keep the latest callback in a ref
+  // so it never forces those paths to change identity, and track the committed
+  // id so a same-user refresh is a no-op.
+  const onUserChangeRef = useRef(onUserChange);
+  onUserChangeRef.current = onUserChange;
+  const currentUserIdRef = useRef<string | null>(initialUser?.id ?? null);
+
+  const commitUserId = useCallback((nextUserId: string | null) => {
+    const previousUserId = currentUserIdRef.current;
+    if (previousUserId === nextUserId) return;
+    currentUserIdRef.current = nextUserId;
+    onUserChangeRef.current?.(previousUserId, nextUserId);
+  }, []);
 
   const redirectToLogin = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -179,6 +203,7 @@ export function AuthProvider({
       setUser(null);
       setStatus("anonymous");
       setSessionState("active");
+      commitUserId(null);
       const expected = hasSessionCookie();
       clearSessionCookie();
       if (expected) {
@@ -201,6 +226,7 @@ export function AuthProvider({
       const nextUser = await service.getCurrentUser();
       setSession(nextSession);
       setUser(nextUser);
+      commitUserId(nextUser?.id ?? null);
       const isAuth = !!nextUser;
       setStatus(isAuth ? "authenticated" : "anonymous");
       if (isAuth) {
@@ -216,6 +242,7 @@ export function AuthProvider({
         setUser(null);
         setStatus("anonymous");
         setSessionState("active");
+        commitUserId(null);
         clearSessionCookie();
         redirectToMfa();
         return;
@@ -232,9 +259,10 @@ export function AuthProvider({
       setUser(null);
       setStatus("anonymous");
       setSessionState("active");
+      commitUserId(null);
       clearSessionCookie();
     }
-  }, [service, redirectToLogin, redirectToMfa]);
+  }, [service, redirectToLogin, redirectToMfa, commitUserId]);
 
   // Bootstrap session on mount
   useEffect(() => {
@@ -331,6 +359,7 @@ export function AuthProvider({
     (nextSession: AuthSession, nextUser: AuthUser | null) => {
       setSession(nextSession);
       setUser(nextUser);
+      commitUserId(nextUser?.id ?? null);
       setStatus(nextUser ? "authenticated" : "anonymous");
       setSessionState("active");
       if (nextUser) setSessionCookie();
@@ -341,7 +370,7 @@ export function AuthProvider({
       suppressExpiredUntilRef.current = Date.now() + SIGNAL_SUPPRESSION_MS;
       sessionGenerationRef.current += 1;
     },
-    [],
+    [commitUserId],
   );
 
   // Shared tail for every credential exchange: fetch the user for the freshly
@@ -408,10 +437,11 @@ export function AuthProvider({
       setUser(null);
       setStatus("anonymous");
       setSessionState("active");
+      commitUserId(null);
       clearSessionCookie();
       suppressExpiredUntilRef.current = 0;
     },
-    [service],
+    [service, commitUserId],
   );
 
   const value = useMemo<AuthContextValue>(

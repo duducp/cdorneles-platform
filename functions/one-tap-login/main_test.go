@@ -343,6 +343,9 @@ func TestMainAllowsAbsentExpectedUserID(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Fatalf("expected 200 when expectedUserId is absent, got %d (%s)", resp.StatusCode, resp.Body)
 	}
+	if ops.tokenCalls != 1 {
+		t.Fatalf("expected exactly one login token when expectedUserId is absent, got %d", ops.tokenCalls)
+	}
 }
 
 // A whitespace-only expectedUserId carries no binding and is treated as absent.
@@ -358,6 +361,9 @@ func TestMainTreatsWhitespaceExpectedUserIDAsAbsent(t *testing.T) {
 	resp := handle(newContext(`{"idToken":"x","expectedUserId":"   "}`), ops)
 	if resp.StatusCode != 200 {
 		t.Fatalf("expected 200 when expectedUserId is whitespace-only, got %d (%s)", resp.StatusCode, resp.Body)
+	}
+	if ops.tokenCalls != 1 {
+		t.Fatalf("expected exactly one login token when expectedUserId is whitespace-only, got %d", ops.tokenCalls)
 	}
 }
 

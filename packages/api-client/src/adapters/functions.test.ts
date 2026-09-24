@@ -318,6 +318,21 @@ describe("createFunctionsApi one-tap login", () => {
     expect(result).toEqual({ userId: "u1", secret: "the-secret" });
   });
 
+  it("forwards expectedUserId for a re-authentication request", async () => {
+    mockExecution(JSON.stringify({ userId: "u1", secret: "the-secret" }));
+    const api = createFunctionsApi(client);
+
+    await api.oneTapLogin({ idToken: "jwt", expectedUserId: "u1" });
+
+    expect(mocks.functions.createExecution).toHaveBeenCalledWith({
+      functionId: "one-tap-login",
+      body: JSON.stringify({ idToken: "jwt", expectedUserId: "u1" }),
+      async: false,
+      xpath: undefined,
+      method: "POST",
+    });
+  });
+
   it("throws the one-tap-login error reason", async () => {
     mockExecution(JSON.stringify({ error: "unknown_email", reason: "no platform user" }));
     const api = createFunctionsApi(client);
