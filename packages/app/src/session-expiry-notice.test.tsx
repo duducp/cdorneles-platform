@@ -25,10 +25,10 @@ const { SessionExpiryNotice } = await import("./session-expiry-notice");
 const NOTICE_ID = "session-expiring";
 
 function authState(
-  overrides: Partial<Record<"sessionState" | "status" | "renewSession", unknown>> = {},
+  overrides: Partial<Record<"expiryWarning" | "status" | "renewSession", unknown>> = {},
 ) {
   return {
-    sessionState: "active",
+    expiryWarning: "none",
     status: "authenticated",
     // The real contract returns a Promise; a bare vi.fn() would return
     // undefined and the button handler's `.catch` would throw.
@@ -42,22 +42,33 @@ describe("SessionExpiryNotice", () => {
     vi.clearAllMocks();
   });
 
-  it("warns, without auto-closing, while the session is expiring", () => {
-    useAuthMock.mockReturnValue(authState({ sessionState: "expiring" }));
+  it("warns with the 15-minute text without auto-closing", () => {
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "15m" }));
 
     render(<SessionExpiryNotice />);
 
     expect(notifyInfoMock).toHaveBeenCalledTimes(1);
     const [message, options] = notifyInfoMock.mock.calls[0];
-    expect(message).toMatch(/expira/i);
+    expect(message).toBe("Sua sessão expira em 15 minutos.");
     expect(options.id).toBe(NOTICE_ID);
     expect(options.autoClose).toBe(false);
     expect(options.action).toBeTruthy();
   });
 
+  it("steps down to the 5-minute text under the same toast id", () => {
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "5m" }));
+
+    render(<SessionExpiryNotice />);
+
+    expect(notifyInfoMock).toHaveBeenCalledTimes(1);
+    const [message, options] = notifyInfoMock.mock.calls[0];
+    expect(message).toBe("Sua sessão expira em 5 minutos.");
+    expect(options.id).toBe(NOTICE_ID);
+  });
+
   it("renews the session when the action is pressed", () => {
     const renewSession = vi.fn().mockResolvedValue(undefined);
-    useAuthMock.mockReturnValue(authState({ sessionState: "expiring", renewSession }));
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "5m", renewSession }));
 
     render(<SessionExpiryNotice />);
 
@@ -70,7 +81,7 @@ describe("SessionExpiryNotice", () => {
 
   it("surfaces a non-401 renewal failure to the user", async () => {
     const renewSession = vi.fn().mockRejectedValue(new Error("boom"));
-    useAuthMock.mockReturnValue(authState({ sessionState: "expiring", renewSession }));
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "5m", renewSession }));
 
     render(<SessionExpiryNotice />);
 
@@ -96,7 +107,7 @@ describe("SessionExpiryNotice", () => {
         calls += 1;
         return Promise.reject(new ApiError("no", { status: 401 }));
       };
-      useAuthMock.mockReturnValue(authState({ sessionState: "expiring", renewSession }));
+      useAuthMock.mockReturnValue(authState({ expiryWarning: "15m", renewSession }));
 
       render(<SessionExpiryNotice />);
 
@@ -119,8 +130,8 @@ describe("SessionExpiryNotice", () => {
     }
   });
 
-  it("stays silent while the session is healthy", () => {
-    useAuthMock.mockReturnValue(authState());
+  it("stays silent and clears the toast while no warning is active", () => {
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "none" }));
 
     render(<SessionExpiryNotice />);
 
@@ -129,19 +140,20 @@ describe("SessionExpiryNotice", () => {
   });
 
   it("does not warn an anonymous visitor", () => {
-    useAuthMock.mockReturnValue(authState({ sessionState: "expiring", status: "anonymous" }));
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "15m", status: "anonymous" }));
 
     render(<SessionExpiryNotice />);
 
     expect(notifyInfoMock).not.toHaveBeenCalled();
+    expect(notifyHideMock).toHaveBeenCalledWith(NOTICE_ID);
   });
 
   it("clears the warning once the session is renewed", () => {
-    useAuthMock.mockReturnValue(authState({ sessionState: "expiring" }));
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "15m" }));
     const { rerender } = render(<SessionExpiryNotice />);
     expect(notifyInfoMock).toHaveBeenCalledTimes(1);
 
-    useAuthMock.mockReturnValue(authState());
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "none" }));
     rerender(<SessionExpiryNotice />);
 
     expect(notifyHideMock).toHaveBeenCalledWith(NOTICE_ID);

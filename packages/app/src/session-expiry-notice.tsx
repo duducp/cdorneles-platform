@@ -11,26 +11,25 @@ const NOTICE_ID = "session-expiring";
 /**
  * Warns that the session is about to expire, with a way to renew it.
  *
- * `AuthProvider` reports the session as `expiring` five minutes before it dies,
- * but nothing consumed it, so the user was signed out with no warning at all.
- * This is the notice it was meant for.
- *
- * The toast is keyed by a stable id and cleared as soon as the state leaves
- * `expiring`, so renewing the session removes it and repeated renders cannot
- * stack duplicates.
+ * `AuthProvider` exposes `expiryWarning`, which steps from `15m` to `5m` as the
+ * session approaches its expiry. The toast is keyed by a stable id, so the
+ * 5-minute step replaces the 15-minute one rather than stacking a second notice,
+ * and it is cleared as soon as the warning returns to `none` (renewal or logout).
  */
 export function SessionExpiryNotice() {
-  const { sessionState, status, renewSession } = useAuth();
+  const { expiryWarning, status, renewSession } = useAuth();
   const renewSessionRef = useRef(renewSession);
   renewSessionRef.current = renewSession;
 
   useEffect(() => {
-    if (sessionState !== "expiring" || status !== "authenticated") {
+    if (expiryWarning === "none" || status !== "authenticated") {
       notifyHide(NOTICE_ID);
       return;
     }
 
-    notifyInfo("Sua sessão expira em alguns minutos.", {
+    const minutes = expiryWarning === "15m" ? "15" : "5";
+
+    notifyInfo(`Sua sessão expira em ${minutes} minutos.`, {
       id: NOTICE_ID,
       title: "Sessão expirando",
       autoClose: false,
@@ -51,7 +50,7 @@ export function SessionExpiryNotice() {
         </Button>
       ),
     });
-  }, [sessionState, status]);
+  }, [expiryWarning, status]);
 
   return null;
 }

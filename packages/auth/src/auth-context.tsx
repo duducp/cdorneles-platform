@@ -37,8 +37,26 @@ const PUBLIC_AUTH_PREFIXES = ["/login", "/mfa", "/forgot-password", "/reset-pass
 /** How often to check session validity (ms). */
 const SESSION_POLL_INTERVAL = 4 * 60 * 1000; // 4 minutes
 
-/** How far before expiry to consider a session "about to expire" (ms). */
-const EXPIRY_WARNING_MS = 5 * 60 * 1000; // 5 minutes
+/** How far before expiry to warn that the session is about to expire (ms). */
+const WARNING_15M_MS = 15 * 60 * 1000; // 15 minutes
+const WARNING_5M_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * The step of the expiry warning currently shown:
+ *
+ * - `none` — more than 15 minutes left, or no live session
+ * - `15m`  — the 15-minute threshold was crossed while watching
+ * - `5m`   — the 5-minute threshold was crossed (or the session was born inside it)
+ */
+export type ExpiryWarning = "none" | "15m" | "5m";
+
+/**
+ * Largest delay `setTimeout` honours. A larger delay overflows the 32-bit timer
+ * and fires ~immediately, which would flash the 5-minute warning for a session
+ * (Appwrite's default is a year) that is nowhere near expiring. Long waits are
+ * therefore capped and re-armed.
+ */
+const MAX_TIMEOUT_MS = 2_147_483_647; // 2^31 - 1 milliseconds (~24.8 days)
 
 /**
  * After a fresh session lands, 401s are ignored for this long (ms). The window
@@ -77,7 +95,7 @@ function hasSessionCookie(): boolean {
 function isExpiringSoon(expiresAt: string): boolean {
   const delta = new Date(expiresAt).getTime() - Date.now();
   // A timestamp already in the past is gone, not "about to expire".
-  return delta > 0 && delta <= EXPIRY_WARNING_MS;
+  return delta > 0 && delta <= WARNING_5M_MS;
 }
 
 /**
@@ -95,6 +113,8 @@ export interface AuthContextValue {
   session: AuthSession | null;
   status: AuthStatus;
   sessionState: SessionState;
+  /** Which expiry warning the UI should show, derived from the session expiry. */
+  expiryWarning: ExpiryWarning;
   login: (input: LoginInput) => Promise<AuthSession>;
   /** Signs in with a Google One Tap ID token and establishes the session. */
   loginWithOneTap: (input: OneTapLoginInput) => Promise<AuthSession>;
@@ -154,6 +174,7 @@ export function AuthProvider({
   // signed out after every reload.
   const [status, setStatus] = useState<AuthStatus>(initialUser ? "authenticated" : "loading");
   const [sessionState, setSessionState] = useState<SessionState>("active");
+  const [expiryWarning, setExpiryWarning] = useState<ExpiryWarning>("none");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // The identity transitions through a handful of paths (login, a restored
@@ -353,6 +374,70 @@ export function AuthProvider({
     };
   }, [status, sessionState, service, markExpired]);
 
+  // Derive the expiry warning from the session's expiry with timers rather than
+  // from the 4-minute poll, which is too coarse to hit the 15- and 5-minute
+  // marks. The crossing rule: only emit "15m" when the 15-minute mark is
+  // actually crossed while watching. A session born inside the window (e.g. a
+  // short-lived one) never observed that crossing, so it goes straight to "5m".
+  // Re-running on `expiresAt` makes a renewal reschedule from the new expiry and
+  // a logout return to "none".
+  useEffect(() => {
+    const expiresAt = session?.expiresAt;
+    if (!expiresAt) {
+      setExpiryWarning("none");
+      return;
+    }
+
+    const deadline = new Date(expiresAt).getTime();
+    if (!Number.isFinite(deadline)) {
+      setExpiryWarning("none");
+      return;
+    }
+
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      setExpiryWarning("none");
+      return;
+    }
+
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+
+    // Arm a single threshold crossing. The wait is recomputed each time so a
+    // capped (long) wait re-arms instead of firing early, and the warning only
+    // lands once the deadline actually reaches the threshold.
+    const armCrossing = (thresholdMs: number, warning: ExpiryWarning) => {
+      const delay = deadline - Date.now() - thresholdMs;
+      if (delay <= 0) {
+        setExpiryWarning(warning);
+        return;
+      }
+      const timer = setTimeout(() => {
+        timers.delete(timer);
+        armCrossing(thresholdMs, warning);
+      }, Math.min(delay, MAX_TIMEOUT_MS));
+      timers.add(timer);
+    };
+
+    if (remaining > WARNING_15M_MS) {
+      setExpiryWarning("none");
+      armCrossing(WARNING_15M_MS, "15m");
+    } else if (remaining > WARNING_5M_MS) {
+      // Inside the 15-minute window without having crossed it: stay silent.
+      setExpiryWarning("none");
+    } else {
+      setExpiryWarning("5m");
+    }
+
+    if (remaining > WARNING_5M_MS) {
+      armCrossing(WARNING_5M_MS, "5m");
+    }
+
+    return () => {
+      for (const timer of timers) clearTimeout(timer);
+      timers.clear();
+    };
+  }, [session?.expiresAt]);
+
   // Every successful credential exchange lands here: one place decides what a
   // fresh identity means for session, user, status, cookie and dialog state.
   const applyAuthenticatedSession = useCallback(
@@ -451,6 +536,7 @@ export function AuthProvider({
       session,
       status,
       sessionState,
+      expiryWarning,
       login,
       loginWithOneTap,
       completeMfa,
@@ -466,6 +552,7 @@ export function AuthProvider({
       session,
       status,
       sessionState,
+      expiryWarning,
       login,
       loginWithOneTap,
       completeMfa,

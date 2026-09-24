@@ -726,6 +726,189 @@ describe("session state", () => {
   });
 });
 
+describe("expiry warning", () => {
+  it("warns at 15 minutes and again at 5 minutes before a long session expires", async () => {
+    vi.useFakeTimers();
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValue(
+          createMockSession({ expiresAt: new Date(Date.now() + 30 * 60_000).toISOString() }),
+        ),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await flushMicrotasks();
+
+    expect(current().status).toBe("authenticated");
+    expect(current().expiryWarning).toBe("none");
+
+    // Cross the 15-minute mark.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15 * 60_000);
+    });
+    expect(current().expiryWarning).toBe("15m");
+
+    // Cross the 5-minute mark.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+    });
+    expect(current().expiryWarning).toBe("5m");
+  });
+
+  it("never emits 15m for a session born inside the 15-minute window", async () => {
+    vi.useFakeTimers();
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValue(
+          createMockSession({ expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() }),
+        ),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await flushMicrotasks();
+    expect(current().expiryWarning).toBe("none");
+
+    // Inside the 15-minute window but still more than 5 minutes out: no crossing
+    // has been observed, so the warning must stay silent (never "15m").
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4 * 60_000);
+    });
+    expect(current().expiryWarning).toBe("none");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(current().expiryWarning).toBe("5m");
+  });
+
+  it("reschedules from the new expiry when the session is renewed", async () => {
+    vi.useFakeTimers();
+    // Track the live session so the poll reflects a renewal instead of reviving
+    // the expired-expiry session it replaced.
+    let activeSession = createMockSession({
+      expiresAt: new Date(Date.now() + 30 * 60_000).toISOString(),
+    });
+    const service = createMockService({
+      getSession: vi.fn().mockImplementation(() => Promise.resolve(activeSession)),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      renewSession: vi.fn().mockImplementation(() => {
+        activeSession = createMockSession({
+          id: "s2",
+          expiresAt: new Date(Date.now() + 30 * 60_000).toISOString(),
+        });
+        return Promise.resolve(activeSession);
+      }),
+    });
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await flushMicrotasks();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15 * 60_000);
+    });
+    expect(current().expiryWarning).toBe("15m");
+
+    // A new expiry is ~30 minutes out again, so the warning resets to "none"
+    // and the old timers are discarded.
+    await act(async () => {
+      await current().renewSession();
+    });
+    expect(current().expiryWarning).toBe("none");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15 * 60_000);
+    });
+    expect(current().expiryWarning).toBe("15m");
+  });
+
+  it("clears the warning on logout", async () => {
+    vi.useFakeTimers();
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValue(
+          createMockSession({ expiresAt: new Date(Date.now() + 30 * 60_000).toISOString() }),
+        ),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      logout: vi.fn().mockResolvedValue(undefined),
+    });
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await flushMicrotasks();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15 * 60_000);
+    });
+    expect(current().expiryWarning).toBe("15m");
+
+    await act(async () => {
+      await current().logout();
+    });
+    expect(current().expiryWarning).toBe("none");
+  });
+
+  it("never schedules a delay beyond the setTimeout 32-bit range", async () => {
+    // A session ~400 days out (Appwrite's default lifetime is around a year)
+    // would overflow setTimeout: the raw delay is clamped to 1ms and fires at
+    // once, flashing a warning the session is nowhere near. Assert the invariant
+    // directly, since fake timers do not reproduce the runtime clamp.
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValue(
+          createMockSession({
+            expiresAt: new Date(Date.now() + 400 * 24 * 60 * 60_000).toISOString(),
+          }),
+        ),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await flushMicrotasks();
+
+    const MAX_TIMEOUT_MS = 2_147_483_647;
+    const delays = setTimeoutSpy.mock.calls.map((call) => Number(call[1] ?? 0));
+    expect(delays.length).toBeGreaterThan(0);
+    for (const delay of delays) {
+      expect(delay).toBeLessThanOrEqual(MAX_TIMEOUT_MS);
+    }
+    // With a safe capped wait that will not fire, the warning stays silent.
+    expect(current().expiryWarning).toBe("none");
+
+    setTimeoutSpy.mockRestore();
+  });
+});
+
 describe("reauthentication", () => {
   it("returns to active after reauthenticating", async () => {
     const service = createMockService({
