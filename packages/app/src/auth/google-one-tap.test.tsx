@@ -139,6 +139,7 @@ describe("GoogleOneTap", () => {
       width: 200,
     });
     expect(renderButtonCalls[0].options.client_id).toBeUndefined();
+    expect(screen.getByTestId("google-button").style.colorScheme).toBe("light");
     expect(onError).not.toHaveBeenCalled();
   });
 
@@ -149,6 +150,7 @@ describe("GoogleOneTap", () => {
     await waitFor(() => expect(renderButtonCalls).toHaveLength(1));
 
     expect(renderButtonCalls[0].options.theme).toBe("filled_black");
+    expect(screen.getByTestId("google-button").style.colorScheme).toBe("dark");
   });
 
   it("re-renders the button with the new theme when the scheme toggles", async () => {
@@ -162,6 +164,7 @@ describe("GoogleOneTap", () => {
 
     await waitFor(() => expect(renderButtonCalls).toHaveLength(2));
     expect(renderButtonCalls[1].options.theme).toBe("filled_black");
+    expect(screen.getByTestId("google-button").style.colorScheme).toBe("dark");
     expect(initCalls).toHaveLength(1);
   });
 

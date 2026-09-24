@@ -187,9 +187,13 @@ export function GoogleOneTap({
       const parent = buttonParentRef?.current;
       if (!parent) return;
 
-      const theme = colorSchemeRef.current === "dark" ? "filled_black" : "outline";
+      const scheme = colorSchemeRef.current === "dark" ? "dark" : "light";
+      const theme = scheme === "dark" ? "filled_black" : "outline";
       const text = buttonTextRef.current ?? "signin_with";
       const last = lastButtonRenderRef.current;
+      // The GSI iframe is cross-origin: its canvas follows the container's
+      // color-scheme, so keep it in sync even when the button is not redrawn.
+      parent.style.colorScheme = scheme;
       if (last && last.theme === theme && last.text === text) return;
 
       parent.replaceChildren();
@@ -201,6 +205,11 @@ export function GoogleOneTap({
         text,
         locale: "pt-BR",
         width: Math.min(Math.max(parent.clientWidth, 200), 400),
+      });
+      // Belt and braces: stop a white iframe canvas from showing through the
+      // rounded corners.
+      parent.querySelectorAll("iframe").forEach((iframe) => {
+        iframe.style.setProperty("background-color", "transparent", "important");
       });
       lastButtonRenderRef.current = { theme, text };
     },
