@@ -11,14 +11,14 @@ import {
 import {
   AuthCard,
   AuthVisual,
+  Button,
   FormError,
   MfaChallengeForm,
   AppVersion,
   Logo,
   ThemeToggle,
 } from "@cdorneles/ui";
-import { Anchor, Flex, Skeleton, Stack, Text } from "@mantine/core";
-import Link from "next/link";
+import { Flex, Skeleton, Stack, Text } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -28,7 +28,7 @@ export interface MfaPageProps {
 }
 
 export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
-  const { service, completeMfa } = useAuth();
+  const { service, completeMfa, logout } = useAuth();
   const router = useRouter();
   const goToApp = useCallback(() => {
     router.replace(resolvePostAuthRedirect(window.location.search));
@@ -100,6 +100,14 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
     }
   }, [service, factor]);
 
+  const handleCancel = useCallback(() => {
+    void logout()
+      .catch(() => undefined)
+      .finally(() => {
+        window.location.href = "/login";
+      });
+  }, [logout]);
+
   if (!canRender) {
     return null;
   }
@@ -126,20 +134,15 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
                     Verificação em duas etapas
                   </Text>
                   <FormError>{error}</FormError>
-                  <Anchor
-                    component={Link}
-                    href="/login"
-                    underline="always"
-                    display="block"
-                    ta="center"
-                  >
-                    Voltar para o login
-                  </Anchor>
+                  <Button type="button" variant="subtle" fullWidth onClick={handleCancel}>
+                    Cancelar
+                  </Button>
                 </Stack>
               ) : (
                 <MfaChallengeForm
                   onSubmit={handleSubmit}
                   onResend={factor === "email" ? handleResend : undefined}
+                  onCancel={handleCancel}
                 />
               )
             }
