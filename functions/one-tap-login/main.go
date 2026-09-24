@@ -41,10 +41,12 @@ const googleCertsURL = "https://www.googleapis.com/oauth2/v3/certs"
 // forced refresh.
 const keysTTL = 12 * time.Hour
 
-// forcedRefreshCooldown bounds how often an unknown kid can force an outbound
-// JWKS refresh. A token's kid is attacker-controlled until the signature is
-// verified, so without a cooldown a stream of arbitrary kids would turn this
-// function into a request amplifier pointed at Google.
+// forcedRefreshCooldown bounds how often an outbound JWKS refresh can happen,
+// covering both the unknown-kid rotation path and the periodic TTL refresh. A
+// token's kid is attacker-controlled until the signature is verified, and a
+// stale cache would otherwise refetch on every request, so without a cooldown
+// either path would turn this function into a request amplifier pointed at
+// Google.
 const forcedRefreshCooldown = 30 * time.Second
 
 // maxJWKSBodyBytes caps how much of the certs response is read, so a hostile
@@ -262,14 +264,19 @@ func (o *appwriteOps) VerifyIDToken(idToken string) (*jwt.Token, error) {
 			}
 			kid, _ := token.Header["kid"].(string)
 			key, fresh := o.cachedKey(kid)
-			if key != nil {
+			if key != nil && fresh {
 				return key, nil
 			}
-			// A fresh cache with an unknown kid is the rotation path, but the
-			// kid is attacker-controlled until the signature is verified: bound
-			// how often it can force an outbound refresh. A genuinely stale
-			// cache is not subject to the cooldown.
-			if fresh && !o.beginForcedRefresh() {
+			// A missing kid on a fresh cache is the rotation path, and a stale
+			// cache needs a periodic refresh; both would call loadKeys. The kid
+			// is attacker-controlled until the signature is verified, so a
+			// single cooldown bounds either. When the cooldown blocks the
+			// refresh, a stale cache may still hold the requested key, which is
+			// served rather than failing the request.
+			if !o.beginForcedRefresh() {
+				if key != nil {
+					return key, nil
+				}
 				return nil, fmt.Errorf("unknown key id %q", kid)
 			}
 			if err := o.loadKeys(); err != nil {
@@ -285,21 +292,20 @@ func (o *appwriteOps) VerifyIDToken(idToken string) (*jwt.Token, error) {
 }
 
 // cachedKey returns the key for kid and whether the cache was fresh. A nil key
-// with a fresh cache means the kid is unknown; a nil key with a stale cache
-// means loadKeys must refresh from Google.
+// with a fresh cache means the kid is unknown; a stale cache still returns any
+// key it holds, so an availability fallback can serve it when a refresh is
+// suppressed.
 func (o *appwriteOps) cachedKey(kid string) (*rsa.PublicKey, bool) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	if o.keys == nil || clock().Sub(o.keysFetchedAt) >= keysTTL {
-		return nil, false
-	}
-	return o.keys[kid], true
+	fresh := o.keys != nil && clock().Sub(o.keysFetchedAt) < keysTTL
+	return o.keys[kid], fresh
 }
 
-// beginForcedRefresh reports whether an unknown-kid refresh is allowed now,
-// recording the attempt so repeated untrusted kids cannot force a fetch on
-// every request. Only a fresh cache reaches this path; a stale cache always
-// refreshes.
+// beginForcedRefresh reports whether an outbound refresh is allowed now,
+// recording the attempt so repeated untrusted kids and stale caches cannot
+// force a fetch on every request. It bounds both the unknown-kid rotation path
+// and the periodic TTL refresh.
 func (o *appwriteOps) beginForcedRefresh() bool {
 	o.mu.Lock()
 	defer o.mu.Unlock()

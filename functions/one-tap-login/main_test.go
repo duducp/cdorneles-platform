@@ -554,6 +554,56 @@ func TestVerifyIDTokenCooldownBoundsForcedRefreshes(t *testing.T) {
 	}
 }
 
+// A stale cache must be subject to the same cooldown as a fresh one: without
+// it, an unknown kid on every request during a Google outage would re-attempt
+// the outbound fetch indefinitely.
+func TestVerifyIDTokenCooldownBoundsRefreshOnStaleCache(t *testing.T) {
+	calls := stubHTTPGet(t, jwksBody(t, "rotated-kid"))
+
+	ops := &appwriteOps{
+		keys:              map[string]*rsa.PublicKey{"known-kid": &testKey.PublicKey},
+		keysFetchedAt:     clock().Add(-(keysTTL + time.Second)),
+		lastForcedRefresh: clock(),
+	}
+
+	if _, err := ops.VerifyIDToken(signedTokenWithKid(t, "attacker-kid")); err == nil {
+		t.Fatal("expected verification to fail for an unknown kid on a stale cache")
+	}
+	if *calls != 0 {
+		t.Fatalf("stale cache unknown kid within the cooldown must not fetch, got %d", *calls)
+	}
+
+	// Once the cooldown has elapsed the same stale cache is allowed one refresh
+	// so a genuine rotation can still be picked up.
+	ops.lastForcedRefresh = clock().Add(-(forcedRefreshCooldown + time.Second))
+	if _, err := ops.VerifyIDToken(signedTokenWithKid(t, "attacker-kid")); err == nil {
+		t.Fatal("expected verification to fail for an unknown kid")
+	}
+	if *calls != 1 {
+		t.Fatalf("expected exactly one refresh after the cooldown on a stale cache, got %d", *calls)
+	}
+}
+
+// A stale cache that still holds the requested kid keeps serving it while the
+// cooldown blocks the refresh: the signature is still verified against a
+// previously-fetched Google key, so availability is preserved.
+func TestVerifyIDTokenServesStaleCachedKeyWhenCooldownBlocks(t *testing.T) {
+	calls := stubHTTPGet(t, jwksBody(t, "rotated-kid"))
+
+	ops := &appwriteOps{
+		keys:              map[string]*rsa.PublicKey{"test-kid": &testKey.PublicKey},
+		keysFetchedAt:     clock().Add(-(keysTTL + time.Second)),
+		lastForcedRefresh: clock(),
+	}
+
+	if _, err := ops.VerifyIDToken(signedTokenWithKid(t, "test-kid")); err != nil {
+		t.Fatalf("expected the stale cached key to verify the token, got %v", err)
+	}
+	if *calls != 0 {
+		t.Fatalf("serving a stale cached key within the cooldown must not fetch, got %d", *calls)
+	}
+}
+
 // Appwrite stores normalised lower-case e-mails, so a mixed-case Google claim
 // must be normalised before the lookup or a real user would fail to match.
 func TestFindUserByEmailQueriesWithNormalisedEmail(t *testing.T) {
