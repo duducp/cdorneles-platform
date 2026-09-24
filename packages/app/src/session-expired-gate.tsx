@@ -183,7 +183,11 @@ export function SessionExpiredGate() {
           errorMessage={googleMessage}
           loading={googleLoading}
           googleResetToken={googleResetToken}
-          google={googleAvailable ? <div ref={googleButtonRef} /> : undefined}
+          google={
+            googleAvailable ? (
+              <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center" }} />
+            ) : undefined
+          }
         />
       )}
     </>

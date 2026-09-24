@@ -151,7 +151,9 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
                 showSignUp={enableSignUp}
                 heading={heading}
                 showGoogle={googleEnabled && !!googleClientId && status === "anonymous"}
-                googleSlot={<div ref={googleButtonRef} />}
+                googleSlot={
+                  <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center" }} />
+                }
                 onForgotPassword={handleForgotPassword}
               />
             }
