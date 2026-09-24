@@ -27,5 +27,15 @@ body::before {
 
 /* Light theme needs a touch more presence for the watermark to read. */
 html[data-mantine-color-scheme="light"] body::before {
-  opacity: 0.7;
+  opacity: 0.5;
+}
+
+/*
+ * Google's button iframe is rebuilt when GSI personalises it (photo, name,
+ * e-mail). Keep its canvas transparent so the card background shows through in
+ * both themes instead of a white rectangle.
+ */
+.google-signin-button iframe {
+  background-color: transparent !important;
+  color-scheme: inherit;
 }

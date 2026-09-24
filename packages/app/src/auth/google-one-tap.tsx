@@ -194,6 +194,9 @@ export function GoogleOneTap({
       // The GSI iframe is cross-origin: its canvas follows the container's
       // color-scheme, so keep it in sync even when the button is not redrawn.
       parent.style.colorScheme = scheme;
+      // Stable hook for the stylesheet rule that keeps the iframe canvas
+      // transparent, including the personalised iframe GSI swaps in later.
+      parent.classList.add("google-signin-button");
       if (last && last.theme === theme && last.text === text) return;
 
       parent.replaceChildren();
