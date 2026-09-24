@@ -1,9 +1,9 @@
 import "@testing-library/jest-dom/vitest";
 
 import { ApiError } from "@cdorneles/api-client";
-import { ThemeProvider } from "@cdorneles/theme";
-import { render, screen, waitFor } from "@testing-library/react";
-import { createRef } from "react";
+import { ThemeProvider, useAppColorScheme } from "@cdorneles/theme";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { createRef, useEffect } from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { GoogleOneTap, describeOneTapError, readIdTokenEmail } from "./google-one-tap";
@@ -50,6 +50,7 @@ function renderOneTap(
     clientId: string;
     buttonParent: boolean;
     buttonText: "signin_with" | "continue_with";
+    colorScheme: "light" | "dark";
     onCredential: (idToken: string) => void;
     onStart: () => void;
   }>,
@@ -59,8 +60,26 @@ function renderOneTap(
   const onStart = vi.fn();
   const buttonParentRef = createRef<HTMLDivElement>();
   const withParent = overrides?.buttonParent ?? true;
+  const initialScheme = overrides?.colorScheme;
+
+  // Surface Mantine's setter so a test can toggle the scheme after mount.
+  const schemeControl: { set: ((scheme: "light" | "dark" | "auto") => void) | null } = {
+    set: null,
+  };
+  function SchemeCapture() {
+    const { setColorScheme } = useAppColorScheme();
+    useEffect(() => {
+      schemeControl.set = setColorScheme;
+    }, [setColorScheme]);
+    return null;
+  }
+
   render(
-    <ThemeProvider>
+    <ThemeProvider
+      organizationDefault={initialScheme}
+      respectSystemPreference={initialScheme ? false : undefined}
+    >
+      <SchemeCapture />
       {withParent ? <div ref={buttonParentRef} data-testid="google-button" /> : null}
       <GoogleOneTap
         clientId={overrides?.clientId ?? "client-id.apps.googleusercontent.com"}
@@ -74,13 +93,23 @@ function renderOneTap(
       />
     </ThemeProvider>,
   );
-  return { onSuccess, onError, onStart, buttonParentRef };
+  return {
+    onSuccess,
+    onError,
+    onStart,
+    buttonParentRef,
+    setColorScheme: (scheme: "light" | "dark" | "auto") => {
+      if (!schemeControl.set) throw new Error("color scheme control is not ready");
+      act(() => schemeControl.set?.(scheme));
+    },
+  };
 }
 
 beforeEach(() => {
   loginWithOneTapMock.mockReset();
   initCalls.length = 0;
   renderButtonCalls.length = 0;
+  localStorage.clear();
   delete (window as unknown as { google?: unknown }).google;
 });
 
@@ -111,6 +140,29 @@ describe("GoogleOneTap", () => {
     });
     expect(renderButtonCalls[0].options.client_id).toBeUndefined();
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("renders the button with the dark theme under a dark scheme", async () => {
+    installGsi();
+    renderOneTap({ colorScheme: "dark" });
+
+    await waitFor(() => expect(renderButtonCalls).toHaveLength(1));
+
+    expect(renderButtonCalls[0].options.theme).toBe("filled_black");
+  });
+
+  it("re-renders the button with the new theme when the scheme toggles", async () => {
+    installGsi();
+    const { setColorScheme } = renderOneTap();
+
+    await waitFor(() => expect(renderButtonCalls).toHaveLength(1));
+    expect(renderButtonCalls[0].options.theme).toBe("outline");
+
+    setColorScheme("dark");
+
+    await waitFor(() => expect(renderButtonCalls).toHaveLength(2));
+    expect(renderButtonCalls[1].options.theme).toBe("filled_black");
+    expect(initCalls).toHaveLength(1);
   });
 
   it("clamps the button width to Google's 200–400 range", async () => {

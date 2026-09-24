@@ -2,7 +2,8 @@
 
 import { isApiError } from "@cdorneles/api-client";
 import { useAuth } from "@cdorneles/auth";
-import { type RefObject, useEffect, useRef } from "react";
+import { useAppColorScheme } from "@cdorneles/theme";
+import { type RefObject, useCallback, useEffect, useRef } from "react";
 
 const GSI_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 
@@ -154,6 +155,7 @@ export function GoogleOneTap({
   buttonText,
 }: GoogleOneTapProps) {
   const { loginWithOneTap } = useAuth();
+  const { colorScheme } = useAppColorScheme();
   const idApiRef = useRef<GsiIdApi | null>(null);
 
   // Keep the latest callbacks/login in refs so the init effect stays stable
@@ -170,6 +172,40 @@ export function GoogleOneTap({
   onStartRef.current = onStart;
   loginWithOneTapRef.current = loginWithOneTap;
   buttonTextRef.current = buttonText;
+
+  // Read the scheme from a ref inside the (stable) render callback so a theme
+  // change repaints the button without re-initializing GSI or re-prompting.
+  const colorSchemeRef = useRef(colorScheme);
+  colorSchemeRef.current = colorScheme;
+
+  // Remembers the last (theme, text) pair drawn so a re-render from an
+  // unrelated cause does not needlessly wipe and redraw Google's iframe.
+  const lastButtonRenderRef = useRef<{ theme: string; text: string } | null>(null);
+
+  const renderGoogleButton = useCallback(
+    (idApi: GsiIdApi) => {
+      const parent = buttonParentRef?.current;
+      if (!parent) return;
+
+      const theme = colorSchemeRef.current === "dark" ? "filled_black" : "outline";
+      const text = buttonTextRef.current ?? "signin_with";
+      const last = lastButtonRenderRef.current;
+      if (last && last.theme === theme && last.text === text) return;
+
+      parent.replaceChildren();
+      idApi.renderButton(parent, {
+        type: "standard",
+        theme,
+        size: "large",
+        shape: "rectangular",
+        text,
+        locale: "pt-BR",
+        width: Math.min(Math.max(parent.clientWidth, 200), 400),
+      });
+      lastButtonRenderRef.current = { theme, text };
+    },
+    [buttonParentRef],
+  );
 
   useEffect(() => {
     if (!enabled || !clientId) return;
@@ -206,19 +242,7 @@ export function GoogleOneTap({
           use_fedcm_for_prompt: true,
         });
 
-        const buttonParent = buttonParentRef?.current;
-        if (buttonParent) {
-          buttonParent.replaceChildren();
-          idApi.renderButton(buttonParent, {
-            type: "standard",
-            theme: "outline",
-            size: "large",
-            shape: "rectangular",
-            text: buttonTextRef.current ?? "signin_with",
-            locale: "pt-BR",
-            width: Math.min(Math.max(buttonParent.clientWidth, 200), 400),
-          });
-        }
+        renderGoogleButton(idApi);
 
         promptTimer = setTimeout(() => {
           if (!cancelled) idApi.prompt();
@@ -234,6 +258,13 @@ export function GoogleOneTap({
       if (promptTimer) clearTimeout(promptTimer);
     };
   }, [enabled, clientId]);
+
+  // Repaint Google's button for the new scheme only — GSI was already
+  // initialized, so this neither re-initializes nor re-triggers the prompt.
+  useEffect(() => {
+    const idApi = idApiRef.current;
+    if (idApi) renderGoogleButton(idApi);
+  }, [colorScheme, renderGoogleButton]);
 
   return null;
 }
