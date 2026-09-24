@@ -1,9 +1,8 @@
 "use client";
 
 import { mfaChallengeSchema, type MfaChallengeFormValues } from "@cdorneles/schemas";
-import { Box, Button, Stack, Text, TextInput } from "@mantine/core";
+import { Box, Button, PinInput, Stack, Text } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { KeyRoundIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { FormError } from "../components/form-error";
@@ -115,18 +114,32 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
       </Stack>
 
       <Stack gap="md" mt="lg">
-        <TextInput
-          label="Código de verificação"
-          placeholder="000000"
-          required
-          maxLength={6}
-          inputMode="numeric"
-          pattern="[0-9]*"
-          leftSection={<KeyRoundIcon size={16} aria-hidden />}
-          aria-invalid={form.errors.code ? true : undefined}
-          aria-describedby={form.errors.code ? "mfa-form-error" : undefined}
-          {...form.getInputProps("code")}
-        />
+        <Box>
+          <Text fw={500} size="sm" mb="xs">
+            Código de verificação
+          </Text>
+          <PinInput
+            length={6}
+            type="number"
+            placeholder=""
+            value={form.values.code}
+            onChange={(value) => form.setFieldValue("code", value)}
+            onComplete={() => {
+              if (status === "submitting") return;
+              void form.onSubmit(handleSubmit)();
+            }}
+            error={Boolean(form.errors.code)}
+            getInputProps={(index) => ({
+              "aria-label": `Código de verificação, dígito ${index + 1} de 6`,
+              ...(form.errors.code ? { "aria-describedby": "mfa-code-error" } : {}),
+            })}
+          />
+          {form.errors.code && (
+            <Text c="red" size="sm" id="mfa-code-error" mt={5}>
+              {form.errors.code}
+            </Text>
+          )}
+        </Box>
 
         <Button type="submit" fullWidth loading={status === "submitting"}>
           Verificar código

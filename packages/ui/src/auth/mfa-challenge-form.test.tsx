@@ -15,12 +15,23 @@ function renderForm(props: Parameters<typeof MfaChallengeForm>[0]) {
   );
 }
 
+function codeInputs(): HTMLElement[] {
+  return screen.getAllByLabelText(/código de verificação/i);
+}
+
+async function typeCode(user: ReturnType<typeof userEvent.setup>, code: string) {
+  await user.click(codeInputs()[0]);
+  await user.keyboard(code);
+}
+
 describe("MfaChallengeForm", () => {
-  it("renders the code input and submit button", () => {
+  it("renders six digit boxes, each individually labelled", () => {
     const onSubmit = vi.fn();
     renderForm({ onSubmit });
 
-    expect(screen.getByLabelText(/código de verificação/i)).toBeInTheDocument();
+    expect(codeInputs()).toHaveLength(6);
+    expect(codeInputs()[0]).toHaveAccessibleName(/código de verificação, dígito 1 de 6/i);
+    expect(codeInputs()[5]).toHaveAccessibleName(/código de verificação, dígito 6 de 6/i);
     expect(screen.getByRole("button", { name: /verificar código/i })).toBeInTheDocument();
   });
 
@@ -35,29 +46,103 @@ describe("MfaChallengeForm", () => {
     expect(screen.getByText(/código de 6 dígitos/i)).toBeInTheDocument();
   });
 
-  it("calls onSubmit with the code", async () => {
+  it("auto-submits exactly once when the sixth digit lands", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     renderForm({ onSubmit });
 
-    await user.type(screen.getByLabelText(/código de verificação/i), "123456");
-    await user.click(screen.getByRole("button", { name: /verificar código/i }));
+    await typeCode(user, "123456");
 
     await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1);
       expect(onSubmit).toHaveBeenCalledWith({ code: "123456" });
     });
+    expect(screen.getByRole("button", { name: /verificar código/i })).toBeInTheDocument();
   });
 
-  it("shows an error message when onSubmit fails", async () => {
+  it("shows the async error when auto-submit fails", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockRejectedValue(new Error("Código expirado"));
     renderForm({ onSubmit });
 
-    await user.type(screen.getByLabelText(/código de verificação/i), "123456");
-    await user.click(screen.getByRole("button", { name: /verificar código/i }));
+    await typeCode(user, "123456");
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent(/Código expirado/i);
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not resubmit while the value stays unchanged after a failure", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockRejectedValue(new Error("Código inválido"));
+    renderForm({ onSubmit });
+
+    await typeCode(user, "123456");
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/código inválido/i);
+    });
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("resubmits through the button when retrying the same code", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Código expirado"))
+      .mockResolvedValue(undefined);
+    renderForm({ onSubmit });
+
+    await typeCode(user, "123456");
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Código expirado/i);
+    });
+
+    await user.click(screen.getByRole("button", { name: /verificar código/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(2);
+    });
+    expect(onSubmit).toHaveBeenLastCalledWith({ code: "123456" });
+  });
+
+  it("resubmits after the user edits a digit", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Código inválido"))
+      .mockResolvedValue(undefined);
+    renderForm({ onSubmit });
+
+    await typeCode(user, "123456");
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    });
+
+    await user.click(codeInputs()[5]);
+    await user.keyboard("{Backspace}7");
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(2);
+    });
+    expect(onSubmit).toHaveBeenLastCalledWith({ code: "123457" });
+  });
+
+  it("accepts a pasted full code and auto-submits", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    renderForm({ onSubmit });
+
+    await user.click(codeInputs()[0]);
+    await user.paste("123456");
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({ code: "123456" });
     });
   });
 

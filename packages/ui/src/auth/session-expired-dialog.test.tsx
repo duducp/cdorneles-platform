@@ -10,7 +10,7 @@ import { SessionExpiredDialog, SessionExpiredMfaDialog } from "./session-expired
 // The required marker (" *") is part of the label text, and the visibility
 // toggle's aria-label also mentions "senha", so scope the query to the input.
 const passwordField = () => screen.getByLabelText(/senha/i, { selector: "input" });
-const codeField = () => screen.getByLabelText(/código de verificação/i, { selector: "input" });
+const codeInputs = () => screen.getAllByLabelText(/código de verificação/i, { selector: "input" });
 
 function renderDialog(props: Partial<Parameters<typeof SessionExpiredDialog>[0]> = {}) {
   const onSubmit = vi.fn().mockResolvedValue(undefined);
@@ -176,9 +176,11 @@ describe("SessionExpiredMfaDialog", () => {
     await userEvent.keyboard("{Escape}");
     expect(screen.getByRole("button", { name: /entrar com outra conta/i })).toBeInTheDocument();
 
-    await userEvent.type(codeField(), "123456");
-    await userEvent.click(screen.getByRole("button", { name: "Verificar código" }));
+    await userEvent.click(codeInputs()[0]);
+    await userEvent.keyboard("123456");
 
-    expect(onSubmit).toHaveBeenCalledWith({ code: "123456" });
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({ code: "123456" });
+    });
   });
 });
