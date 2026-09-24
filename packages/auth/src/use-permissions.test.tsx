@@ -104,4 +104,23 @@ describe("usePermissions", () => {
     expect(captured.current?.status).toBe("loading");
     expect(functionsApi.createExecution).not.toHaveBeenCalled();
   });
+
+  it("does not invalidate the grants cache on mount", async () => {
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    const functionsApi = createMockFunctionsApi(
+      JSON.stringify({ permissions: ["organizations.create"], features: [] }),
+    );
+
+    try {
+      const { captured } = renderUsePermissions("org-1", functionsApi);
+
+      await waitFor(() => expect(captured.current?.status).toBe("resolved"));
+
+      // The mount-time effect must not fire an extra invalidate/refetch; the
+      // query key already carries the organization, so the first load is enough.
+      expect(invalidateSpy).not.toHaveBeenCalled();
+    } finally {
+      invalidateSpy.mockRestore();
+    }
+  });
 });

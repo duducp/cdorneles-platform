@@ -3,7 +3,7 @@
 import type { FunctionsApi } from "@cdorneles/api-client";
 import { resolveGrants, type GrantedAccess } from "@cdorneles/permissions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { useAuth } from "./auth-context";
 
@@ -51,9 +51,17 @@ export function usePermissions(
     retry: 1,
   });
 
+  // Track the organization that was last resolved. The query key already
+  // carries the organization, so a change refetches on its own; invalidating
+  // here only exists to drop the previous organization's cached grants. Doing
+  // it on mount would fire an extra invalidate/refetch of the first load.
+  const previousOrganizationIdRef = useRef<string | null | undefined>(undefined);
+
   // Invalidate when organization changes
   useEffect(() => {
-    if (enabled) {
+    const previous = previousOrganizationIdRef.current;
+    previousOrganizationIdRef.current = organizationId;
+    if (enabled && previous !== undefined && previous !== organizationId) {
       queryClient.invalidateQueries({ queryKey: ["grants", user?.id] });
     }
   }, [organizationId, enabled, queryClient, user?.id]);

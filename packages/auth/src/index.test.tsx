@@ -30,7 +30,7 @@ function createFakeService(): AuthService {
     })),
     createMfaChallenge: vi.fn(async () => ({ challengeId: "c1", factor: "email" as const })),
     logout: vi.fn(async () => undefined),
-    getSession: vi.fn(async () => null),
+    getSession: vi.fn(async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" })),
     renewSession: vi.fn(async () => ({
       id: "s1",
       userId: "u1",
@@ -76,7 +76,8 @@ describe("AuthProvider", () => {
     // Starts loading while any existing session is resolved.
     expect(screen.getByTestId("status")).toHaveTextContent("loading");
 
-    // getCurrentUser resolves, so the session is restored without a login.
+    // getSession returns a session and getCurrentUser resolves, so the session
+    // is restored without a login.
     await screen.findByText("user@example.com");
     expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
 

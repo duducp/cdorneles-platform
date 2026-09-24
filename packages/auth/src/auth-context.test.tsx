@@ -427,11 +427,136 @@ describe("session state", () => {
     }
   });
 
+  it("does not label an already-expired session as expiring", async () => {
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValue(
+          createMockSession({ expiresAt: new Date(Date.now() - 60_000).toISOString() }),
+        ),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:active"),
+    );
+  });
+
+  it("labels a session inside the warning window as expiring", async () => {
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockResolvedValue(
+          createMockSession({ expiresAt: new Date(Date.now() + 60_000).toISOString() }),
+        ),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:expiring"),
+    );
+  });
+
+  it("stops polling once the session is known expired", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const getSession = vi.fn().mockResolvedValue(createMockSession());
+    const service = createMockService({
+      getSession,
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    const signal = createSessionSignal();
+    stubLocation("/dashboard");
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await flushMicrotasks();
+    expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:active");
+    const callsBefore = getSession.mock.calls.length;
+
+    await act(async () => {
+      signal.notifyExpired();
+    });
+    expect(screen.getByTestId("probe")).toHaveTextContent("authenticated:expired");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    });
+    expect(getSession.mock.calls.length).toBe(callsBefore);
+  });
+
+  it("ignores a poll that started before a reauthentication and resolves afterwards", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    let resolvePoll!: (value: AuthSession | null) => void;
+    const pollPromise = new Promise<AuthSession | null>((resolve) => {
+      resolvePoll = resolve;
+    });
+    const getSession = vi
+      .fn()
+      .mockResolvedValueOnce(createMockSession())
+      .mockReturnValueOnce(pollPromise);
+    const service = createMockService({
+      getSession,
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      login: vi.fn().mockResolvedValue(createMockSession({ id: "s2" })),
+    });
+    stubLocation("/dashboard");
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await flushMicrotasks();
+    expect(current().status).toBe("authenticated");
+
+    // Fire the poll; its getSession is deliberately left pending.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    });
+    expect(getSession).toHaveBeenCalledTimes(2);
+
+    // Reauthenticate while that poll is still in flight.
+    await act(async () => {
+      await current().reauthenticate({ email: "user@example.com", password: "pw" });
+    });
+    expect(current().sessionState).toBe("active");
+    expect(current().session?.id).toBe("s2");
+
+    // The stale poll now resolves null. It must not expire the fresh session.
+    await act(async () => {
+      resolvePoll(null);
+      await pollPromise;
+    });
+    expect(current().sessionState).toBe("active");
+    expect(current().status).toBe("authenticated");
+  });
+
   it("redirects on bootstrap when a session cookie was present but the session is gone", async () => {
     document.cookie = "cdorneles-session=1";
     const service = createMockService({
       getSession: vi.fn().mockResolvedValue(null),
-      getCurrentUser: vi.fn().mockResolvedValue(null),
+      // The real adapter rethrows a 401 from getCurrentUser (it never resolves
+      // null), so a stale cookie takes this path via a rejection, not a null.
+      getCurrentUser: vi
+        .fn()
+        .mockRejectedValue(new ApiError("session gone", { status: 401, code: "user_unauthorized" })),
     });
     stubLocation("/dashboard");
 
@@ -444,10 +569,52 @@ describe("session state", () => {
     await waitFor(() => expect(window.location.href).toContain("/login"));
   });
 
+  it("signs out on bootstrap when the session resolves but the user check is unauthorized", async () => {
+    document.cookie = "cdorneles-session=1";
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi
+        .fn()
+        .mockRejectedValue(new ApiError("session gone", { status: 401, code: "user_unauthorized" })),
+    });
+    stubLocation("/dashboard");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    // A confirmed 401 is a sign-out, not a transient failure: navigate to login.
+    await waitFor(() => expect(window.location.href).toContain("/login"));
+  });
+
+  it("does not redirect on a transient bootstrap failure even with a cookie", async () => {
+    document.cookie = "cdorneles-session=1";
+    const service = createMockService({
+      getSession: vi.fn().mockRejectedValue(new ApiError("network", { status: 500 })),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    stubLocation("/dashboard");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"));
+    // A failed check (network or server) must not navigate: the session may
+    // still be valid and the next load will find it.
+    expect(window.location.href).toBe("");
+  });
+
   it("does not redirect a truly anonymous visitor on bootstrap", async () => {
     const service = createMockService({
       getSession: vi.fn().mockResolvedValue(null),
-      getCurrentUser: vi.fn().mockResolvedValue(null),
+      getCurrentUser: vi
+        .fn()
+        .mockRejectedValue(new ApiError("session gone", { status: 401, code: "user_unauthorized" })),
     });
     stubLocation("/forgot-password");
 
@@ -465,7 +632,9 @@ describe("session state", () => {
     document.cookie = "cdorneles-session=1";
     const service = createMockService({
       getSession: vi.fn().mockResolvedValue(null),
-      getCurrentUser: vi.fn().mockResolvedValue(null),
+      getCurrentUser: vi
+        .fn()
+        .mockRejectedValue(new ApiError("session gone", { status: 401, code: "user_unauthorized" })),
     });
     stubLocation("/forgot-password");
 
@@ -608,7 +777,7 @@ describe("reauthentication", () => {
     expect(window.location.href).toBe("");
   });
 
-  it("does not reopen the dialog after a stale 401 arrives post-reauthentication", async () => {
+  it("moves back to expired when a fresh 401 arrives after a successful reauthentication", async () => {
     const service = createMockService({
       getSession: vi.fn().mockResolvedValue(createMockSession()),
       getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
@@ -634,14 +803,13 @@ describe("reauthentication", () => {
     });
     expect(current().sessionState).toBe("active");
 
-    // 3. A stale 401 from a request made before reauth arrives now.
+    // 3. The fresh session dies too. This is a second, genuine 401 — not a
+    //    stale request from before reauth — so it must reopen the dialog.
     await act(async () => {
       signal.notifyExpired();
     });
 
-    // 4. The dialog must NOT reopen — sessionState stays "active".
-    //    waitFor ensures React has flushed and the signal handler ran.
-    await waitFor(() => expect(current().sessionState).toBe("active"));
+    await waitFor(() => expect(current().sessionState).toBe("expired"));
   });
 
   it("keeps the session expired when the reauthentication MFA code is rejected", async () => {

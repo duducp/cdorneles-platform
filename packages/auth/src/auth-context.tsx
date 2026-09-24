@@ -40,14 +40,19 @@ const SESSION_POLL_INTERVAL = 4 * 60 * 1000; // 4 minutes
 /** How far before expiry to consider a session "about to expire" (ms). */
 const EXPIRY_WARNING_MS = 5 * 60 * 1000; // 5 minutes
 
+/** `Secure` when served over HTTPS so the hint is not sent in the clear. */
+function sessionCookieSecure(): string {
+  return typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+}
+
 function setSessionCookie(): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${SESSION_COOKIE}=1; path=/; SameSite=Lax; max-age=86400`;
+  document.cookie = `${SESSION_COOKIE}=1; path=/; SameSite=Lax; max-age=86400${sessionCookieSecure()}`;
 }
 
 function clearSessionCookie(): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${SESSION_COOKIE}=; path=/; SameSite=Lax; max-age=0`;
+  document.cookie = `${SESSION_COOKIE}=; path=/; SameSite=Lax; max-age=0${sessionCookieSecure()}`;
 }
 
 function hasSessionCookie(): boolean {
@@ -59,7 +64,9 @@ function hasSessionCookie(): boolean {
 }
 
 function isExpiringSoon(expiresAt: string): boolean {
-  return new Date(expiresAt).getTime() - Date.now() <= EXPIRY_WARNING_MS;
+  const delta = new Date(expiresAt).getTime() - Date.now();
+  // A timestamp already in the past is gone, not "about to expire".
+  return delta > 0 && delta <= EXPIRY_WARNING_MS;
 }
 
 /**
@@ -150,44 +157,71 @@ export function AuthProvider({
 
   const refresh = useCallback(async () => {
     setStatus("loading");
+
+    // A confirmed sign-out: clear identity and the client-side hint. The cookie
+    // is a client-side hint with a 24h max-age, so it can outlive the server
+    // session. If it was present, a session was expected and the fresh load has
+    // landed in a shell with no user: send it to /login. Without it the visitor
+    // is genuinely anonymous (e.g. reading /forgot-password) and must stay put.
+    const applySignedOut = () => {
+      setSession(null);
+      setUser(null);
+      setStatus("anonymous");
+      setSessionState("active");
+      const expected = hasSessionCookie();
+      clearSessionCookie();
+      if (expected) {
+        redirectToLogin();
+      }
+    };
+
     try {
-      const [nextSession, nextUser] = await Promise.all([
-        service.getSession(),
-        service.getCurrentUser(),
-      ]);
+      // Resolve the session before the user. `getCurrentUser` rethrows a 401
+      // rather than resolving null, so joining the two with Promise.all would
+      // reject on a stale cookie before the signed-out branch below could clear
+      // it and redirect.
+      const nextSession = await service.getSession();
+
+      if (!nextSession) {
+        applySignedOut();
+        return;
+      }
+
+      const nextUser = await service.getCurrentUser();
       setSession(nextSession);
       setUser(nextUser);
       const isAuth = !!nextUser;
       setStatus(isAuth ? "authenticated" : "anonymous");
       if (isAuth) {
         setSessionCookie();
-        setSessionState(
-          nextSession && isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active",
-        );
+        setSessionState(isExpiringSoon(nextSession.expiresAt) ? "expiring" : "active");
       } else {
-        // The cookie is a client-side hint with a 24h max-age, so it can outlive
-        // the server session. If it was present, a session was expected and the
-        // fresh load has landed in a shell with no user: send it to /login.
-        // Without it the visitor is genuinely anonymous (e.g. reading
-        // /forgot-password) and must stay put. The catch below is a failed
-        // check (network or server), not a confirmed sign-out, so it does not
-        // navigate.
-        const expected = hasSessionCookie();
-        clearSessionCookie();
         setSessionState("active");
-        if (expected) {
-          redirectToLogin();
-        }
+        clearSessionCookie();
       }
     } catch (error) {
+      if (error instanceof MfaRequiredError) {
+        setSession(null);
+        setUser(null);
+        setStatus("anonymous");
+        setSessionState("active");
+        clearSessionCookie();
+        redirectToMfa();
+        return;
+      }
+      if (isUnauthorized(error)) {
+        // The server confirmed the session is gone — treat it exactly like a
+        // missing session rather than a transient failure.
+        applySignedOut();
+        return;
+      }
+      // A failed check (network or server), not a confirmed sign-out: clear any
+      // partial identity but do not navigate.
       setSession(null);
       setUser(null);
       setStatus("anonymous");
       setSessionState("active");
       clearSessionCookie();
-      if (error instanceof MfaRequiredError) {
-        redirectToMfa();
-      }
     }
   }, [service, redirectToLogin, redirectToMfa]);
 
@@ -203,6 +237,15 @@ export function AuthProvider({
   const userRef = useRef(user);
   userRef.current = user;
 
+  // Armed only while the app is "active" right after a reauthentication: it
+  // suppresses stale 401s from requests made before reauth. It is cleared on
+  // every fresh session (applyAuthenticatedSession) and on logout.
+  const everExpiredRef = useRef(false);
+
+  // Bumped on every fresh session so an in-flight poll started against the
+  // previous session cannot expire the one that replaced it.
+  const sessionGenerationRef = useRef(0);
+
   // The session died while the app was running. Keep the cookie and stay on the
   // page: the dialog restores the session without discarding the React tree.
   const markExpired = useCallback(() => {
@@ -211,6 +254,8 @@ export function AuthProvider({
     if (!userRef.current) return;
     setSessionState("expired");
     setStatus("authenticated");
+    // Only a signal that actually moved the app to "expired" arms suppression.
+    everExpiredRef.current = true;
   }, []);
 
   // Read the latest sessionState without making `markExpired` depend on it: the
@@ -218,19 +263,14 @@ export function AuthProvider({
   const sessionStateRef = useRef(sessionState);
   sessionStateRef.current = sessionState;
 
-  // Track whether the session has ever been expired during this mount. After a
-  // successful reauthentication the state returns to "active", but the signal
-  // subscription must ignore stale 401s from requests made before reauth.
-  const everExpiredRef = useRef(false);
-
   // A 401 from any request reaches the query client, not the auth state.
   useEffect(() => {
     if (!sessionSignal) return;
     return sessionSignal.subscribe(() => {
-      // After a successful reauthentication, sessionState is "active" again. A
-      // stale 401 from a request made before reauth must not reopen the dialog.
+      // While "active" right after a reauthentication, a stale 401 from a
+      // request made before reauth must not reopen the dialog. The flag is
+      // cleared on every fresh session, so a genuine later 401 still expires.
       if (sessionStateRef.current === "active" && everExpiredRef.current) return;
-      everExpiredRef.current = true;
       markExpired();
     });
   }, [sessionSignal, markExpired]);
@@ -239,11 +279,13 @@ export function AuthProvider({
   // the stored expiry locally: a session can be revoked (password changed,
   // signed out elsewhere) long before its timestamp says so.
   useEffect(() => {
-    if (status !== "authenticated") return;
+    // A session known to be dead needs no further checks.
+    if (status !== "authenticated" || sessionState === "expired") return;
 
     let cancelled = false;
 
     pollRef.current = setInterval(async () => {
+      const generation = sessionGenerationRef.current;
       let nextSession: AuthSession | null;
       try {
         nextSession = await service.getSession();
@@ -254,6 +296,9 @@ export function AuthProvider({
       // The effect may have been torn down (unmount, status or service change)
       // while the request was in flight; do not touch state afterwards.
       if (cancelled) return;
+      // A reauthentication replaced the session while this check was in flight;
+      // its result describes the previous session and must be ignored.
+      if (sessionGenerationRef.current !== generation) return;
       if (!nextSession) {
         markExpired();
         return;
@@ -269,7 +314,7 @@ export function AuthProvider({
         pollRef.current = null;
       }
     };
-  }, [status, service, markExpired]);
+  }, [status, sessionState, service, markExpired]);
 
   // Every successful credential exchange lands here: one place decides what a
   // fresh identity means for session, user, status, cookie and dialog state.
@@ -280,38 +325,39 @@ export function AuthProvider({
       setStatus(nextUser ? "authenticated" : "anonymous");
       setSessionState("active");
       if (nextUser) setSessionCookie();
+      // A fresh session disarms the stale-401 suppression and invalidates any
+      // poll started against the session it replaces.
+      everExpiredRef.current = false;
+      sessionGenerationRef.current += 1;
     },
     [],
   );
 
-  const login = useCallback(
-    async (input: LoginInput) => {
-      const nextSession = await service.login(input);
+  // Shared tail for every credential exchange: fetch the user for the freshly
+  // issued session and commit it. `login`/`completeMfa` and their
+  // reauthentication counterparts differ only in which call mints the session.
+  const finishAuthentication = useCallback(
+    async (nextSession: AuthSession) => {
       const nextUser = await service.getCurrentUser();
       applyAuthenticatedSession(nextSession, nextUser);
       return nextSession;
     },
     [service, applyAuthenticatedSession],
+  );
+
+  const login = useCallback(
+    async (input: LoginInput) => finishAuthentication(await service.login(input)),
+    [service, finishAuthentication],
   );
 
   const loginWithOneTap = useCallback(
-    async (input: OneTapLoginInput) => {
-      const nextSession = await service.loginWithOneTap(input);
-      const nextUser = await service.getCurrentUser();
-      applyAuthenticatedSession(nextSession, nextUser);
-      return nextSession;
-    },
-    [service, applyAuthenticatedSession],
+    async (input: OneTapLoginInput) => finishAuthentication(await service.loginWithOneTap(input)),
+    [service, finishAuthentication],
   );
 
   const completeMfa = useCallback(
-    async (input: CompleteMfaInput) => {
-      const nextSession = await service.completeMfa(input);
-      const nextUser = await service.getCurrentUser();
-      applyAuthenticatedSession(nextSession, nextUser);
-      return nextSession;
-    },
-    [service, applyAuthenticatedSession],
+    async (input: CompleteMfaInput) => finishAuthentication(await service.completeMfa(input)),
+    [service, finishAuthentication],
   );
 
   // Re-authentication after the session died. Deliberately NOT the login page's
@@ -319,23 +365,13 @@ export function AuthProvider({
   // the very page this exists to preserve. Here the error propagates so the
   // dialog can switch to its MFA step in place.
   const reauthenticate = useCallback(
-    async (input: LoginInput) => {
-      const nextSession = await service.login(input);
-      const nextUser = await service.getCurrentUser();
-      applyAuthenticatedSession(nextSession, nextUser);
-      return nextSession;
-    },
-    [service, applyAuthenticatedSession],
+    async (input: LoginInput) => finishAuthentication(await service.login(input)),
+    [service, finishAuthentication],
   );
 
   const completeReauthMfa = useCallback(
-    async (input: CompleteMfaInput) => {
-      const nextSession = await service.completeMfa(input);
-      const nextUser = await service.getCurrentUser();
-      applyAuthenticatedSession(nextSession, nextUser);
-      return nextSession;
-    },
-    [service, applyAuthenticatedSession],
+    async (input: CompleteMfaInput) => finishAuthentication(await service.completeMfa(input)),
+    [service, finishAuthentication],
   );
 
   const renewSession = useCallback(async () => {
@@ -362,6 +398,7 @@ export function AuthProvider({
       setStatus("anonymous");
       setSessionState("active");
       clearSessionCookie();
+      everExpiredRef.current = false;
     },
     [service],
   );
