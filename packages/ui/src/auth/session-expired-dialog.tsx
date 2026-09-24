@@ -2,7 +2,7 @@
 
 import { Box, Button, Divider, Modal, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
 import { LockIcon } from "lucide-react";
-import { useCallback, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { BlockingOverlay } from "../components/blocking-overlay";
 import { FormError } from "../components/form-error";
@@ -55,6 +55,11 @@ export interface SessionExpiredDialogProps {
   google?: ReactNode;
   /** A caller-owned message (Google failures). A local submit error takes precedence. */
   errorMessage?: string | null;
+  /**
+   * Bumped when a Google credential arrives. Clears any stale local submit
+   * error so the caller's Google message can show instead.
+   */
+  googleResetToken?: number;
   /** Blocks the modal with an overlay while an external step runs. */
   loading?: boolean;
 }
@@ -66,11 +71,16 @@ export function SessionExpiredDialog({
   onSignOut,
   google,
   errorMessage,
+  googleResetToken,
   loading,
 }: SessionExpiredDialogProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setError(null);
+  }, [googleResetToken]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {

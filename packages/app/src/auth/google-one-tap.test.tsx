@@ -107,9 +107,21 @@ describe("GoogleOneTap", () => {
       shape: "rectangular",
       text: "signin_with",
       locale: "pt-BR",
+      width: 200,
     });
     expect(renderButtonCalls[0].options.client_id).toBeUndefined();
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("clamps the button width to Google's 200–400 range", async () => {
+    installGsi();
+    renderOneTap();
+    const container = screen.getByTestId("google-button");
+    Object.defineProperty(container, "clientWidth", { value: 500, configurable: true });
+
+    await waitFor(() => expect(renderButtonCalls).toHaveLength(1));
+
+    expect(renderButtonCalls[0].options.width).toBe(400);
   });
 
   it("uses the requested button label", async () => {

@@ -25,6 +25,7 @@ const {
       buttonParentRef?: { current: HTMLDivElement | null };
       onCredential?: (idToken: string) => void;
       onError?: (error: unknown) => void;
+      onStart?: () => void;
     },
   },
 }));
@@ -259,6 +260,42 @@ describe("SessionExpiredGate", () => {
     const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { google?: unknown };
     expect(props.google).toBeDefined();
     expect(oneTapProps.current?.buttonParentRef?.current).toBeInstanceOf(HTMLDivElement);
+  });
+
+  it("bumps the dialog's Google reset token when a credential starts", () => {
+    useAuthMock.mockReturnValue(
+      authState({ sessionState: "expired", user: { email: "user@example.com" } }),
+    );
+    render(<SessionExpiredGate />);
+
+    const before = (
+      SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { googleResetToken?: number }
+    ).googleResetToken;
+
+    act(() => {
+      oneTapProps.current?.onStart?.();
+    });
+
+    const after = (
+      SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { googleResetToken?: number }
+    ).googleResetToken;
+
+    expect(after).not.toBe(before);
+    expect(after).toBe((before ?? 0) + 1);
+  });
+
+  it("surfaces a One Tap failure through the dialog message", () => {
+    useAuthMock.mockReturnValue(
+      authState({ sessionState: "expired", user: { email: "user@example.com" } }),
+    );
+    render(<SessionExpiredGate />);
+
+    act(() => {
+      oneTapProps.current?.onError?.(new Error("boom"));
+    });
+
+    const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
+    expect(props.errorMessage).toBe("Não foi possível entrar com o Google. Tente novamente.");
   });
 
   it("matches the locked account case-insensitively", async () => {

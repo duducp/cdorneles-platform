@@ -30,6 +30,7 @@ export function SessionExpiredGate() {
   const [factor, setFactor] = useState<"email" | "totp" | null>(null);
   const [googleMessage, setGoogleMessage] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleResetToken, setGoogleResetToken] = useState(0);
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const googleAvailable = isGoogleAuthEnabled() && !!googleClientId;
@@ -164,6 +165,7 @@ export function SessionExpiredGate() {
           buttonParentRef={googleButtonRef}
           buttonText="continue_with"
           onCredential={handleGoogleCredential}
+          onStart={() => setGoogleResetToken((n) => n + 1)}
           onError={(error) => setGoogleMessage(describeOneTapError(error))}
         />
       ) : null}
@@ -180,6 +182,7 @@ export function SessionExpiredGate() {
           onSignOut={handleSignOut}
           errorMessage={googleMessage}
           loading={googleLoading}
+          googleResetToken={googleResetToken}
           google={googleAvailable ? <div ref={googleButtonRef} /> : undefined}
         />
       )}

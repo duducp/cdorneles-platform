@@ -208,6 +208,7 @@ export function GoogleOneTap({
 
         const buttonParent = buttonParentRef?.current;
         if (buttonParent) {
+          buttonParent.replaceChildren();
           idApi.renderButton(buttonParent, {
             type: "standard",
             theme: "outline",

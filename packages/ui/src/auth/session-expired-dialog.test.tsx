@@ -15,7 +15,7 @@ const codeField = () => screen.getByLabelText(/código de verificação/i, { sel
 function renderDialog(props: Partial<Parameters<typeof SessionExpiredDialog>[0]> = {}) {
   const onSubmit = vi.fn().mockResolvedValue(undefined);
   const onSignOut = vi.fn();
-  render(
+  const view = render(
     <MantineProvider>
       <SessionExpiredDialog
         email="ana@exemplo.com"
@@ -25,7 +25,19 @@ function renderDialog(props: Partial<Parameters<typeof SessionExpiredDialog>[0]>
       />
     </MantineProvider>,
   );
-  return { onSubmit, onSignOut };
+  const rerenderDialog = (next: Partial<Parameters<typeof SessionExpiredDialog>[0]>) =>
+    view.rerender(
+      <MantineProvider>
+        <SessionExpiredDialog
+          email="ana@exemplo.com"
+          onSubmit={onSubmit}
+          onSignOut={onSignOut}
+          {...props}
+          {...next}
+        />
+      </MantineProvider>,
+    );
+  return { onSubmit, onSignOut, rerenderDialog };
 }
 
 describe("SessionExpiredDialog", () => {
@@ -91,7 +103,7 @@ describe("SessionExpiredDialog", () => {
   it("renders no Google option by default", () => {
     renderDialog();
 
-    expect(screen.queryByRole("button", { name: "g" })).not.toBeInTheDocument();
+    expect(screen.queryByText("ou")).not.toBeInTheDocument();
   });
 
   it("shows a caller-provided message", () => {
@@ -113,6 +125,27 @@ describe("SessionExpiredDialog", () => {
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Senha incorreta.");
+  });
+
+  it("clears the local error when a Google credential starts", async () => {
+    const onSubmit = vi.fn().mockRejectedValue(new Error("Senha incorreta."));
+    const { rerenderDialog } = renderDialog({
+      onSubmit,
+      errorMessage: "Esta conta Google não corresponde à conta bloqueada.",
+      googleResetToken: 0,
+    });
+
+    await userEvent.type(passwordField(), "errada");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Senha incorreta.");
+
+    rerenderDialog({ googleResetToken: 1 });
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Esta conta Google não corresponde à conta bloqueada.",
+      ),
+    );
   });
 });
 
