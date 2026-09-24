@@ -234,6 +234,12 @@ describe("MfaChallengeForm", () => {
     const onCancel = vi.fn();
     renderForm({ onSubmit, onCancel });
 
+    await typeCode(user, "123456");
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    });
+    onSubmit.mockClear();
+
     await user.click(screen.getByRole("button", { name: /^cancelar$/i }));
 
     expect(onCancel).toHaveBeenCalledTimes(1);

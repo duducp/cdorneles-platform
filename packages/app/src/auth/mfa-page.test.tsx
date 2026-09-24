@@ -61,6 +61,8 @@ describe("MfaPage", () => {
 
     expect(logout).toHaveBeenCalledTimes(1);
     expect(completeMfa).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalled();
     await waitFor(() => {
       expect(window.location.href).toBe("/login");
     });
