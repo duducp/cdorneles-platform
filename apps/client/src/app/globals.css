@@ -22,10 +22,10 @@ body::before {
   background-image: url("/brand/background.webp");
   background-repeat: repeat;
   background-size: 256px auto;
-  opacity: 0.02;
+  opacity: 0.03;
 }
 
 /* Light theme needs a touch more presence for the watermark to read. */
 html[data-mantine-color-scheme="light"] body::before {
-  opacity: 0.5;
+  opacity: 0.7;
 }
