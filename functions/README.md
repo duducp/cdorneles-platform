@@ -85,6 +85,12 @@ The generated directories are gitignored.
 | `list-organizations` | Lists every organization (`id`, `name`), paging through every server `teams` page and filtering out the platform team | Authenticated; `organizations.read` (platform team); non-platform callers denied |
 | `one-tap-login` | Verifies a Google One Tap ID token (RS256 signature against Google's keys, issuer, audience, expiry, verified e-mail) and creates an Appwrite login token (`users.createToken`) for the matching user, returning `userId`+`secret` that the browser exchanges with `account.createSession(userId, secret)` | Public (pre-authentication); deny-by-default on unknown e-mail, disabled account or Appwrite-unverified e-mail. Requires `GOOGLE_CLIENT_ID` env var and the `users.read`+`users.write` scopes |
 
+The `one-tap-login` function reads the `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED` kill
+switch at **runtime**, so disabling Google applies to it immediately. The sites
+inline `NEXT_PUBLIC_*` at **build time**, so the browser can keep showing the
+Google option until the site is redeployed. The two can briefly disagree; the
+server always wins.
+
 `create-user` sends the temporary-password welcome email **directly** through
 Appwrite Messaging, targeting the newly created user id (Appwrite registers the
 user's email as a target). The body is rendered by `shared/email`, which
