@@ -142,97 +142,98 @@ export interface GoogleOneTapProps {
  * Renders nothing: Google draws the prompt itself. The classic
  * "Entrar com Google" button stays untouched as the fallback.
  */
-export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(
-  function GoogleOneTap({ clientId, enabled, onSuccess, onError, onCredential, onStart }, ref) {
-    const { loginWithOneTap } = useAuth();
-    const idApiRef = useRef<GsiIdApi | null>(null);
+export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(function GoogleOneTap(
+  { clientId, enabled, onSuccess, onError, onCredential, onStart },
+  ref,
+) {
+  const { loginWithOneTap } = useAuth();
+  const idApiRef = useRef<GsiIdApi | null>(null);
 
-    // Keep the latest callbacks/login in refs so the init effect stays stable
-    // across renders instead of re-initializing GSI on every parent render.
-    const onSuccessRef = useRef(onSuccess);
-    const onErrorRef = useRef(onError);
-    const onCredentialRef = useRef(onCredential);
-    const onStartRef = useRef(onStart);
-    const loginWithOneTapRef = useRef(loginWithOneTap);
-    onSuccessRef.current = onSuccess;
-    onErrorRef.current = onError;
-    onCredentialRef.current = onCredential;
-    onStartRef.current = onStart;
-    loginWithOneTapRef.current = loginWithOneTap;
+  // Keep the latest callbacks/login in refs so the init effect stays stable
+  // across renders instead of re-initializing GSI on every parent render.
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  const onCredentialRef = useRef(onCredential);
+  const onStartRef = useRef(onStart);
+  const loginWithOneTapRef = useRef(loginWithOneTap);
+  onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
+  onCredentialRef.current = onCredential;
+  onStartRef.current = onStart;
+  loginWithOneTapRef.current = loginWithOneTap;
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        prompt(onUnavailable) {
-          const idApi = idApiRef.current;
-          if (!idApi) {
-            onUnavailable?.();
-            return;
-          }
-          try {
-            idApi.prompt((notification) => {
-              if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-                onUnavailable?.();
-              }
-            });
-          } catch {
-            onUnavailable?.();
-          }
-        },
-      }),
-      [],
-    );
-
-    useEffect(() => {
-      if (!enabled || !clientId) return;
-
-      let cancelled = false;
-      let promptTimer: ReturnType<typeof setTimeout> | null = null;
-
-      loadGsiScript()
-        .then(() => {
-          if (cancelled) return;
-          const idApi = window.google?.accounts?.id;
-          if (!idApi) return;
-          idApiRef.current = idApi;
-
-          idApi.initialize({
-            client_id: clientId,
-            callback: (response) => {
-              const idToken = response?.credential;
-              if (!idToken) return;
-              onStartRef.current?.();
-              if (onCredentialRef.current) {
-                Promise.resolve()
-                  .then(() => onCredentialRef.current?.(idToken))
-                  .catch((error: unknown) => onErrorRef.current(error));
-                return;
-              }
-              loginWithOneTapRef
-                .current({ idToken })
-                .then(() => onSuccessRef.current?.())
-                .catch((error: unknown) => onErrorRef.current(error));
-            },
-            auto_select: false,
-            cancel_on_tap_outside: true,
-            use_fedcm_for_prompt: true,
+  useImperativeHandle(
+    ref,
+    () => ({
+      prompt(onUnavailable) {
+        const idApi = idApiRef.current;
+        if (!idApi) {
+          onUnavailable?.();
+          return;
+        }
+        try {
+          idApi.prompt((notification) => {
+            if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+              onUnavailable?.();
+            }
           });
+        } catch {
+          onUnavailable?.();
+        }
+      },
+    }),
+    [],
+  );
 
-          promptTimer = setTimeout(() => {
-            if (!cancelled) idApi.prompt();
-          }, PROMPT_DELAY_MS);
-        })
-        .catch(() => {
-          if (!cancelled) onErrorRef.current(null);
+  useEffect(() => {
+    if (!enabled || !clientId) return;
+
+    let cancelled = false;
+    let promptTimer: ReturnType<typeof setTimeout> | null = null;
+
+    loadGsiScript()
+      .then(() => {
+        if (cancelled) return;
+        const idApi = window.google?.accounts?.id;
+        if (!idApi) return;
+        idApiRef.current = idApi;
+
+        idApi.initialize({
+          client_id: clientId,
+          callback: (response) => {
+            const idToken = response?.credential;
+            if (!idToken) return;
+            onStartRef.current?.();
+            if (onCredentialRef.current) {
+              Promise.resolve()
+                .then(() => onCredentialRef.current?.(idToken))
+                .catch((error: unknown) => onErrorRef.current(error));
+              return;
+            }
+            loginWithOneTapRef
+              .current({ idToken })
+              .then(() => onSuccessRef.current?.())
+              .catch((error: unknown) => onErrorRef.current(error));
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          use_fedcm_for_prompt: true,
         });
 
-      return () => {
-        cancelled = true;
-        idApiRef.current = null;
-        if (promptTimer) clearTimeout(promptTimer);
-      };
-    }, [enabled, clientId]);
+        promptTimer = setTimeout(() => {
+          if (!cancelled) idApi.prompt();
+        }, PROMPT_DELAY_MS);
+      })
+      .catch(() => {
+        if (!cancelled) onErrorRef.current(null);
+      });
 
-    return null;
-  },
-);
+    return () => {
+      cancelled = true;
+      idApiRef.current = null;
+      if (promptTimer) clearTimeout(promptTimer);
+    };
+  }, [enabled, clientId]);
+
+  return null;
+});

@@ -170,7 +170,10 @@ describe("SessionExpiredGate", () => {
   it("shows the loading overlay while the Google exchange runs", async () => {
     let resolveLogin: (value: unknown) => void = () => {};
     const loginWithOneTap = vi.fn(
-      () => new Promise((resolve) => { resolveLogin = resolve; }),
+      () =>
+        new Promise((resolve) => {
+          resolveLogin = resolve;
+        }),
     );
     useAuthMock.mockReturnValue(
       authState({

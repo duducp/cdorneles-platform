@@ -6,8 +6,6 @@
  * Google by accident. In production the value comes from an Appwrite project
  * variable, shared with every site and the one-tap-login function.
  */
-export function isGoogleAuthEnabled(
-  value = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED,
-): boolean {
+export function isGoogleAuthEnabled(value = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED): boolean {
   return (value ?? "").trim().toLowerCase() !== "false";
 }

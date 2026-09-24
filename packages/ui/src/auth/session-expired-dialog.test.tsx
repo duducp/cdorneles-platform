@@ -5,10 +5,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  SessionExpiredDialog,
-  SessionExpiredMfaDialog,
-} from "./session-expired-dialog";
+import { SessionExpiredDialog, SessionExpiredMfaDialog } from "./session-expired-dialog";
 
 // The required marker (" *") is part of the label text, and the visibility
 // toggle's aria-label also mentions "senha", so scope the query to the input.

@@ -493,9 +493,7 @@ describe("session state", () => {
       </AuthProvider>,
     );
 
-    await waitFor(() =>
-      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
-    );
+    await waitFor(() => expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"));
     expect(window.location.href).toBe("/mfa?redirect=%2Fdashboard");
   });
 
@@ -512,9 +510,7 @@ describe("session state", () => {
       </AuthProvider>,
     );
 
-    await waitFor(() =>
-      expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"),
-    );
+    await waitFor(() => expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"));
     expect(window.location.href).toBe("");
   });
 });
