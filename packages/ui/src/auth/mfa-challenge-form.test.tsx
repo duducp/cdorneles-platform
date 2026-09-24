@@ -35,6 +35,27 @@ describe("MfaChallengeForm", () => {
     expect(screen.getByRole("button", { name: /verificar código/i })).toBeInTheDocument();
   });
 
+  it("focuses the first digit box on mount", () => {
+    const onSubmit = vi.fn();
+    renderForm({ onSubmit });
+
+    expect(codeInputs()[0]).toHaveFocus();
+  });
+
+  it("clears the code and refocuses the first box after a rejected submit", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockRejectedValue(new Error("Código inválido"));
+    renderForm({ onSubmit });
+
+    await typeCode(user, "123456");
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/código inválido/i);
+    });
+    expect(codeInputs()[0]).toHaveValue("");
+    expect(codeInputs()[0]).toHaveFocus();
+  });
+
   it("validates the code before submitting", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
@@ -89,7 +110,7 @@ describe("MfaChallengeForm", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 
-  it("resubmits through the button when retrying the same code", async () => {
+  it("auto-submits the same code again after retyping it following a rejection", async () => {
     const user = userEvent.setup();
     const onSubmit = vi
       .fn()
@@ -102,8 +123,9 @@ describe("MfaChallengeForm", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent(/Código expirado/i);
     });
+    expect(codeInputs()[0]).toHaveValue("");
 
-    await user.click(screen.getByRole("button", { name: /verificar código/i }));
+    await typeCode(user, "123456");
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledTimes(2);
@@ -111,7 +133,7 @@ describe("MfaChallengeForm", () => {
     expect(onSubmit).toHaveBeenLastCalledWith({ code: "123456" });
   });
 
-  it("resubmits after the user edits a digit", async () => {
+  it("resubmits with the newly typed code after a rejection", async () => {
     const user = userEvent.setup();
     const onSubmit = vi
       .fn()
@@ -124,8 +146,7 @@ describe("MfaChallengeForm", () => {
       expect(onSubmit).toHaveBeenCalledTimes(1);
     });
 
-    await user.click(codeInputs()[5]);
-    await user.keyboard("{Backspace}7");
+    await typeCode(user, "123457");
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledTimes(2);

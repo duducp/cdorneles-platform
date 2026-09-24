@@ -66,6 +66,18 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
     },
   });
 
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const codeError = form.errors.code;
+
+  useEffect(() => {
+    if (error || codeError) {
+      form.setFieldValue("code", "");
+      if (codeError) form.setErrors((current) => ({ ...current, code: codeError }));
+      firstInputRef.current?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, codeError]);
+
   const handleSubmit = useCallback(
     async (values: MfaChallengeFormValues) => {
       setStatus("submitting");
@@ -119,6 +131,8 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
             Código de verificação
           </Text>
           <PinInput
+            ref={firstInputRef}
+            autoFocus
             length={6}
             type="number"
             placeholder=""
