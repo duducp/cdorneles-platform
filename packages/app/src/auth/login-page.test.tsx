@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { ThemeProvider } from "@cdorneles/theme";
 import { act, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 const { pushMock, replaceMock, oneTapProps } = vi.hoisted(() => ({
@@ -68,6 +69,25 @@ describe("LoginPage", () => {
     renderPage();
 
     expect(screen.getByRole("heading", { name: "Bem vindo" })).toBeInTheDocument();
+  });
+
+  it("keeps 'Bem vindo' when nothing is stored after hydration", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Bem vindo" })).toBeInTheDocument();
+  });
+
+  it("prerenders the neutral heading even when a method is stored", () => {
+    localStorage.setItem("cdorneles-last-login-method", "email");
+
+    const html = renderToString(
+      <ThemeProvider>
+        <LoginPage />
+      </ThemeProvider>,
+    );
+
+    expect(html).toContain("Bem vindo");
+    expect(html).not.toContain("Bem-vindo de volta");
   });
 
   it("shows 'Bem-vindo de volta' when there is a previous login", () => {

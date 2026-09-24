@@ -14,7 +14,7 @@ import { describeOneTapError, GoogleOneTap } from "./google-one-tap";
 import { isGoogleAuthEnabled } from "./google-auth-enabled";
 import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const LAST_METHOD_KEY = "cdorneles-last-login-method";
 type LoginMethod = "email" | "google";
@@ -40,11 +40,14 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   const [announcement, setAnnouncement] = useState("");
   const [oneTapLoading, setOneTapLoading] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
-  const [lastMethod] = useState<LoginMethod | null>(() => {
-    if (typeof window === "undefined") return null;
+  // Read the stored method only after hydration: the auth routes are
+  // prerendered, so touching localStorage during render would mismatch the
+  // server's neutral heading.
+  const [lastMethod, setLastMethod] = useState<LoginMethod | null>(null);
+  useEffect(() => {
     const stored = localStorage.getItem(LAST_METHOD_KEY);
-    return stored === "email" || stored === "google" ? stored : null;
-  });
+    setLastMethod(stored === "email" || stored === "google" ? stored : null);
+  }, []);
   const enableSignUp = process.env.NEXT_PUBLIC_ENABLE_SIGN_UP === "true";
   // One Tap only runs with a configured client id, and only for confirmed
   // anonymous visitors — never while the session is still being resolved and
