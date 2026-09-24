@@ -46,9 +46,12 @@ export function createAppwriteAuthService(
         throw new Error("Google One Tap is not available in this environment.");
       }
       try {
-        // The function verifies the ID token server-side and returns the
-        // one-time credentials; the browser session is established here.
-        const credentials = await functionsApi.oneTapLogin({ idToken: input.idToken });
+        // The function verifies the ID token server-side and refuses a token
+        // for any account other than the one this client expects.
+        const credentials = await functionsApi.oneTapLogin({
+          idToken: input.idToken,
+          expectedUserId: input.expectedUserId,
+        });
         return mapSession(
           await accountApi.createSessionFromToken({
             userId: credentials.userId,

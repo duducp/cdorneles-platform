@@ -128,7 +128,7 @@ export function SessionExpiredGate() {
       setGoogleLoading(true);
       try {
         await cancelStaleRequests(queryClient);
-        await loginWithOneTap({ idToken });
+        await loginWithOneTap({ idToken, expectedUserId: user.id });
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
         finish();
       } catch (error) {

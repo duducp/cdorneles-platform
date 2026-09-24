@@ -5,6 +5,7 @@ export { createProviders } from "./providers";
 export { createShellLayout } from "./shell-layout";
 export { SelectOrgPage } from "./select-org-page";
 export { SessionExpiredGate } from "./session-expired-gate";
+export { UserCacheGuard } from "./user-cache-guard";
 export type { ShellNavItem } from "./shell-layout";
 export { UsersPage } from "./users-page";
 export type { CreateUserInput, PermissionGroup, UserRow } from "./users-page";

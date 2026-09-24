@@ -183,6 +183,29 @@ describe("SessionExpiredGate", () => {
     expect(cancelMutationsOrder).toBeLessThan(loginOrder);
   });
 
+  it("sends the expired account id so the server can refuse a swap", async () => {
+    const loginWithOneTap = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { id: "u1", email: "user@example.com" },
+        loginWithOneTap,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    act(() => {
+      oneTapProps.current?.onCredential?.("user@example.com");
+    });
+
+    await waitFor(() =>
+      expect(loginWithOneTap).toHaveBeenCalledWith({
+        idToken: "user@example.com",
+        expectedUserId: "u1",
+      }),
+    );
+  });
+
   it("cancels stale queries and broadcasts the renewal after a password success", async () => {
     const reauthenticate = vi.fn().mockResolvedValue({});
     useAuthMock.mockReturnValue(

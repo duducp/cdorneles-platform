@@ -112,6 +112,25 @@ describe("createAppwriteAuthService", () => {
       });
     });
 
+    it("forwards the expected account so the server can refuse a swap", async () => {
+      const account = createMockAccountApi();
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.oneTapLogin).mockResolvedValue({ userId: "u1", secret: "the-secret" });
+      vi.mocked(account.createSessionFromToken).mockResolvedValue({
+        $id: "s1",
+        userId: "u1",
+        expire: futureDate,
+      });
+
+      const service = createAppwriteAuthService(account, functions);
+      await service.loginWithOneTap({ idToken: "jwt", expectedUserId: "u1" });
+
+      expect(functions.oneTapLogin).toHaveBeenCalledWith({
+        idToken: "jwt",
+        expectedUserId: "u1",
+      });
+    });
+
     it("propagates function errors (unknown e-mail, invalid token)", async () => {
       const account = createMockAccountApi();
       const functions = createMockFunctionsApi();

@@ -42,6 +42,11 @@ describe("describeAuthError", () => {
     );
   });
 
+  it("maps a server-side account mismatch", () => {
+    const error = new ApiError("Account mismatch", { code: "account_mismatch", status: 403 });
+    expect(describeAuthError(error)).toBe("Esta conta Google não corresponde à sua conta.");
+  });
+
   it("falls back for an unknown error", () => {
     expect(describeAuthError(new Error("boom"))).toBe("Não foi possível entrar. Tente novamente.");
     expect(describeAuthError(new ApiError("odd", { code: "weird_thing", status: 500 }))).toBe(

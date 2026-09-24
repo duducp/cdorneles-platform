@@ -26,6 +26,8 @@ export function describeAuthError(
         return "Conta bloqueada. Fale com um administrador.";
       case "general_argument_invalid":
         return "Verifique os dados informados.";
+      case "account_mismatch":
+        return "Esta conta Google não corresponde à sua conta.";
       case "general_rate_limit_exceeded":
         return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
       default:

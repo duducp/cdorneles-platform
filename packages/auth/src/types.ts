@@ -32,8 +32,12 @@ export interface LoginInput {
   password: string;
 }
 
-/** The Google One Tap ID token (JWT) captured by the GSI callback. */
-export type OneTapLoginInput = { idToken: string };
+/**
+ * The Google One Tap ID token (JWT) captured by the GSI callback, plus the
+ * account the caller expects it to resolve to. The server refuses a token for
+ * any other account, which stops a re-auth from silently swapping the user.
+ */
+export type OneTapLoginInput = { idToken: string; expectedUserId?: string };
 
 export interface CompleteMfaInput {
   challengeId: string;

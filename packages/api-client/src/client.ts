@@ -75,9 +75,13 @@ export interface FunctionsApi {
   /**
    * Exchanges a Google One Tap ID token for Appwrite session credentials.
    * The one-tap-login function verifies the token server-side and returns the
-   * `userId`+`secret` pair for `account.createSession`.
+   * `userId`+`secret` pair for `account.createSession`. `expectedUserId`, when
+   * given, makes the function refuse a token for any other account.
    */
-  oneTapLogin(input: { idToken: string }): Promise<{ userId: string; secret: string }>;
+  oneTapLogin(input: {
+    idToken: string;
+    expectedUserId?: string;
+  }): Promise<{ userId: string; secret: string }>;
 }
 
 export interface StorageApi {
