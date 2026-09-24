@@ -16,14 +16,9 @@ export function createUnconfiguredAuthService(): AuthService {
   const fail = (operation: string) => async (): Promise<never> => {
     throw new AuthNotConfiguredError(operation);
   };
-  // Synchronous variant for the void-returning (redirect) operations.
-  const failSync = (operation: string) => (): void => {
-    throw new AuthNotConfiguredError(operation);
-  };
 
   return {
     login: fail("login"),
-    loginWithGoogle: failSync("loginWithGoogle"),
     loginWithOneTap: fail("loginWithOneTap"),
     completeMfa: fail("completeMfa"),
     listMfaFactors: fail("listMfaFactors"),

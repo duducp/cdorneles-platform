@@ -21,7 +21,6 @@ import type {
   AuthUser,
   CompleteMfaInput,
   LoginInput,
-  OAuthLoginInput,
   OneTapLoginInput,
 } from "./types";
 
@@ -79,8 +78,6 @@ export interface AuthContextValue {
   status: AuthStatus;
   sessionState: SessionState;
   login: (input: LoginInput) => Promise<AuthSession>;
-  /** Starts the Google OAuth sign-in (a full-page redirect). */
-  loginWithGoogle: (input: OAuthLoginInput) => void;
   /** Signs in with a Google One Tap ID token and establishes the session. */
   loginWithOneTap: (input: OneTapLoginInput) => Promise<AuthSession>;
   completeMfa: (input: CompleteMfaInput) => Promise<AuthSession>;
@@ -297,13 +294,6 @@ export function AuthProvider({
     [service, applyAuthenticatedSession],
   );
 
-  const loginWithGoogle = useCallback(
-    (input: OAuthLoginInput) => {
-      service.loginWithGoogle(input);
-    },
-    [service],
-  );
-
   const loginWithOneTap = useCallback(
     async (input: OneTapLoginInput) => {
       const nextSession = await service.loginWithOneTap(input);
@@ -384,7 +374,6 @@ export function AuthProvider({
       status,
       sessionState,
       login,
-      loginWithGoogle,
       loginWithOneTap,
       completeMfa,
       reauthenticate,
@@ -400,7 +389,6 @@ export function AuthProvider({
       status,
       sessionState,
       login,
-      loginWithGoogle,
       loginWithOneTap,
       completeMfa,
       reauthenticate,

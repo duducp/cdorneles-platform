@@ -18,7 +18,6 @@ const user: AuthUser = {
 function createFakeService(): AuthService {
   return {
     login: vi.fn(async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" })),
-    loginWithGoogle: vi.fn(),
     loginWithOneTap: vi.fn(
       async () => ({ id: "s1", userId: "u1", expiresAt: "2030-01-01T00:00:00Z" }) as never,
     ),

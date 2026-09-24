@@ -42,7 +42,6 @@ const futureDate = new Date(Date.now() + 86400000).toISOString();
 function createMockService(overrides?: Partial<AuthService>): AuthService {
   return {
     login: vi.fn(),
-    loginWithGoogle: vi.fn(),
     loginWithOneTap: vi.fn(),
     completeMfa: vi.fn(),
     listMfaFactors: vi.fn(),

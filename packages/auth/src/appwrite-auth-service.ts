@@ -39,14 +39,6 @@ export function createAppwriteAuthService(
       }
     },
 
-    loginWithGoogle(input) {
-      accountApi.createOAuth2Session({
-        provider: "google",
-        success: input.successUrl,
-        failure: input.failureUrl,
-      });
-    },
-
     async loginWithOneTap(input: OneTapLoginInput) {
       if (!functionsApi) {
         // One Tap needs the one-tap-login function; without it the flow cannot

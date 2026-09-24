@@ -32,13 +32,6 @@ export interface LoginInput {
   password: string;
 }
 
-export interface OAuthLoginInput {
-  /** Where the provider returns on success (same-origin absolute URL). */
-  successUrl: string;
-  /** Where the provider returns when the user cancels or it fails. */
-  failureUrl: string;
-}
-
 /** The Google One Tap ID token (JWT) captured by the GSI callback. */
 export type OneTapLoginInput = { idToken: string };
 
@@ -75,8 +68,6 @@ export interface CreateMfaChallengeInput {
  */
 export interface AuthService {
   login(input: LoginInput): Promise<AuthSession>;
-  /** Starts the Google OAuth sign-in. A full-page redirect; does not return. */
-  loginWithGoogle(input: OAuthLoginInput): void;
   /**
    * Signs in with a Google One Tap ID token: the one-tap-login function
    * verifies it server-side and the returned credentials establish the

@@ -17,8 +17,6 @@ export interface AccountApi {
   updateSession(input: { sessionId: string }): Promise<AppwriteSession>;
   listSessions(): Promise<AppwriteSession[]>;
   createEmailPasswordSession(input: { email: string; password: string }): Promise<AppwriteSession>;
-  /** Starts an OAuth2 sign-in: a full-page redirect to the provider. */
-  createOAuth2Session(input: { provider: "google"; success: string; failure: string }): void;
   /**
    * Completes a server-orchestrated login: the `userId`+`secret` pair comes
    * from a trusted source (e.g. the one-tap-login function) and establishes
