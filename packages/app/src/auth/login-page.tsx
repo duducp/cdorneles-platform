@@ -10,11 +10,11 @@ import {
   useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
 import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
-import { describeOneTapError, GoogleOneTap } from "./google-one-tap";
+import { type GoogleOneTapHandle, describeOneTapError, GoogleOneTap } from "./google-one-tap";
 import { isGoogleAuthEnabled } from "./google-auth-enabled";
 import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 const LAST_METHOD_KEY = "cdorneles-last-login-method";
 type LoginMethod = "email" | "google";
@@ -29,7 +29,7 @@ export interface LoginPageProps {
 }
 
 export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) {
-  const { login, loginWithGoogle, status } = useAuth();
+  const { login, status } = useAuth();
   const router = useRouter();
   const goToApp = useCallback(() => {
     router.replace(resolvePostAuthRedirect(window.location.search));
@@ -39,6 +39,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [oneTapLoading, setOneTapLoading] = useState(false);
+  const oneTapRef = useRef<GoogleOneTapHandle>(null);
   const [lastMethod] = useState<LoginMethod | null>(() => {
     if (typeof window === "undefined") return null;
     const stored = localStorage.getItem(LAST_METHOD_KEY);
@@ -83,21 +84,11 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
 
   const handleGoogleClick = useCallback(() => {
     localStorage.setItem(LAST_METHOD_KEY, "google");
-    // A full-page redirect: Appwrite sends the browser to Google and back to
-    // `successUrl` (which restores the session on load) or `failureUrl`.
-    const origin = window.location.origin;
-    loginWithGoogle({
-      successUrl: `${origin}${resolvePostAuthRedirect(window.location.search)}`,
-      failureUrl: `${origin}/login?error=google`,
+    // No OAuth redirect: Appwrite would auto-create the user. Re-open the One
+    // Tap prompt instead — its exchange denies accounts that do not exist.
+    oneTapRef.current?.prompt(() => {
+      setError("Não foi possível abrir o Google. Use e-mail e senha.");
     });
-  }, [loginWithGoogle]);
-
-  // The provider redirects here with `?error=google` when the user cancels or
-  // the exchange fails; surface it after mount to avoid a hydration mismatch.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("error") === "google") {
-      setError("Não foi possível entrar com o Google. Tente novamente.");
-    }
   }, []);
 
   async function handleSubmit(credentials: { email: string; password: string }) {
@@ -135,6 +126,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
     <Flex direction="column" mih="100dvh">
       {googleEnabled ? (
         <GoogleOneTap
+          ref={oneTapRef}
           clientId={googleClientId ?? ""}
           enabled={canRender && status === "anonymous" && !!googleClientId}
           onSuccess={() => {
@@ -142,7 +134,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
             // `/login?redirect=/login`) fires no unmount, so the overlay would
             // otherwise stay up forever.
             setOneTapLoading(false);
-            // Same destination as the OAuth fallback button.
+            // Land where a successful e-mail/password login would.
             router.replace(resolvePostAuthRedirect(window.location.search));
           }}
           onStart={() => setOneTapLoading(true)}
@@ -165,7 +157,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
                 showSignUp={enableSignUp}
                 heading={heading}
                 googleLabel={googleLabel}
-                showGoogle={googleEnabled}
+                showGoogle={googleEnabled && !!googleClientId}
                 onGoogleClick={handleGoogleClick}
                 onForgotPassword={handleForgotPassword}
               />

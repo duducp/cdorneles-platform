@@ -5,26 +5,22 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-const { loginWithGoogleMock, loginWithOneTapMock, pushMock, replaceMock, oneTapProps } =
-  vi.hoisted(() => ({
-    loginWithGoogleMock: vi.fn(),
-    loginWithOneTapMock: vi.fn(),
-    pushMock: vi.fn(),
-    replaceMock: vi.fn(),
-    oneTapProps: {
-      current: null as null | {
-        onError: (error: unknown) => void;
-        onSuccess?: () => void;
-        onStart?: () => void;
-      },
+const { pushMock, replaceMock, oneTapProps, promptMock } = vi.hoisted(() => ({
+  pushMock: vi.fn(),
+  replaceMock: vi.fn(),
+  oneTapProps: {
+    current: null as null | {
+      onError: (error: unknown) => void;
+      onSuccess?: () => void;
+      onStart?: () => void;
     },
-  }));
+  },
+  promptMock: vi.fn(),
+}));
 
 vi.mock("@cdorneles/auth", () => ({
   useAuth: () => ({
     login: vi.fn(),
-    loginWithGoogle: loginWithGoogleMock,
-    loginWithOneTap: loginWithOneTapMock,
     status: "anonymous",
   }),
   useRedirectIfAuthenticated: () => true,
@@ -32,17 +28,23 @@ vi.mock("@cdorneles/auth", () => ({
   MfaRequiredError: class MfaRequiredError extends Error {},
 }));
 
-vi.mock("./google-one-tap", () => ({
-  GoogleOneTap: (props: {
-    onError: (error: unknown) => void;
-    onSuccess?: () => void;
-    onStart?: () => void;
-  }) => {
-    oneTapProps.current = props;
-    return null;
-  },
-  describeOneTapError: (error: unknown) => `mapped:${String(error)}`,
-}));
+vi.mock("./google-one-tap", async () => {
+  const { forwardRef, useImperativeHandle } = await import("react");
+  return {
+    GoogleOneTap: forwardRef<{ prompt: (onUnavailable?: () => void) => void }>(
+      function MockGoogleOneTap(props, ref) {
+        oneTapProps.current = props as unknown as NonNullable<typeof oneTapProps.current>;
+        useImperativeHandle(
+          ref,
+          () => ({ prompt: (onUnavailable?: () => void) => promptMock(onUnavailable) }),
+          [],
+        );
+        return null;
+      },
+    ),
+    describeOneTapError: (error: unknown) => `mapped:${String(error)}`,
+  };
+});
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock, push: pushMock }),
@@ -68,6 +70,7 @@ describe("LoginPage", () => {
     localStorage.clear();
     oneTapProps.current = null;
     vi.clearAllMocks();
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "client-id.apps.googleusercontent.com");
     window.history.replaceState({}, "", "/login");
   });
 
@@ -103,24 +106,23 @@ describe("LoginPage", () => {
     expect(screen.queryByText(/Termos de Uso/)).not.toBeInTheDocument();
   });
 
-  it("starts the Google OAuth flow with the success and failure URLs", async () => {
+  it("opens the One Tap prompt from the Google button", async () => {
     renderPage();
 
     await userEvent.click(screen.getByRole("button", { name: "Entrar com Google" }));
 
-    expect(loginWithGoogleMock).toHaveBeenCalledWith({
-      successUrl: `${window.location.origin}/dashboard`,
-      failureUrl: `${window.location.origin}/login?error=google`,
-    });
+    expect(promptMock).toHaveBeenCalledTimes(1);
   });
 
-  it("shows an error when the provider returns with ?error=google", async () => {
-    window.history.replaceState({}, "", "/login?error=google");
+  it("hints to use email and password when the prompt cannot open", async () => {
     renderPage();
 
-    expect(
-      await screen.findByText("Não foi possível entrar com o Google. Tente novamente."),
-    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Entrar com Google" }));
+    act(() => {
+      promptMock.mock.calls.at(-1)?.[0]?.();
+    });
+
+    expect(await screen.findByText(/Não foi possível abrir o Google/i)).toBeInTheDocument();
   });
 
   it("routes a One Tap MFA challenge to the MFA page", async () => {
