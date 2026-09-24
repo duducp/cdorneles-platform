@@ -28,6 +28,7 @@ const {
   },
   queryClientMock: {
     cancelQueries: vi.fn().mockResolvedValue(undefined),
+    cancelMutations: vi.fn().mockResolvedValue(undefined),
     invalidateQueries: vi.fn().mockResolvedValue(undefined),
   },
   oneTapProps: {
@@ -203,6 +204,52 @@ describe("SessionExpiredGate", () => {
     );
     rerender(<SessionExpiredGate />);
     expect(screen.queryByTestId("password-dialog")).not.toBeInTheDocument();
+  });
+
+  it("cancels stale queries and mutations together before re-authenticating", async () => {
+    const reauthenticate = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+    await act(async () => {
+      await dialogProps.onSubmit("secret");
+    });
+
+    expect(queryClientMock.cancelQueries).toHaveBeenCalled();
+    expect(queryClientMock.cancelMutations).toHaveBeenCalled();
+    expect(reauthenticate).toHaveBeenCalledWith({ email: "user@example.com", password: "secret" });
+  });
+
+  it("maps a cancellation failure through describeAuthError before the exchange", async () => {
+    const cancellationError = new Error("cancel failed");
+    queryClientMock.cancelQueries.mockRejectedValueOnce(cancellationError);
+    const reauthenticate = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+
+    await expect(dialogProps.onSubmit("secret")).rejects.toMatchObject({
+      cause: cancellationError,
+    });
+    expect(reauthenticate).not.toHaveBeenCalled();
   });
 
   it("still broadcasts the renewal when invalidating the queries fails", async () => {

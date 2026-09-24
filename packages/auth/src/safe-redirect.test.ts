@@ -28,6 +28,15 @@ describe("resolvePostAuthRedirect", () => {
     expect(resolvePostAuthRedirect("?redirect=%2F%2F%2Fevil.test")).toBe("/");
   });
 
+  it("rejects a path the URL parser normalises into a protocol-relative URL", () => {
+    // `.`/`..` segments are collapsed after the host is fixed, so a rooted
+    // input can still come back out starting with `//`, which Next treats as
+    // an external, protocol-relative URL.
+    expect(resolvePostAuthRedirect("?redirect=%2F..%2F%2Fevil.test")).toBe("/"); // /..//evil.test
+    expect(resolvePostAuthRedirect("?redirect=/.//evil.test")).toBe("/");
+    expect(resolvePostAuthRedirect("?redirect=/a/../..//evil.test")).toBe("/");
+  });
+
   it("rejects a backslash that the URL parser treats as a host separator", () => {
     expect(resolvePostAuthRedirect("?redirect=%2F%5Cevil.test")).toBe("/");
     expect(resolvePostAuthRedirect("?redirect=/%5Cevil.test")).toBe("/");

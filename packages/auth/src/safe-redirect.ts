@@ -24,7 +24,11 @@ export function resolvePostAuthRedirect(search: string): string {
   try {
     const url = new URL(value, BASE);
     if (url.origin !== BASE) return "/";
-    return `${url.pathname}${url.search}${url.hash}`;
+    const out = `${url.pathname}${url.search}${url.hash}`;
+    // The parser collapses `.`/`..` segments after fixing the host, so a rooted
+    // input can still surface as `//host`, which Next resolves cross-origin.
+    if (!out.startsWith("/") || out.startsWith("//")) return "/";
+    return out;
   } catch {
     return "/";
   }

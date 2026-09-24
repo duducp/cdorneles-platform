@@ -237,9 +237,11 @@ export function AuthProvider({
   const userRef = useRef(user);
   userRef.current = user;
 
-  // Armed only while the app is "active" right after a reauthentication: it
-  // suppresses stale 401s from requests made before reauth. It is cleared on
-  // every fresh session (applyAuthenticatedSession) and on logout.
+  // Armed only while the app is "active" right after a reauthentication. It
+  // does NOT suppress a stale 401 by itself: the flag is cleared as soon as
+  // the fresh session lands (applyAuthenticatedSession), so the gate must
+  // cancel stale queries AND mutations before re-authenticating for this to
+  // hold. It is also cleared on logout.
   const everExpiredRef = useRef(false);
 
   // Bumped on every fresh session so an in-flight poll started against the

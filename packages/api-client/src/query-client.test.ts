@@ -48,4 +48,22 @@ describe("createQueryClient", () => {
 
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
+
+  it("ignores an unauthorized mutation evicted by cancelMutations", async () => {
+    const onUnauthorized = vi.fn();
+    const client = createQueryClient({ onUnauthorized });
+
+    let rejectMutation: (error: unknown) => void = () => {};
+    const mutation = client.getMutationCache().build(client, {
+      mutationFn: () => new Promise((_resolve, reject) => (rejectMutation = reject)),
+    });
+    const running = mutation.execute(undefined).catch(() => {});
+
+    await vi.waitFor(() => expect(client.isMutating()).toBe(1));
+    await client.cancelMutations();
+    rejectMutation(new ApiError("no", { status: 401 }));
+    await running;
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
 });
