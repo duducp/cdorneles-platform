@@ -291,6 +291,76 @@ func TestMainLogsInAndReturnsCredentials(t *testing.T) {
 	}
 }
 
+// A request that names the resolved user's id is the normal session-expired
+// re-auth path and must still produce a login token.
+func TestMainAcceptsMatchingExpectedUserID(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
+	ops := &fakeOps{
+		verifyToken: googleToken(t, nil),
+		usersByEmail: map[string]*models.User{
+			"user@example.com": activeUser("u1", "user@example.com"),
+		},
+		token: &models.Token{Id: "t1", UserId: "u1", Secret: "the-secret"},
+	}
+	resp := handle(newContext(`{"idToken":"x","expectedUserId":"u1"}`), ops)
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 for a matching expectedUserId, got %d (%s)", resp.StatusCode, resp.Body)
+	}
+	if ops.tokenCalls != 1 {
+		t.Fatalf("expected exactly one login token for a matching expectedUserId, got %d", ops.tokenCalls)
+	}
+}
+
+// An expectedUserId naming another account must be refused and, crucially, no
+// login token may be created for the resolved user.
+func TestMainRejectsMismatchedExpectedUserID(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
+	ops := &fakeOps{
+		verifyToken: googleToken(t, nil),
+		usersByEmail: map[string]*models.User{
+			"user@example.com": activeUser("u1", "user@example.com"),
+		},
+		token: &models.Token{Id: "t1", UserId: "u1", Secret: "the-secret"},
+	}
+	resp := handle(newContext(`{"idToken":"x","expectedUserId":"someone-else"}`), ops)
+	assertError(t, resp, 403, "account_mismatch", "token requested for a different account")
+	if ops.tokenCalls != 0 {
+		t.Fatal("no login token may be created when the expected user does not match")
+	}
+}
+
+// Absent expectedUserId is the ordinary login and must behave exactly as before.
+func TestMainAllowsAbsentExpectedUserID(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
+	ops := &fakeOps{
+		verifyToken: googleToken(t, nil),
+		usersByEmail: map[string]*models.User{
+			"user@example.com": activeUser("u1", "user@example.com"),
+		},
+		token: &models.Token{Id: "t1", UserId: "u1", Secret: "the-secret"},
+	}
+	resp := handle(newContext(`{"idToken":"x"}`), ops)
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 when expectedUserId is absent, got %d (%s)", resp.StatusCode, resp.Body)
+	}
+}
+
+// A whitespace-only expectedUserId carries no binding and is treated as absent.
+func TestMainTreatsWhitespaceExpectedUserIDAsAbsent(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
+	ops := &fakeOps{
+		verifyToken: googleToken(t, nil),
+		usersByEmail: map[string]*models.User{
+			"user@example.com": activeUser("u1", "user@example.com"),
+		},
+		token: &models.Token{Id: "t1", UserId: "u1", Secret: "the-secret"},
+	}
+	resp := handle(newContext(`{"idToken":"x","expectedUserId":"   "}`), ops)
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 when expectedUserId is whitespace-only, got %d (%s)", resp.StatusCode, resp.Body)
+	}
+}
+
 func TestMainReturns500WhenTokenCreationFails(t *testing.T) {
 	t.Setenv("GOOGLE_CLIENT_ID", testClientID)
 	ops := &fakeOps{

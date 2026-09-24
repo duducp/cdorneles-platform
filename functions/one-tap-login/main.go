@@ -86,6 +86,7 @@ const (
 	errUnknownEmail       = "unknown_email"
 	errUserDisabled       = "user_disabled"
 	errEmailNotVerified   = "email_not_verified"
+	errAccountMismatch    = "account_mismatch"
 	errConfigMissing      = "config_missing"
 	errGoogleAuthDisabled = "google_auth_disabled"
 	errInternal           = "internal_error"
@@ -95,8 +96,12 @@ const (
 var clock = time.Now
 
 // oneTapLoginRequest is the browser's body: the ID token from Google One Tap.
+// ExpectedUserID is optional: when set, the function only issues a login token
+// if the resolved user matches it, so a session-expired re-auth cannot be
+// silently completed for a different account.
 type oneTapLoginRequest struct {
-	IDToken string `json:"idToken"`
+	IDToken        string `json:"idToken"`
+	ExpectedUserID string `json:"expectedUserId"`
 }
 
 // oneTapLoginResponse carries the credentials the browser needs to complete
@@ -184,6 +189,14 @@ func handle(ctx openruntimes.Context, ops operations) openruntimes.Response {
 	}
 	if !user.EmailVerification {
 		return errorBody(ctx, http.StatusForbidden, errEmailNotVerified, "account e-mail is not verified")
+	}
+
+	// Optional account binding: when the client names the user it expects, a
+	// token for any other user is refused. This is the session-expired re-auth
+	// guard — no login token may be created on this path.
+	if expected := strings.TrimSpace(body.ExpectedUserID); expected != "" && user.Id != expected {
+		ctx.Log(map[string]interface{}{"action": "one_tap.rejected", "reason": "account_mismatch"})
+		return errorBody(ctx, http.StatusForbidden, errAccountMismatch, "token requested for a different account")
 	}
 
 	loginToken, err := ops.CreateLoginToken(user.Id)
