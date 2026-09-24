@@ -25,7 +25,9 @@ const { SessionExpiryNotice } = await import("./session-expiry-notice");
 const NOTICE_ID = "session-expiring";
 
 function authState(
-  overrides: Partial<Record<"expiryWarning" | "status" | "renewSession", unknown>> = {},
+  overrides: Partial<
+    Record<"expiryWarning" | "sessionState" | "status" | "renewSession", unknown>
+  > = {},
 ) {
   return {
     expiryWarning: "none",
@@ -132,6 +134,17 @@ describe("SessionExpiryNotice", () => {
 
   it("stays silent and clears the toast while no warning is active", () => {
     useAuthMock.mockReturnValue(authState({ expiryWarning: "none" }));
+
+    render(<SessionExpiryNotice />);
+
+    expect(notifyInfoMock).not.toHaveBeenCalled();
+    expect(notifyHideMock).toHaveBeenCalledWith(NOTICE_ID);
+  });
+
+  it("clears the toast while the session-expired modal is open", () => {
+    useAuthMock.mockReturnValue(
+      authState({ expiryWarning: "5m", sessionState: "expired" }),
+    );
 
     render(<SessionExpiryNotice />);
 

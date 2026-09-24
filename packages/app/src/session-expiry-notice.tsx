@@ -17,12 +17,12 @@ const NOTICE_ID = "session-expiring";
  * and it is cleared as soon as the warning returns to `none` (renewal or logout).
  */
 export function SessionExpiryNotice() {
-  const { expiryWarning, status, renewSession } = useAuth();
+  const { expiryWarning, sessionState, status, renewSession } = useAuth();
   const renewSessionRef = useRef(renewSession);
   renewSessionRef.current = renewSession;
 
   useEffect(() => {
-    if (expiryWarning === "none" || status !== "authenticated") {
+    if (expiryWarning === "none" || sessionState === "expired" || status !== "authenticated") {
       notifyHide(NOTICE_ID);
       return;
     }
@@ -50,7 +50,7 @@ export function SessionExpiryNotice() {
         </Button>
       ),
     });
-  }, [expiryWarning, status]);
+  }, [expiryWarning, sessionState, status]);
 
   return null;
 }

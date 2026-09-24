@@ -13,6 +13,9 @@ const {
   MfaRequiredErrorMock,
   queryClientMock,
   oneTapProps,
+  notifyInfoMock,
+  notifyHideMock,
+  notifyErrorMock,
 } = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   SessionExpiredDialogMock: vi.fn((props: Record<string, unknown>) => (
@@ -40,6 +43,9 @@ const {
       onStart?: () => void;
     },
   },
+  notifyInfoMock: vi.fn(),
+  notifyHideMock: vi.fn(),
+  notifyErrorMock: vi.fn(),
 }));
 
 vi.mock("@cdorneles/auth", async () => {
@@ -54,6 +60,9 @@ vi.mock("@cdorneles/auth", async () => {
 vi.mock("@cdorneles/ui", () => ({
   SessionExpiredDialog: SessionExpiredDialogMock,
   SessionExpiredMfaDialog: SessionExpiredMfaDialogMock,
+  notifyInfo: notifyInfoMock,
+  notifyHide: notifyHideMock,
+  notifyError: notifyErrorMock,
 }));
 
 vi.mock("@tanstack/react-query", () => ({
@@ -71,6 +80,7 @@ vi.mock("./auth/google-one-tap", () => ({
 }));
 
 const { SessionExpiredGate } = await import("./session-expired-gate");
+const { SessionExpiryNotice } = await import("./session-expiry-notice");
 
 function authState(
   overrides: Partial<
@@ -82,7 +92,10 @@ function authState(
       | "reauthenticate"
       | "completeReauthMfa"
       | "loginWithOneTap"
-      | "logout",
+      | "logout"
+      | "expiryWarning"
+      | "status"
+      | "renewSession",
       unknown
     >
   > = {},
@@ -95,6 +108,10 @@ function authState(
     completeReauthMfa: vi.fn(),
     loginWithOneTap: vi.fn().mockResolvedValue({}),
     logout: vi.fn(),
+    // Auth fields the SessionExpiryNotice reads when rendered alongside the gate.
+    expiryWarning: "none",
+    status: "authenticated",
+    renewSession: vi.fn().mockResolvedValue(undefined),
     service: {
       createMfaChallenge: vi.fn().mockResolvedValue({ challengeId: "ch1", factor: "totp" }),
       listMfaFactors: vi.fn().mockResolvedValue({ totp: true, email: false }),
@@ -169,6 +186,30 @@ describe("SessionExpiredGate", () => {
     );
     render(<SessionExpiredGate />);
     expect(screen.getByTestId("password-dialog")).toBeInTheDocument();
+  });
+
+  it("hides the expiry toast while the gate is open", () => {
+    // Early revocation: the 5-minute warning is still active when the
+    // session-expired modal takes over the screen.
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        expiryWarning: "5m",
+        status: "authenticated",
+      }),
+    );
+
+    render(
+      <>
+        <SessionExpiryNotice />
+        <SessionExpiredGate />
+      </>,
+    );
+
+    expect(screen.getByTestId("password-dialog")).toBeInTheDocument();
+    expect(notifyHideMock).toHaveBeenCalledWith("session-expiring");
+    expect(notifyInfoMock).not.toHaveBeenCalled();
   });
 
   it("revalidates when another tab renews the session", () => {
