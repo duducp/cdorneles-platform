@@ -10,6 +10,9 @@ import { FormError } from "../components/form-error";
 
 export type { MfaChallengeFormValues };
 
+/** Seconds the resend button stays disabled after a code is sent. */
+export const RESEND_COOLDOWN_SECONDS = 30;
+
 export interface MfaChallengeFormProps {
   onSubmit: (values: MfaChallengeFormValues) => Promise<void>;
   onResend?: () => Promise<void>;
@@ -20,7 +23,27 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [cooldown, setCooldown] = useState(0);
+  const [cooldown, setCooldown] = useState(onResend ? RESEND_COOLDOWN_SECONDS : 0);
+
+  const startCooldown = useCallback(() => {
+    setCooldown(RESEND_COOLDOWN_SECONDS);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // The code was just sent when this form appears, so resend starts on cooldown.
+  useEffect(() => {
+    if (!onResend) return;
+    startCooldown();
+  }, [onResend, startCooldown]);
 
   useEffect(() => {
     return () => {
@@ -63,22 +86,13 @@ export function MfaChallengeForm({ onSubmit, onResend }: MfaChallengeFormProps) 
     setResending(true);
     try {
       await onResend();
-      setCooldown(30);
-      cooldownRef.current = setInterval(() => {
-        setCooldown((prev) => {
-          if (prev <= 1) {
-            if (cooldownRef.current) clearInterval(cooldownRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      startCooldown();
     } catch {
       setError("Erro ao reenviar código. Tente novamente.");
     } finally {
       setResending(false);
     }
-  }, [onResend, cooldown]);
+  }, [onResend, cooldown, startCooldown]);
 
   return (
     <Box

@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { ThemeProvider } from "@cdorneles/theme";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -61,12 +61,41 @@ describe("MfaChallengeForm", () => {
     });
   });
 
-  it("renders the resend button when onResend is provided", () => {
+  it("starts the resend button on cooldown", () => {
     const onSubmit = vi.fn();
     const onResend = vi.fn();
     renderForm({ onSubmit, onResend });
 
-    expect(screen.getByRole("button", { name: /reenviar código/i })).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: /reenviar em 30s/i });
+    expect(button).toBeInTheDocument();
+    expect(button).toBeDisabled();
+  });
+
+  it("enables resend after 30s and restarts the cooldown on resend", async () => {
+    vi.useFakeTimers();
+    try {
+      const onSubmit = vi.fn();
+      const onResend = vi.fn().mockResolvedValue(undefined);
+      renderForm({ onSubmit, onResend });
+
+      expect(screen.getByRole("button", { name: /reenviar em 30s/i })).toBeDisabled();
+
+      await act(async () => {
+        vi.advanceTimersByTime(30_000);
+      });
+
+      const enabled = screen.getByRole("button", { name: /^reenviar código$/i });
+      expect(enabled).toBeEnabled();
+
+      await act(async () => {
+        fireEvent.click(enabled);
+      });
+
+      expect(onResend).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("button", { name: /reenviar em 30s/i })).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("does not render the resend button when onResend is not provided", () => {
