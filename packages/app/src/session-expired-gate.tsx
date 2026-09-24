@@ -1,6 +1,6 @@
 "use client";
 
-import type { CancellableQueryClient } from "@cdorneles/api-client";
+import { cancelStaleRequests } from "@cdorneles/api-client";
 import { describeAuthError, MfaRequiredError, useAuth } from "@cdorneles/auth";
 import { SessionExpiredDialog, SessionExpiredMfaDialog } from "@cdorneles/ui";
 import type { MfaChallengeFormValues } from "@cdorneles/ui";
@@ -27,7 +27,7 @@ export function SessionExpiredGate() {
     logout,
     service,
   } = useAuth();
-  const queryClient = useQueryClient() as CancellableQueryClient;
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<"password" | "mfa">("password");
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factor, setFactor] = useState<"email" | "totp" | null>(null);
@@ -72,7 +72,7 @@ export function SessionExpiredGate() {
     async (password: string) => {
       if (!user) return;
       try {
-        await Promise.all([queryClient.cancelQueries(), queryClient.cancelMutations()]);
+        await cancelStaleRequests(queryClient);
         await reauthenticate({ email: user.email, password });
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
         finish();
@@ -98,7 +98,7 @@ export function SessionExpiredGate() {
   const handleMfa = useCallback(
     async (values: MfaChallengeFormValues) => {
       if (!challengeId) return;
-      await Promise.all([queryClient.cancelQueries(), queryClient.cancelMutations()]);
+      await cancelStaleRequests(queryClient);
       await completeReauthMfa({ challengeId, code: values.code });
       window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
       finish();
@@ -127,7 +127,7 @@ export function SessionExpiredGate() {
       setGoogleMessage(null);
       setGoogleLoading(true);
       try {
-        await Promise.all([queryClient.cancelQueries(), queryClient.cancelMutations()]);
+        await cancelStaleRequests(queryClient);
         await loginWithOneTap({ idToken });
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
         finish();

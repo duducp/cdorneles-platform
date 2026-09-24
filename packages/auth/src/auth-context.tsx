@@ -40,6 +40,13 @@ const SESSION_POLL_INTERVAL = 4 * 60 * 1000; // 4 minutes
 /** How far before expiry to consider a session "about to expire" (ms). */
 const EXPIRY_WARNING_MS = 5 * 60 * 1000; // 5 minutes
 
+/**
+ * After a fresh session lands, stale 401s from requests started under the
+ * previous session are ignored for this long (ms). A genuine 401 after the
+ * window still expires.
+ */
+const SIGNAL_SUPPRESSION_MS = 5_000;
+
 /** `Secure` when served over HTTPS so the hint is not sent in the clear. */
 function sessionCookieSecure(): string {
   return typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
@@ -237,12 +244,11 @@ export function AuthProvider({
   const userRef = useRef(user);
   userRef.current = user;
 
-  // Armed only while the app is "active" right after a reauthentication. It
-  // does NOT suppress a stale 401 by itself: the flag is cleared as soon as
-  // the fresh session lands (applyAuthenticatedSession), so the gate must
-  // cancel stale queries AND mutations before re-authenticating for this to
-  // hold. It is also cleared on logout.
-  const everExpiredRef = useRef(false);
+  // Epoch ms until which a 401 signal is ignored. A fresh session opens a
+  // short window (applyAuthenticatedSession) so a stale 401 from a request
+  // that was in flight when it landed cannot reopen the dialog; once the
+  // deadline passes a genuine 401 expires again. Reset on logout.
+  const suppressExpiredUntilRef = useRef(0);
 
   // Bumped on every fresh session so an in-flight poll started against the
   // previous session cannot expire the one that replaced it.
@@ -256,23 +262,16 @@ export function AuthProvider({
     if (!userRef.current) return;
     setSessionState("expired");
     setStatus("authenticated");
-    // Only a signal that actually moved the app to "expired" arms suppression.
-    everExpiredRef.current = true;
   }, []);
-
-  // Read the latest sessionState without making `markExpired` depend on it: the
-  // signal subscription effect must stay stable across renders.
-  const sessionStateRef = useRef(sessionState);
-  sessionStateRef.current = sessionState;
 
   // A 401 from any request reaches the query client, not the auth state.
   useEffect(() => {
     if (!sessionSignal) return;
     return sessionSignal.subscribe(() => {
-      // While "active" right after a reauthentication, a stale 401 from a
-      // request made before reauth must not reopen the dialog. The flag is
-      // cleared on every fresh session, so a genuine later 401 still expires.
-      if (sessionStateRef.current === "active" && everExpiredRef.current) return;
+      // A stale 401 from a request started before a fresh session landed is
+      // ignored until the suppression window lapses; a genuine 401 after it
+      // still expires.
+      if (Date.now() < suppressExpiredUntilRef.current) return;
       markExpired();
     });
   }, [sessionSignal, markExpired]);
@@ -327,9 +326,10 @@ export function AuthProvider({
       setStatus(nextUser ? "authenticated" : "anonymous");
       setSessionState("active");
       if (nextUser) setSessionCookie();
-      // A fresh session disarms the stale-401 suppression and invalidates any
-      // poll started against the session it replaces.
-      everExpiredRef.current = false;
+      // A fresh session opens a short window in which stale 401s from requests
+      // started before it are ignored, and invalidates any poll started against
+      // the session it replaces.
+      suppressExpiredUntilRef.current = Date.now() + SIGNAL_SUPPRESSION_MS;
       sessionGenerationRef.current += 1;
     },
     [],
@@ -400,7 +400,7 @@ export function AuthProvider({
       setStatus("anonymous");
       setSessionState("active");
       clearSessionCookie();
-      everExpiredRef.current = false;
+      suppressExpiredUntilRef.current = 0;
     },
     [service],
   );

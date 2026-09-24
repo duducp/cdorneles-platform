@@ -72,11 +72,32 @@ export function createQueryClient(
   queryClient.cancelMutations = async () => {
     const cache = queryClient.getMutationCache();
     for (const mutation of cache.getAll()) {
-      if (mutation.state.status === "pending") {
+      // A paused mutation (offline, networkMode "online") never ran, so it is
+      // not a stale 401 source: evicting it would leave resumePausedMutations()
+      // with nothing to resume and hang the mutateAsync() caller.
+      if (mutation.state.status === "pending" && !mutation.state.isPaused) {
         cache.remove(mutation);
       }
     }
   };
 
   return queryClient;
+}
+
+/**
+ * Cancels the work that belongs to the session that just died: every in-flight
+ * query, plus any pending mutation the client can cancel.
+ *
+ * `cancelMutations` is an extension added by `createQueryClient`, not part of
+ * the base `QueryClient`, so callers can pass any client and the mutation
+ * cancellation is guarded at runtime instead of casting at each call site.
+ * Both cancels settle before the returned promise resolves, so a caller can
+ * re-authenticate only once they are done.
+ */
+export async function cancelStaleRequests(queryClient: QueryClient): Promise<void> {
+  const cancelMutations = (queryClient as Partial<CancellableQueryClient>).cancelMutations;
+  await Promise.all([
+    queryClient.cancelQueries(),
+    typeof cancelMutations === "function" ? cancelMutations.call(queryClient) : Promise.resolve(),
+  ]);
 }

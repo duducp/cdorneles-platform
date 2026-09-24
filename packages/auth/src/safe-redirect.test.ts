@@ -42,6 +42,14 @@ describe("resolvePostAuthRedirect", () => {
     expect(resolvePostAuthRedirect("?redirect=/%5Cevil.test")).toBe("/");
   });
 
+  it("rejects a still-encoded slash or backslash a downstream decode could turn cross-origin", () => {
+    // The URL parser leaves `%2F`/`%5C` in the path, so without this check they
+    // pass through and a later decode could surface `//` or `/\`.
+    expect(resolvePostAuthRedirect("?redirect=%2F%2Fevil.test")).toBe("/");
+    expect(resolvePostAuthRedirect("?redirect=%2F%252F%252Fevil.test")).toBe("/");
+    expect(resolvePostAuthRedirect("?redirect=%2F%255Cevil.test")).toBe("/");
+  });
+
   it("rejects a tab that the URL parser strips into a protocol-relative URL", () => {
     expect(resolvePostAuthRedirect("?redirect=%2F%09%2Fevil.test")).toBe("/");
   });

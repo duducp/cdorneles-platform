@@ -15,6 +15,10 @@ import type { AuthService, AuthSession, AuthUser } from "./types";
 // tests fail loudly instead of passing silently.
 const POLL_INTERVAL_MS = 4 * 60 * 1000;
 
+// Must match SIGNAL_SUPPRESSION_MS in auth-context.tsx: the window after a fresh
+// session in which stale 401s are ignored.
+const SIGNAL_SUPPRESSION_MS = 5_000;
+
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, "location");
 
 // `document.cookie` is shared jsdom state. Clear it before every test so the
@@ -777,7 +781,50 @@ describe("reauthentication", () => {
     expect(window.location.href).toBe("");
   });
 
+  it("ignores a stale 401 that arrives inside the suppression window after a reauthentication", async () => {
+    const startedAt = Date.now();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(startedAt);
+
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+      login: vi.fn().mockResolvedValue(createMockSession({ id: "s2" })),
+    });
+    const signal = createSessionSignal();
+    const { Capture, current } = captureAuth();
+
+    render(
+      <AuthProvider service={service} sessionSignal={signal}>
+        <Capture />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(current().status).toBe("authenticated"));
+
+    signal.notifyExpired();
+    await waitFor(() => expect(current().sessionState).toBe("expired"));
+
+    await act(async () => {
+      await current().reauthenticate({ email: "user@example.com", password: "pw" });
+    });
+    expect(current().sessionState).toBe("active");
+
+    // A request started before the fresh session landed resolves with a stale
+    // 401 a second later. It is inside the suppression window and must not
+    // reopen the dialog.
+    vi.setSystemTime(startedAt + 1_000);
+    await act(async () => {
+      signal.notifyExpired();
+    });
+
+    expect(current().sessionState).toBe("active");
+  });
+
   it("moves back to expired when a fresh 401 arrives after a successful reauthentication", async () => {
+    const startedAt = Date.now();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(startedAt);
+
     const service = createMockService({
       getSession: vi.fn().mockResolvedValue(createMockSession()),
       getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
@@ -803,8 +850,10 @@ describe("reauthentication", () => {
     });
     expect(current().sessionState).toBe("active");
 
-    // 3. The fresh session dies too. This is a second, genuine 401 — not a
-    //    stale request from before reauth — so it must reopen the dialog.
+    // 3. The fresh session dies too, after the suppression window has lapsed.
+    //    This is a second, genuine 401 — not a stale request from before reauth
+    //    — so it must reopen the dialog.
+    vi.setSystemTime(startedAt + SIGNAL_SUPPRESSION_MS + 1);
     await act(async () => {
       signal.notifyExpired();
     });

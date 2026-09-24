@@ -174,6 +174,13 @@ describe("SessionExpiredGate", () => {
       expect(loginWithOneTap).toHaveBeenCalledWith({ idToken: "user@example.com" }),
     );
     expect(window.localStorage.getItem("cdorneles-session-renewed")).not.toBeNull();
+
+    // Both cancels must settle before the credential exchange starts.
+    const cancelQueriesOrder = queryClientMock.cancelQueries.mock.invocationCallOrder[0];
+    const cancelMutationsOrder = queryClientMock.cancelMutations.mock.invocationCallOrder[0];
+    const loginOrder = loginWithOneTap.mock.invocationCallOrder[0];
+    expect(cancelQueriesOrder).toBeLessThan(cancelMutationsOrder);
+    expect(cancelMutationsOrder).toBeLessThan(loginOrder);
   });
 
   it("cancels stale queries and broadcasts the renewal after a password success", async () => {
@@ -227,6 +234,36 @@ describe("SessionExpiredGate", () => {
     expect(queryClientMock.cancelQueries).toHaveBeenCalled();
     expect(queryClientMock.cancelMutations).toHaveBeenCalled();
     expect(reauthenticate).toHaveBeenCalledWith({ email: "user@example.com", password: "secret" });
+
+    // Both cancels must settle before the credential exchange starts.
+    const cancelQueriesOrder = queryClientMock.cancelQueries.mock.invocationCallOrder[0];
+    const cancelMutationsOrder = queryClientMock.cancelMutations.mock.invocationCallOrder[0];
+    const reauthenticateOrder = reauthenticate.mock.invocationCallOrder[0];
+    expect(cancelQueriesOrder).toBeLessThan(cancelMutationsOrder);
+    expect(cancelMutationsOrder).toBeLessThan(reauthenticateOrder);
+  });
+
+  it("maps a cancelMutations failure through describeAuthError before the exchange", async () => {
+    const cancellationError = new Error("cancel mutations failed");
+    queryClientMock.cancelMutations.mockRejectedValueOnce(cancellationError);
+    const reauthenticate = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+
+    await expect(dialogProps.onSubmit("secret")).rejects.toMatchObject({
+      cause: cancellationError,
+    });
+    expect(reauthenticate).not.toHaveBeenCalled();
   });
 
   it("maps a cancellation failure through describeAuthError before the exchange", async () => {

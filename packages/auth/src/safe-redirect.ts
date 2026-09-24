@@ -10,7 +10,9 @@ const BASE = "https://internal.invalid";
  * — all of which the browser URL parser resolves cross-origin), parse it
  * against a fixed origin and accept only values that stay on that origin.
  * Anything that escapes — an absolute URL, a protocol-relative `//host`, a
- * backslash or stripped control character — falls back to `/`.
+ * backslash or stripped control character — falls back to `/`. A value that
+ * still carries an encoded `%2F`/`%5C` is rejected too: the parser leaves it
+ * intact, but a downstream double-decode would turn it into a separator.
  *
  * Kept pure (a search string in, a path out) so it can be tested without a
  * browser, and so callers can pass `window.location.search` at submit time
@@ -28,6 +30,9 @@ export function resolvePostAuthRedirect(search: string): string {
     // The parser collapses `.`/`..` segments after fixing the host, so a rooted
     // input can still surface as `//host`, which Next resolves cross-origin.
     if (!out.startsWith("/") || out.startsWith("//")) return "/";
+    // Defence against a downstream double-decode: the parser leaves `%2F`/`%5C`
+    // encoded, but decoding them later would reintroduce a separator.
+    if (/%(2f|5c)/i.test(out)) return "/";
     return out;
   } catch {
     return "/";
