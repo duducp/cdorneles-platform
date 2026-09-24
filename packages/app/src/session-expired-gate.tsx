@@ -35,8 +35,8 @@ export function SessionExpiredGate() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const googleAvailable = isGoogleAuthEnabled() && !!googleClientId;
 
-  const finish = useCallback(async () => {
-    await queryClient.invalidateQueries();
+  const finish = useCallback(() => {
+    void queryClient.invalidateQueries().catch(() => {});
     setStep("password");
     setChallengeId(null);
     setFactor(null);
@@ -68,16 +68,17 @@ export function SessionExpiredGate() {
   const handlePassword = useCallback(
     async (password: string) => {
       if (!user) return;
+      await queryClient.cancelQueries();
       try {
         await reauthenticate({ email: user.email, password });
-        await finish();
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
+        finish();
       } catch (error) {
         if (error instanceof MfaRequiredError) {
           try {
             await beginMfaChallenge();
           } catch (mfaError) {
-            setGoogleMessage(
+            throw new Error(
               mfaError instanceof NoMfaFactorError
                 ? mfaError.message
                 : "Erro ao iniciar a verificação em duas etapas.",
@@ -88,17 +89,18 @@ export function SessionExpiredGate() {
         throw new Error(describeAuthError(error), { cause: error });
       }
     },
-    [user, reauthenticate, beginMfaChallenge, finish],
+    [user, queryClient, reauthenticate, beginMfaChallenge, finish],
   );
 
   const handleMfa = useCallback(
     async (values: MfaChallengeFormValues) => {
       if (!challengeId) return;
+      await queryClient.cancelQueries();
       await completeReauthMfa({ challengeId, code: values.code });
-      await finish();
       window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
+      finish();
     },
-    [challengeId, completeReauthMfa, finish],
+    [challengeId, queryClient, completeReauthMfa, finish],
   );
 
   const handleResend = useCallback(async () => {
@@ -122,9 +124,10 @@ export function SessionExpiredGate() {
       setGoogleMessage(null);
       setGoogleLoading(true);
       try {
+        await queryClient.cancelQueries();
         await loginWithOneTap({ idToken });
-        await finish();
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
+        finish();
       } catch (error) {
         if (error instanceof MfaRequiredError) {
           try {
@@ -143,7 +146,7 @@ export function SessionExpiredGate() {
         setGoogleLoading(false);
       }
     },
-    [user, loginWithOneTap, beginMfaChallenge, finish],
+    [user, queryClient, loginWithOneTap, beginMfaChallenge, finish],
   );
 
   const handleSignOut = useCallback(() => {

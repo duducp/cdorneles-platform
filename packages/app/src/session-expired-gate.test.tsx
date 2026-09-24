@@ -3,11 +3,14 @@ import "@testing-library/jest-dom/vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, "location");
+
 const {
   useAuthMock,
   SessionExpiredDialogMock,
   SessionExpiredMfaDialogMock,
   MfaRequiredErrorMock,
+  queryClientMock,
   oneTapProps,
 } = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
@@ -19,6 +22,10 @@ const {
   )),
   MfaRequiredErrorMock: class MfaRequiredError extends Error {
     override name = "MfaRequiredError" as const;
+  },
+  queryClientMock: {
+    cancelQueries: vi.fn().mockResolvedValue(undefined),
+    invalidateQueries: vi.fn().mockResolvedValue(undefined),
   },
   oneTapProps: {
     current: null as null | {
@@ -42,7 +49,7 @@ vi.mock("@cdorneles/ui", () => ({
 }));
 
 vi.mock("@tanstack/react-query", () => ({
-  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+  useQueryClient: () => queryClientMock,
 }));
 
 vi.mock("./auth/google-one-tap", () => ({
@@ -60,7 +67,13 @@ const { SessionExpiredGate } = await import("./session-expired-gate");
 function authState(
   overrides: Partial<
     Record<
-      "sessionState" | "user" | "service" | "refresh" | "reauthenticate" | "loginWithOneTap",
+      | "sessionState"
+      | "user"
+      | "service"
+      | "refresh"
+      | "reauthenticate"
+      | "loginWithOneTap"
+      | "logout",
       unknown
     >
   > = {},
@@ -91,6 +104,11 @@ describe("SessionExpiredGate", () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    if (originalLocationDescriptor) {
+      Object.defineProperty(window, "location", originalLocationDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "location");
+    }
   });
 
   it("renders nothing when sessionState is active", () => {
@@ -152,6 +170,85 @@ describe("SessionExpiredGate", () => {
       expect(loginWithOneTap).toHaveBeenCalledWith({ idToken: "user@example.com" }),
     );
     expect(window.localStorage.getItem("cdorneles-session-renewed")).not.toBeNull();
+  });
+
+  it("cancels stale queries and broadcasts the renewal after a password success", async () => {
+    const reauthenticate = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate,
+      }),
+    );
+    const { rerender } = render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+    await act(async () => {
+      await dialogProps.onSubmit("secret");
+    });
+
+    expect(reauthenticate).toHaveBeenCalledWith({ email: "user@example.com", password: "secret" });
+    expect(queryClientMock.cancelQueries).toHaveBeenCalled();
+    expect(queryClientMock.invalidateQueries).toHaveBeenCalled();
+    expect(window.localStorage.getItem("cdorneles-session-renewed")).not.toBeNull();
+
+    useAuthMock.mockReturnValue(
+      authState({ sessionState: "active", user: { email: "user@example.com" } }),
+    );
+    rerender(<SessionExpiredGate />);
+    expect(screen.queryByTestId("password-dialog")).not.toBeInTheDocument();
+  });
+
+  it("still broadcasts the renewal when invalidating the queries fails", async () => {
+    queryClientMock.invalidateQueries.mockRejectedValueOnce(new Error("offline"));
+    const reauthenticate = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+    await act(async () => {
+      await expect(dialogProps.onSubmit("secret")).resolves.toBeUndefined();
+    });
+
+    expect(window.localStorage.getItem("cdorneles-session-renewed")).not.toBeNull();
+  });
+
+  it("signs out and navigates to the login page", async () => {
+    const logout = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      writable: true,
+      value: { href: "" },
+    });
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        logout,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSignOut: () => void;
+    };
+    await act(async () => {
+      dialogProps.onSignOut();
+    });
+
+    expect(logout).toHaveBeenCalled();
+    await waitFor(() => expect(window.location.href).toBe("/login"));
   });
 
   it("shows the loading overlay while the Google exchange runs", async () => {
@@ -400,7 +497,7 @@ describe("SessionExpiredGate", () => {
     expect(mfaProps.onResend).toBeUndefined();
   });
 
-  it("surfaces an error when the account has no MFA factor", async () => {
+  it("rejects with the missing-factor message when the account has no MFA factor", async () => {
     const listMfaFactors = vi.fn().mockResolvedValue({ totp: false, email: false });
     useAuthMock.mockReturnValue(
       authState({
@@ -415,17 +512,11 @@ describe("SessionExpiredGate", () => {
     const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
       onSubmit: (password: string) => Promise<void>;
     };
-    await act(async () => {
-      await dialogProps.onSubmit("secret").catch(() => {});
-    });
 
-    await waitFor(() => {
-      const latest = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
-      expect(latest.errorMessage).toMatch(/fator de verificação/i);
-    });
+    await expect(dialogProps.onSubmit("secret")).rejects.toThrow(/fator de verificação/i);
   });
 
-  it("does not report a missing factor when starting the challenge fails", async () => {
+  it("rejects with the generic message when starting the challenge fails", async () => {
     const listMfaFactors = vi.fn().mockRejectedValue(new Error("network"));
     useAuthMock.mockReturnValue(
       authState({
@@ -440,14 +531,9 @@ describe("SessionExpiredGate", () => {
     const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
       onSubmit: (password: string) => Promise<void>;
     };
-    await act(async () => {
-      await dialogProps.onSubmit("secret").catch(() => {});
-    });
 
-    await waitFor(() => {
-      const latest = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
-      expect(latest.errorMessage).toMatch(/Erro ao iniciar a verificação/i);
-      expect(latest.errorMessage).not.toMatch(/Nenhum fator/i);
-    });
+    await expect(dialogProps.onSubmit("secret")).rejects.toThrow(
+      "Erro ao iniciar a verificação em duas etapas.",
+    );
   });
 });

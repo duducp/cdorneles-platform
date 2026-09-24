@@ -75,6 +75,7 @@ describe("SessionExpiredDialog", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Senha incorreta.");
+    expect(passwordField()).toHaveValue("errada");
   });
 
   it("offers a way out for an account with no password", async () => {
