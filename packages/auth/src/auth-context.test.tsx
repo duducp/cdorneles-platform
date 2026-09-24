@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@cdorneles/api-client";
 
-import { AuthProvider, useAuth } from "./auth-context";
+import { AuthProvider, SIGNAL_SUPPRESSION_MS, useAuth } from "./auth-context";
 import { MfaRequiredError } from "./errors";
 import { createSessionSignal } from "./session-signal";
 import type { AuthService, AuthSession, AuthUser } from "./types";
@@ -14,10 +14,6 @@ import type { AuthService, AuthSession, AuthUser } from "./types";
 // interval changes, advancing this much stops firing the poll and the fake-timer
 // tests fail loudly instead of passing silently.
 const POLL_INTERVAL_MS = 4 * 60 * 1000;
-
-// Must match SIGNAL_SUPPRESSION_MS in auth-context.tsx: the window after a fresh
-// session in which stale 401s are ignored.
-const SIGNAL_SUPPRESSION_MS = 5_000;
 
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, "location");
 

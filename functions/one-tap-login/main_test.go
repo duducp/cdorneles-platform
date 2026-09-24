@@ -585,22 +585,44 @@ func TestVerifyIDTokenCooldownBoundsRefreshOnStaleCache(t *testing.T) {
 }
 
 // A stale cache that still holds the requested kid keeps serving it while the
-// cooldown blocks the refresh: the signature is still verified against a
-// previously-fetched Google key, so availability is preserved.
+// cooldown blocks the refresh, as long as it is within maxStaleKeysAge: the
+// signature is still verified against a previously-fetched Google key, so
+// availability is preserved.
 func TestVerifyIDTokenServesStaleCachedKeyWhenCooldownBlocks(t *testing.T) {
 	calls := stubHTTPGet(t, jwksBody(t, "rotated-kid"))
 
 	ops := &appwriteOps{
 		keys:              map[string]*rsa.PublicKey{"test-kid": &testKey.PublicKey},
-		keysFetchedAt:     clock().Add(-(keysTTL + time.Second)),
+		keysFetchedAt:     clock().Add(-(maxStaleKeysAge - time.Second)),
 		lastForcedRefresh: clock(),
 	}
 
 	if _, err := ops.VerifyIDToken(signedTokenWithKid(t, "test-kid")); err != nil {
-		t.Fatalf("expected the stale cached key to verify the token, got %v", err)
+		t.Fatalf("expected the stale cached key within the cap to verify the token, got %v", err)
 	}
 	if *calls != 0 {
 		t.Fatalf("serving a stale cached key within the cooldown must not fetch, got %d", *calls)
+	}
+}
+
+// A stale cache older than maxStaleKeysAge must not be served even though it
+// still holds the requested kid: a key Google revoked just before an outage
+// would otherwise verify for the whole outage. The refresh is blocked by the
+// cooldown, so the request fails closed.
+func TestVerifyIDTokenDoesNotServeStaleKeyBeyondMaxAgeWhenCooldownBlocks(t *testing.T) {
+	calls := stubHTTPGet(t, jwksBody(t, "rotated-kid"))
+
+	ops := &appwriteOps{
+		keys:              map[string]*rsa.PublicKey{"test-kid": &testKey.PublicKey},
+		keysFetchedAt:     clock().Add(-(maxStaleKeysAge + time.Second)),
+		lastForcedRefresh: clock(),
+	}
+
+	if _, err := ops.VerifyIDToken(signedTokenWithKid(t, "test-kid")); err == nil {
+		t.Fatal("expected verification to fail for a stale cache beyond maxStaleKeysAge")
+	}
+	if *calls != 0 {
+		t.Fatalf("refresh blocked by the cooldown must not fetch, got %d", *calls)
 	}
 }
 

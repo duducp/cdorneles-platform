@@ -41,11 +41,15 @@ const SESSION_POLL_INTERVAL = 4 * 60 * 1000; // 4 minutes
 const EXPIRY_WARNING_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * After a fresh session lands, stale 401s from requests started under the
- * previous session are ignored for this long (ms). A genuine 401 after the
- * window still expires.
+ * After a fresh session lands, 401s are ignored for this long (ms). The window
+ * BOUNDS the stale-401 race, it does not close it: it only covers stale 401s
+ * from work that was already in flight when the re-auth landed. A genuine 401
+ * after the window still expires the app, and a genuine revocation that lands
+ * inside the window is not lost — the poll is the backstop, so it is merely
+ * delayed until the next poll. Any 401 seen during the window is therefore
+ * masked, not proven stale.
  */
-const SIGNAL_SUPPRESSION_MS = 5_000;
+export const SIGNAL_SUPPRESSION_MS = 5_000;
 
 /** `Secure` when served over HTTPS so the hint is not sent in the clear. */
 function sessionCookieSecure(): string {
@@ -247,7 +251,9 @@ export function AuthProvider({
   // Epoch ms until which a 401 signal is ignored. A fresh session opens a
   // short window (applyAuthenticatedSession) so a stale 401 from a request
   // that was in flight when it landed cannot reopen the dialog; once the
-  // deadline passes a genuine 401 expires again. Reset on logout.
+  // deadline passes a genuine 401 expires again. The window only bounds that
+  // race: a 401 inside it is masked regardless of cause, and the poll is the
+  // backstop that still notices a genuine revocation. Reset on logout.
   const suppressExpiredUntilRef = useRef(0);
 
   // Bumped on every fresh session so an in-flight poll started against the
@@ -269,8 +275,10 @@ export function AuthProvider({
     if (!sessionSignal) return;
     return sessionSignal.subscribe(() => {
       // A stale 401 from a request started before a fresh session landed is
-      // ignored until the suppression window lapses; a genuine 401 after it
-      // still expires.
+      // ignored until the suppression window lapses; this bounds the race
+      // rather than closing it, so a genuine 401 inside the window is masked
+      // too — the poll is the backstop. After the window a genuine 401
+      // expires.
       if (Date.now() < suppressExpiredUntilRef.current) return;
       markExpired();
     });
@@ -328,7 +336,8 @@ export function AuthProvider({
       if (nextUser) setSessionCookie();
       // A fresh session opens a short window in which stale 401s from requests
       // started before it are ignored, and invalidates any poll started against
-      // the session it replaces.
+      // the session it replaces. The window bounds the stale-401 race without
+      // closing it; the poll remains the backstop for a genuine revocation.
       suppressExpiredUntilRef.current = Date.now() + SIGNAL_SUPPRESSION_MS;
       sessionGenerationRef.current += 1;
     },

@@ -49,6 +49,19 @@ const keysTTL = 12 * time.Hour
 // Google.
 const forcedRefreshCooldown = 30 * time.Second
 
+// maxStaleKeysAge caps how old a cached key set may be before it stops being
+// served as an availability fallback. The stale-serve path is fail-open: during
+// a Google outage where loadKeys keeps failing, lastForcedRefresh keeps
+// advancing and the old cache would otherwise verify tokens for the whole
+// outage — including a key Google revoked just before it began. Capping at 24h
+// (twice keysTTL) bounds that. The tradeoff: a longer cap keeps One Tap logins
+// working through a longer outage, but trusts a possibly-revoked key for
+// longer; past the cap the function fails closed and logins are unavailable
+// until Google's certs endpoint recovers. One day is well beyond any normal
+// rotation cadence and short enough that a revoked key cannot survive
+// indefinitely.
+const maxStaleKeysAge = 24 * time.Hour
+
 // maxJWKSBodyBytes caps how much of the certs response is read, so a hostile
 // or misbehaving endpoint cannot exhaust the function's memory.
 const maxJWKSBodyBytes = 1 << 20 // 1 MiB
@@ -271,15 +284,22 @@ func (o *appwriteOps) VerifyIDToken(idToken string) (*jwt.Token, error) {
 			// cache needs a periodic refresh; both would call loadKeys. The kid
 			// is attacker-controlled until the signature is verified, so a
 			// single cooldown bounds either. When the cooldown blocks the
-			// refresh, a stale cache may still hold the requested key, which is
-			// served rather than failing the request.
+			// refresh, a stale cache may still hold the requested key; it is
+			// served as an availability fallback only while it is within
+			// maxStaleKeysAge, otherwise the request fails closed.
 			if !o.beginForcedRefresh() {
-				if key != nil {
+				if key != nil && o.withinStaleCap() {
 					return key, nil
 				}
 				return nil, fmt.Errorf("unknown key id %q", kid)
 			}
 			if err := o.loadKeys(); err != nil {
+				// Deliberately fail closed even though the stale cache may
+				// still hold a usable key: this request won the refresh slot,
+				// so the failed fetch — not merely an expired TTL — is the
+				// signal to stop trusting the cache. This is the asymmetry
+				// with the cooldown-blocked branch above, which may serve a
+				// cap-bounded stale key because it cannot refresh right now.
 				return nil, err
 			}
 			if key, _ := o.cachedKey(kid); key != nil {
@@ -300,6 +320,15 @@ func (o *appwriteOps) cachedKey(kid string) (*rsa.PublicKey, bool) {
 	defer o.mu.Unlock()
 	fresh := o.keys != nil && clock().Sub(o.keysFetchedAt) < keysTTL
 	return o.keys[kid], fresh
+}
+
+// withinStaleCap reports whether the cached key set is recent enough to serve
+// as an availability fallback. Beyond maxStaleKeysAge a key may have been
+// revoked after it was fetched, so it is no longer served.
+func (o *appwriteOps) withinStaleCap() bool {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return o.keys != nil && clock().Sub(o.keysFetchedAt) <= maxStaleKeysAge
 }
 
 // beginForcedRefresh reports whether an outbound refresh is allowed now,
