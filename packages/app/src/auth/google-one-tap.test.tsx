@@ -249,6 +249,32 @@ describe("GoogleOneTap", () => {
     expect(onError).toHaveBeenCalledWith(apiError);
   });
 
+  it("ignores a synchronous failure from the automatic prompt", async () => {
+    installGsi();
+    const idApi = (window as unknown as { google: { accounts: { id: { prompt: () => void } } } })
+      .google.accounts.id;
+    idApi.prompt = () => {
+      throw new Error("prompt blocked");
+    };
+
+    vi.useFakeTimers();
+    try {
+      const { onError } = renderOneTap();
+
+      // Flush loadGsiScript's resolution, which schedules the prompt timer.
+      await act(async () => {
+        await Promise.resolve();
+      });
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+
+      expect(onError).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reports null when the GSI script fails to load", async () => {
     const { onError } = renderOneTap();
 

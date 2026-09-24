@@ -128,6 +128,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
             // `/login?redirect=/login`) fires no unmount, so the overlay would
             // otherwise stay up forever.
             setOneTapLoading(false);
+            setAnnouncement("");
             // Land where a successful e-mail/password login would.
             router.replace(resolvePostAuthRedirect(window.location.search));
           }}

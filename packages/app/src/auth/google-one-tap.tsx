@@ -257,7 +257,14 @@ export function GoogleOneTap({
         renderGoogleButton(idApi);
 
         promptTimer = setTimeout(() => {
-          if (!cancelled) idApi.prompt();
+          if (cancelled) return;
+          // The automatic prompt can throw synchronously (e.g. when the
+          // browser blocks it). Ignore it — Google's button still works.
+          try {
+            idApi.prompt();
+          } catch {
+            // Nothing to surface: the button render already succeeded.
+          }
         }, PROMPT_DELAY_MS);
       })
       .catch(() => {

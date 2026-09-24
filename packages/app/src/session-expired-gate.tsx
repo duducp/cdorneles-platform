@@ -11,7 +11,9 @@ import { isGoogleAuthEnabled } from "./auth/google-auth-enabled";
 const RENEWED_KEY = "cdorneles-session-renewed";
 
 /** The account has no usable MFA factor at all (distinct from a call failure). */
-class NoMfaFactorError extends Error {}
+class NoMfaFactorError extends Error {
+  override name = "NoMfaFactorError";
+}
 
 export function SessionExpiredGate() {
   const {
@@ -169,7 +171,10 @@ export function SessionExpiredGate() {
           buttonText="continue_with"
           onCredential={handleGoogleCredential}
           onStart={() => setGoogleResetToken((n) => n + 1)}
-          onError={(error) => setGoogleMessage(describeOneTapError(error))}
+          onError={(error) => {
+            setGoogleResetToken((n) => n + 1);
+            setGoogleMessage(describeOneTapError(error));
+          }}
         />
       ) : null}
       {step === "mfa" && challengeId ? (

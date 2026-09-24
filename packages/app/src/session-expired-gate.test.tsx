@@ -15,7 +15,10 @@ const {
 } = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   SessionExpiredDialogMock: vi.fn((props: Record<string, unknown>) => (
-    <div data-testid="password-dialog">{props.google as never}</div>
+    <div data-testid="password-dialog">
+      {props.errorMessage as never}
+      {props.google as never}
+    </div>
   )),
   SessionExpiredMfaDialogMock: vi.fn((_props: Record<string, unknown>) => (
     <div data-testid="mfa-dialog" />
@@ -393,6 +396,45 @@ describe("SessionExpiredGate", () => {
 
     const props = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { errorMessage?: string };
     expect(props.errorMessage).toBe("Não foi possível entrar com o Google. Tente novamente.");
+  });
+
+  it("clears a prior password error when One Tap fails", async () => {
+    const reauthenticate = vi.fn().mockRejectedValue(new Error("Senha incorreta."));
+    useAuthMock.mockReturnValue(
+      authState({
+        sessionState: "expired",
+        user: { email: "user@example.com" },
+        reauthenticate,
+      }),
+    );
+    render(<SessionExpiredGate />);
+
+    // A failed password submit leaves a local error in the dialog.
+    const dialogProps = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      onSubmit: (password: string) => Promise<void>;
+    };
+    await act(async () => {
+      await dialogProps.onSubmit("errada").catch(() => {});
+    });
+
+    const before = (
+      SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as { googleResetToken?: number }
+    ).googleResetToken;
+
+    act(() => {
+      oneTapProps.current?.onError?.(new Error("boom"));
+    });
+
+    const after = SessionExpiredDialogMock.mock.calls.at(-1)?.[0] as {
+      googleResetToken?: number;
+      errorMessage?: string;
+    };
+    // The bumped token clears the stale local error so the Google message shows.
+    expect(after.googleResetToken).toBe((before ?? 0) + 1);
+    expect(after.errorMessage).toBe("Não foi possível entrar com o Google. Tente novamente.");
+    expect(screen.getByTestId("password-dialog")).toHaveTextContent(
+      "Não foi possível entrar com o Google. Tente novamente.",
+    );
   });
 
   it("matches the locked account case-insensitively", async () => {

@@ -21,7 +21,7 @@ function ReauthModal({
   children,
   loading,
 }: {
-  title: string;
+  title?: string;
   children: ReactNode;
   loading?: boolean;
 }) {
@@ -167,7 +167,7 @@ export function SessionExpiredMfaDialog({
   onSignOut,
 }: SessionExpiredMfaDialogProps) {
   return (
-    <ReauthModal title="Confirme o código">
+    <ReauthModal>
       <MfaChallengeForm onSubmit={onSubmit} onResend={onResend} />
       <Button type="button" variant="subtle" fullWidth mt="md" onClick={onSignOut}>
         Entrar com outra conta

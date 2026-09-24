@@ -151,6 +151,19 @@ describe("SessionExpiredDialog", () => {
 });
 
 describe("SessionExpiredMfaDialog", () => {
+  it("shows a single heading, from the challenge form", () => {
+    render(
+      <MantineProvider>
+        <SessionExpiredMfaDialog onSubmit={vi.fn()} onSignOut={vi.fn()} />
+      </MantineProvider>,
+    );
+
+    const headings = screen.getAllByRole("heading");
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toHaveTextContent("Verificação em duas etapas");
+    expect(screen.queryByText("Confirme o código")).not.toBeInTheDocument();
+  });
+
   it("takes the code in the same non-dismissible shell", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const onSignOut = vi.fn();
