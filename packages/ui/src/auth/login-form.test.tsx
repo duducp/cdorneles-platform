@@ -137,32 +137,28 @@ describe("LoginForm", () => {
     expect(screen.getByRole("heading", { name: "Bem-vindo de volta" })).toBeInTheDocument();
   });
 
-  it("passes googleLabel to SocialLogin", () => {
-    renderForm({ onSubmit: vi.fn(), googleLabel: "Continuar com Google" });
-
-    expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
-  });
-
-  it("renders the provided google slot instead of the SocialLogin button", () => {
+  it("renders the provided google slot with the divider", () => {
     renderForm({ onSubmit: vi.fn(), googleSlot: <div data-testid="google-slot" /> });
 
     expect(screen.getByTestId("google-slot")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Entrar com Google" })).not.toBeInTheDocument();
     expect(screen.getByText("OU CONTINUE COM")).toBeInTheDocument();
   });
 
-  it("hides the Google button and divider when showGoogle is false", () => {
-    renderForm({ onSubmit: vi.fn(), showGoogle: false });
+  it("hides the google slot and divider when showGoogle is false", () => {
+    renderForm({
+      onSubmit: vi.fn(),
+      showGoogle: false,
+      googleSlot: <div data-testid="google-slot" />,
+    });
 
-    expect(screen.queryByRole("button", { name: "Entrar com Google" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("google-slot")).not.toBeInTheDocument();
     expect(screen.queryByText("OU CONTINUE COM")).not.toBeInTheDocument();
   });
 
-  it("shows the Google button and divider by default", () => {
+  it("renders no Google content without a slot", () => {
     renderForm({ onSubmit: vi.fn() });
 
-    expect(screen.getByRole("button", { name: "Entrar com Google" })).toBeInTheDocument();
-    expect(screen.getByText("OU CONTINUE COM")).toBeInTheDocument();
+    expect(screen.queryByText("OU CONTINUE COM")).not.toBeInTheDocument();
   });
 
   it("aligns 'Esqueci minha senha' to the left", () => {
