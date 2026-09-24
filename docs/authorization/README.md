@@ -3,7 +3,7 @@
 Authorization has two layers:
 
 1. Appwrite resource permissions.
-2. Cdorneles business permissions.
+2. Carlos Dorneles business permissions.
 
 Frontend checks improve UX but are not security controls.
 

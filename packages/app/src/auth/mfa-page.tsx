@@ -147,7 +147,7 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
           />
 
           <Stack component="footer" align="center" gap="sm">
-            <Logo alt="Cdorneles" variant="horizontal" height={32} />
+            <Logo alt="Carlos Dorneles" variant="horizontal" height={32} />
             <AppVersion />
           </Stack>
         </Stack>

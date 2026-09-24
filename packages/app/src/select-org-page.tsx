@@ -88,7 +88,7 @@ export function SelectOrgPage() {
           </Modal>
 
           <Stack component="footer" align="center" gap="sm">
-            <Logo alt="Cdorneles" height={48} />
+            <Logo alt="Carlos Dorneles" height={48} />
           </Stack>
         </Stack>
       </Flex>

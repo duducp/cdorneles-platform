@@ -16,7 +16,7 @@ system and an Appwrite backend.
 ## Overview
 
 ```text
-admin      internal Cdorneles administration
+admin      internal Carlos Dorneles administration
 client     organization/tenant administration and operations
 design-system  visual playground for the shared UI
 ```

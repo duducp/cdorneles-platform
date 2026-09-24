@@ -14,8 +14,8 @@ import { OrgBranding } from "@cdorneles/ui/tenant";
 import { Providers } from "./providers";
 
 export const metadata = createMetadata({
-  title: "Cdorneles Admin",
-  description: "Internal Cdorneles administration.",
+  title: "Carlos Dorneles Admin",
+  description: "Internal Carlos Dorneles administration.",
   icon: "/brand/favicon-black.png",
 });
 

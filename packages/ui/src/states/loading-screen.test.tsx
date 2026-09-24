@@ -17,7 +17,7 @@ describe("LoadingScreen", () => {
   it("renders the brand logo in the centred content", () => {
     renderScreen();
 
-    expect(screen.getAllByAltText("Cdorneles")).toHaveLength(2);
+    expect(screen.getAllByAltText("Carlos Dorneles")).toHaveLength(2);
   });
 
   it("pins an accessible spinner to the footer region", () => {

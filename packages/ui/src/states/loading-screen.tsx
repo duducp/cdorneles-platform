@@ -33,7 +33,7 @@ const DEFAULT_MIN_HEIGHT =
  */
 export function LoadingScreen({
   label = "Carregando",
-  alt = "Cdorneles",
+  alt = "Carlos Dorneles",
   minHeight = DEFAULT_MIN_HEIGHT,
 }: LoadingScreenProps) {
   return (

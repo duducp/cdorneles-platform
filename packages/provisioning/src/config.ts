@@ -215,7 +215,11 @@ export interface SeedDef {
 export const SEED_APPLICATIONS: SeedDef[] = [
   {
     id: "app_admin",
-    data: { appId: "admin", name: "Admin Panel", description: "Internal Cdorneles administration" },
+    data: {
+      appId: "admin",
+      name: "Admin Panel",
+      description: "Internal Carlos Dorneles administration",
+    },
   },
   {
     id: "app_client",

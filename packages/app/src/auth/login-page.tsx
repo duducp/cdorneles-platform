@@ -156,7 +156,10 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
                 heading={heading}
                 showGoogle={googleEnabled && !!googleClientId && status === "anonymous"}
                 googleSlot={
-                  <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center" }} />
+                  <div
+                    ref={googleButtonRef}
+                    style={{ display: "flex", justifyContent: "center" }}
+                  />
                 }
                 onForgotPassword={handleForgotPassword}
               />
@@ -166,7 +169,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
           />
 
           <Stack component="footer" align="center" gap="sm">
-            <Logo alt="Cdorneles" variant="horizontal" height={32} />
+            <Logo alt="Carlos Dorneles" variant="horizontal" height={32} />
             <AppVersion />
           </Stack>
         </Stack>

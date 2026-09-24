@@ -35,7 +35,7 @@ apps/client
 apps/design-system
 ```
 
-- `admin`: internal Cdorneles administration.
+- `admin`: internal Carlos Dorneles administration.
 - `client`: organization/tenant administration and operational panel.
 - `design-system`: visual playground/documentation for shared UI.
 

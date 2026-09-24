@@ -27,7 +27,7 @@ export interface CreateAppThemeOptions {
 }
 
 /**
- * Builds the Cdorneles Mantine theme from design tokens. All values come from
+ * Builds the Carlos Dorneles Mantine theme from design tokens. All values come from
  * `@cdorneles/tokens`; no hardcoded palette lives here.
  */
 export function createAppTheme(options: CreateAppThemeOptions = {}): MantineThemeOverride {

@@ -4,10 +4,10 @@ import { createMetadata } from "./metadata";
 
 describe("createMetadata", () => {
   it("uses the platform title template and the default favicon", () => {
-    const metadata = createMetadata({ title: "Cdorneles Admin", description: "x" });
+    const metadata = createMetadata({ title: "Carlos Dorneles Admin", description: "x" });
 
     expect(metadata.title).toEqual({
-      default: "Cdorneles Admin",
+      default: "Carlos Dorneles Admin",
       template: "%s | Carlos Dorneles Platform",
     });
     expect(metadata.icons).toEqual({ icon: "/brand/favicon.png" });
@@ -15,7 +15,7 @@ describe("createMetadata", () => {
 
   it("accepts a per-app favicon override", () => {
     const metadata = createMetadata({
-      title: "Cdorneles Admin",
+      title: "Carlos Dorneles Admin",
       description: "x",
       icon: "/brand/favicon-black.png",
     });

@@ -13,34 +13,35 @@ const renderLogo = (props: Parameters<typeof Logo>[0]) =>
     </ThemeProvider>,
   );
 
-const sources = () => screen.getAllByAltText("Cdorneles").map((img) => img.getAttribute("src"));
+const sources = () =>
+  screen.getAllByAltText("Carlos Dorneles").map((img) => img.getAttribute("src"));
 
 describe("Logo", () => {
   it("renders both light and dark sources so CSS can pick one", () => {
-    renderLogo({ alt: "Cdorneles", lightSrc: "/l.png", darkSrc: "/d.png" });
+    renderLogo({ alt: "Carlos Dorneles", lightSrc: "/l.png", darkSrc: "/d.png" });
 
     expect(sources()).toEqual(["/l.png", "/d.png"]);
   });
 
   it("defaults to the platform brand paths", () => {
-    renderLogo({ alt: "Cdorneles" });
+    renderLogo({ alt: "Carlos Dorneles" });
 
     expect(sources()).toEqual(["/brand/logo-light.webp", "/brand/logo-dark.webp"]);
   });
 
   it("defaults to the horizontal brand paths for the horizontal variant", () => {
-    renderLogo({ alt: "Cdorneles", variant: "horizontal" });
+    renderLogo({ alt: "Carlos Dorneles", variant: "horizontal" });
 
     expect(sources()).toEqual(["/brand/logo-light-h.webp", "/brand/logo-dark-h.webp"]);
   });
 
   it("uses a wider default aspect ratio for the horizontal variant", () => {
-    const { unmount: unmountDefault } = renderLogo({ alt: "Cdorneles", height: 48 });
-    const defaultWidth = screen.getAllByAltText("Cdorneles")[0].style.width;
+    const { unmount: unmountDefault } = renderLogo({ alt: "Carlos Dorneles", height: 48 });
+    const defaultWidth = screen.getAllByAltText("Carlos Dorneles")[0].style.width;
     unmountDefault();
 
-    renderLogo({ alt: "Cdorneles", variant: "horizontal", height: 48 });
-    const horizontalWidth = screen.getAllByAltText("Cdorneles")[0].style.width;
+    renderLogo({ alt: "Carlos Dorneles", variant: "horizontal", height: 48 });
+    const horizontalWidth = screen.getAllByAltText("Carlos Dorneles")[0].style.width;
 
     // Mantine emits widths as `calc(<n>rem * var(--mantine-scale))`.
     const rem = (value: string) => parseFloat(value.match(/[\d.]+rem/)?.[0] ?? "0");
@@ -48,14 +49,14 @@ describe("Logo", () => {
   });
 
   it("renders the symbol-only mark for the symbol variant", () => {
-    renderLogo({ alt: "Cdorneles", variant: "symbol" });
+    renderLogo({ alt: "Carlos Dorneles", variant: "symbol" });
 
     expect(sources()).toEqual(["/brand/favicon.png"]);
   });
 
   it("lets explicit sources override the variant defaults", () => {
     renderLogo({
-      alt: "Cdorneles",
+      alt: "Carlos Dorneles",
       variant: "horizontal",
       lightSrc: "/custom/light.png",
       darkSrc: "/custom/dark.png",
