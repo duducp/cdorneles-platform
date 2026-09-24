@@ -112,6 +112,7 @@ describe("LoginPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Entrar com Google" }));
 
     expect(promptMock).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem("cdorneles-last-login-method")).toBe("google");
   });
 
   it("hints to use email and password when the prompt cannot open", async () => {
@@ -177,6 +178,14 @@ describe("LoginPage", () => {
     });
     expect(screen.queryByText("Entrando…")).not.toBeInTheDocument();
     expect(replaceMock).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("hides Google when no client id is configured", () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "");
+    renderPage();
+
+    expect(oneTapProps.current).toBeNull();
+    expect(screen.queryByRole("button", { name: "Entrar com Google" })).not.toBeInTheDocument();
   });
 
   it("hides Google entirely when the kill switch is off", () => {

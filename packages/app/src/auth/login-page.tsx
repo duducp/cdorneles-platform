@@ -124,7 +124,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
 
   return (
     <Flex direction="column" mih="100dvh">
-      {googleEnabled ? (
+      {googleEnabled && !!googleClientId ? (
         <GoogleOneTap
           ref={oneTapRef}
           clientId={googleClientId ?? ""}
@@ -157,7 +157,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
                 showSignUp={enableSignUp}
                 heading={heading}
                 googleLabel={googleLabel}
-                showGoogle={googleEnabled && !!googleClientId}
+                showGoogle={googleEnabled && !!googleClientId && status === "anonymous"}
                 onGoogleClick={handleGoogleClick}
                 onForgotPassword={handleForgotPassword}
               />

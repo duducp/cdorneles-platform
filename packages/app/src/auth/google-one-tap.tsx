@@ -140,7 +140,7 @@ export interface GoogleOneTapProps {
  * one-tap-login function (server-side verification), never trusted here.
  *
  * Renders nothing: Google draws the prompt itself. The classic
- * "Entrar com Google" button stays untouched as the fallback.
+ * "Entrar com Google" button re-opens this prompt.
  */
 export const GoogleOneTap = forwardRef<GoogleOneTapHandle, GoogleOneTapProps>(function GoogleOneTap(
   { clientId, enabled, onSuccess, onError, onCredential, onStart },
