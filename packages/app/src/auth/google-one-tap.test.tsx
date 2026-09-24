@@ -177,14 +177,27 @@ describe("GoogleOneTap", () => {
   it("hands the raw token to onCredential instead of logging in", async () => {
     installGsi();
     const onCredential = vi.fn();
-    const { onSuccess } = renderOneTap({ onCredential });
+    const { onSuccess, onStart } = renderOneTap({ onCredential });
 
     await waitFor(() => expect(initCalls).toHaveLength(1));
     initCalls[0].callback({ credential: "the-jwt" });
 
     await waitFor(() => expect(onCredential).toHaveBeenCalledWith("the-jwt"));
+    expect(onStart).toHaveBeenCalledOnce();
     expect(loginWithOneTapMock).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it("does not signal the start for a credential-less response", async () => {
+    installGsi();
+    const onCredential = vi.fn();
+    const { onStart } = renderOneTap({ onCredential });
+
+    await waitFor(() => expect(initCalls).toHaveLength(1));
+    initCalls[0].callback({});
+
+    expect(onStart).not.toHaveBeenCalled();
+    expect(onCredential).not.toHaveBeenCalled();
   });
 
   it("routes a rejected parent exchange to onError", async () => {

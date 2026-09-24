@@ -70,7 +70,6 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   const handleOneTapError = useCallback(
     (err: unknown) => {
       setOneTapLoading(false);
-      setAnnouncement("");
       if (err instanceof MfaRequiredError) {
         router.push(
           `/mfa?redirect=${encodeURIComponent(resolvePostAuthRedirect(window.location.search))}`,
@@ -139,13 +138,14 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
           clientId={googleClientId ?? ""}
           enabled={canRender && status === "anonymous" && !!googleClientId}
           onSuccess={() => {
+            // Clear before navigating: a redirect to the same route (e.g.
+            // `/login?redirect=/login`) fires no unmount, so the overlay would
+            // otherwise stay up forever.
+            setOneTapLoading(false);
             // Same destination as the OAuth fallback button.
             router.replace(resolvePostAuthRedirect(window.location.search));
           }}
-          onStart={() => {
-            setOneTapLoading(true);
-            setAnnouncement("Entrando...");
-          }}
+          onStart={() => setOneTapLoading(true)}
           onError={handleOneTapError}
         />
       ) : null}

@@ -14,6 +14,7 @@ const { loginWithGoogleMock, loginWithOneTapMock, pushMock, replaceMock, oneTapP
     oneTapProps: {
       current: null as null | {
         onError: (error: unknown) => void;
+        onSuccess?: () => void;
         onStart?: () => void;
       },
     },
@@ -32,7 +33,11 @@ vi.mock("@cdorneles/auth", () => ({
 }));
 
 vi.mock("./google-one-tap", () => ({
-  GoogleOneTap: (props: { onError: (error: unknown) => void; onStart?: () => void }) => {
+  GoogleOneTap: (props: {
+    onError: (error: unknown) => void;
+    onSuccess?: () => void;
+    onStart?: () => void;
+  }) => {
     oneTapProps.current = props;
     return null;
   },
@@ -154,6 +159,22 @@ describe("LoginPage", () => {
       oneTapProps.current?.onError?.(new Error("boom"));
     });
     expect(screen.queryByText("Entrando…")).not.toBeInTheDocument();
+  });
+
+  it("clears the loading overlay and navigates when One Tap succeeds", async () => {
+    renderPage();
+
+    expect(oneTapProps.current).not.toBeNull();
+    act(() => {
+      oneTapProps.current?.onStart?.();
+    });
+    expect(await screen.findByText("Entrando…")).toBeInTheDocument();
+
+    act(() => {
+      oneTapProps.current?.onSuccess?.();
+    });
+    expect(screen.queryByText("Entrando…")).not.toBeInTheDocument();
+    expect(replaceMock).toHaveBeenCalledWith("/dashboard");
   });
 
   it("hides Google entirely when the kill switch is off", () => {
