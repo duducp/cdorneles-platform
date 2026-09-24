@@ -48,7 +48,7 @@ válida, então quem está ativo nunca é deslogado no meio do trabalho.
 Criar uma organização exige a capability `organizations.create`. Ela é uma
 capability de **plataforma**, não de papel de organização: o `resolve-grants`
 tem um modo de plataforma (um `organizationId` vazio) que a devolve para quem
-é membro do time de plataforma — o `PLATFORM_TEAM_ID` configurado na função.
+é membro do time de plataforma — o `NEXT_PUBLIC_PLATFORM_TEAM_ID` configurado na função.
 
 O time de plataforma é configurado no app por `NEXT_PUBLIC_PLATFORM_TEAM_ID` e
 é **excluído** da lista de organizações, então nunca aparece como uma
@@ -71,7 +71,7 @@ usuário (`role_permissions`) com as chaves concedidas diretamente a ele (tabela
 `user_permissions`) — a mesma união que o `resolve-grants` devolve. Não há
 negação: a concessão apenas soma.
 
-O **root da plataforma** é membro do time de plataforma (`PLATFORM_TEAM_ID`) e
+O **root da plataforma** é membro do time de plataforma (`NEXT_PUBLIC_PLATFORM_TEAM_ID`) e
 tem **todas** as permissões, como o superuser do Django. O modo de plataforma do
 `resolve-grants` é acionado pela **membership** no time, chamado com um
 `organizationId` vazio, e devolve todas as chaves da tabela `permissions`. Um
