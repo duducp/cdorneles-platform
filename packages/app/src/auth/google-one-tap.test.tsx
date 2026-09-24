@@ -140,7 +140,9 @@ describe("GoogleOneTap", () => {
     });
     expect(renderButtonCalls[0].options.client_id).toBeUndefined();
     expect(screen.getByTestId("google-button").style.colorScheme).toBe("light");
-    expect(screen.getByTestId("google-button").classList.contains("google-signin-button")).toBe(true);
+    expect(screen.getByTestId("google-button").classList.contains("google-signin-button")).toBe(
+      true,
+    );
     expect(onError).not.toHaveBeenCalled();
   });
 

@@ -601,7 +601,9 @@ describe("session state", () => {
       // null), so a stale cookie takes this path via a rejection, not a null.
       getCurrentUser: vi
         .fn()
-        .mockRejectedValue(new ApiError("session gone", { status: 401, code: "user_unauthorized" })),
+        .mockRejectedValue(
+          new ApiError("session gone", { status: 401, code: "user_unauthorized" }),
+        ),
     });
     stubLocation("/dashboard");
 
@@ -620,7 +622,9 @@ describe("session state", () => {
       getSession: vi.fn().mockResolvedValue(createMockSession()),
       getCurrentUser: vi
         .fn()
-        .mockRejectedValue(new ApiError("session gone", { status: 401, code: "user_unauthorized" })),
+        .mockRejectedValue(
+          new ApiError("session gone", { status: 401, code: "user_unauthorized" }),
+        ),
     });
     stubLocation("/dashboard");
 
@@ -659,7 +663,9 @@ describe("session state", () => {
       getSession: vi.fn().mockResolvedValue(null),
       getCurrentUser: vi
         .fn()
-        .mockRejectedValue(new ApiError("session gone", { status: 401, code: "user_unauthorized" })),
+        .mockRejectedValue(
+          new ApiError("session gone", { status: 401, code: "user_unauthorized" }),
+        ),
     });
     stubLocation("/forgot-password");
 
@@ -679,7 +685,9 @@ describe("session state", () => {
       getSession: vi.fn().mockResolvedValue(null),
       getCurrentUser: vi
         .fn()
-        .mockRejectedValue(new ApiError("session gone", { status: 401, code: "user_unauthorized" })),
+        .mockRejectedValue(
+          new ApiError("session gone", { status: 401, code: "user_unauthorized" }),
+        ),
     });
     stubLocation("/forgot-password");
 
@@ -909,13 +917,11 @@ describe("expiry warning", () => {
     // directly, since fake timers do not reproduce the runtime clamp.
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const service = createMockService({
-      getSession: vi
-        .fn()
-        .mockResolvedValue(
-          createMockSession({
-            expiresAt: new Date(Date.now() + 400 * 24 * 60 * 60_000).toISOString(),
-          }),
-        ),
+      getSession: vi.fn().mockResolvedValue(
+        createMockSession({
+          expiresAt: new Date(Date.now() + 400 * 24 * 60 * 60_000).toISOString(),
+        }),
+      ),
       getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
     });
     const { Capture, current } = captureAuth();

@@ -142,9 +142,7 @@ describe("SessionExpiryNotice", () => {
   });
 
   it("clears the toast while the session-expired modal is open", () => {
-    useAuthMock.mockReturnValue(
-      authState({ expiryWarning: "5m", sessionState: "expired" }),
-    );
+    useAuthMock.mockReturnValue(authState({ expiryWarning: "5m", sessionState: "expired" }));
 
     render(<SessionExpiryNotice />);
 

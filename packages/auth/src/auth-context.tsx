@@ -423,10 +423,13 @@ export function AuthProvider({
         setExpiryWarning(warning);
         return;
       }
-      const timer = setTimeout(() => {
-        timers.delete(timer);
-        armCrossing(thresholdMs, warning);
-      }, Math.min(delay, MAX_TIMEOUT_MS));
+      const timer = setTimeout(
+        () => {
+          timers.delete(timer);
+          armCrossing(thresholdMs, warning);
+        },
+        Math.min(delay, MAX_TIMEOUT_MS),
+      );
       timers.add(timer);
     };
 
@@ -440,9 +443,12 @@ export function AuthProvider({
 
     // The deadline itself: drop the warning the moment the session dies
     // instead of waiting for the next poll to notice.
-    const deadlineTimer = setTimeout(() => {
-      setExpiryWarning("none");
-    }, Math.min(remaining, MAX_TIMEOUT_MS));
+    const deadlineTimer = setTimeout(
+      () => {
+        setExpiryWarning("none");
+      },
+      Math.min(remaining, MAX_TIMEOUT_MS),
+    );
     timers.add(deadlineTimer);
 
     return () => {
