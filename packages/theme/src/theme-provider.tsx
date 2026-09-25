@@ -1,7 +1,7 @@
 "use client";
 
 import type { ThemeMode } from "@cdorneles/types";
-import { semanticColors } from "@cdorneles/tokens";
+import { elevationShadows, semanticColors } from "@cdorneles/tokens";
 import {
   localStorageColorSchemeManager,
   MantineProvider,
@@ -28,18 +28,46 @@ export interface ThemeProviderProps {
 }
 
 // `--mantine-color-body` is what actually paints the page. Mantine defaults it
-// to white in Light and `dark-7` (#242424) in Dark; wiring it to the semantic
-// tokens gives Light its faint gray canvas and Dark the guide's #0C0C0C.
+// to white in Light and `dark-7` in Dark; wiring it to the semantic tokens
+// gives Light its faint gray canvas and Dark GitHub's slate canvas (#0D1117).
 //
-// Mantine's default `dimmed` (dark-2) fails AA on the dark body; use gray-4.
+// Mantine's default `dimmed` (dark-2) fails AA on the dark body; use dark-3,
+// GitHub's fgColor-muted (#9198A1, ≈6.4:1 on the canvas).
+//
+// `--cd-shadow-*` make elevation scheme-aware: Light uses the slate-ink casts,
+// Dark GitHub's near-black Primer casts (see `elevationShadows`).
+// `--mantine-color-error` is wired to the `danger` palette instead of
+// Mantine's default red. `-light` variants stay default in Light but become
+// translucent tints in Dark (GitHub bgColor-*-muted style) so subtle chips
+// keep a lighter-than-canvas fill instead of a near-black block.
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
-  variables: {},
+  variables: {
+    "--cd-shadow-xs": elevationShadows.light.xs,
+    "--cd-shadow-sm": elevationShadows.light.sm,
+    "--cd-shadow-md": elevationShadows.light.md,
+    "--cd-shadow-lg": elevationShadows.light.lg,
+    "--cd-surface-muted": semanticColors.light.surfaceMuted,
+  },
   light: {
     "--mantine-color-body": semanticColors.light.background,
   },
   dark: {
     "--mantine-color-body": semanticColors.dark.background,
-    "--mantine-color-dimmed": "var(--mantine-color-gray-4)",
+    "--mantine-color-dimmed": "var(--mantine-color-dark-3)",
+    "--mantine-color-error": semanticColors.dark.error,
+    "--cd-shadow-xs": elevationShadows.dark.xs,
+    "--cd-shadow-sm": elevationShadows.dark.sm,
+    "--cd-shadow-md": elevationShadows.dark.md,
+    "--cd-shadow-lg": elevationShadows.dark.lg,
+    "--cd-surface-muted": semanticColors.dark.surfaceMuted,
+    "--mantine-color-brand-light": "var(--mantine-color-brand-8)",
+    "--mantine-color-success-light": "var(--mantine-color-success-8)",
+    "--mantine-color-warning-light": "var(--mantine-color-warning-8)",
+    "--mantine-color-danger-light": "var(--mantine-color-danger-8)",
+    "--mantine-color-info-light": "var(--mantine-color-info-8)",
+    "--mantine-color-gray-light": "var(--mantine-color-gray-8)",
+    "--mantine-color-gray-light-hover": "var(--mantine-color-gray-7)",
+    "--mantine-color-gray-light-color": "var(--mantine-color-gray-2)",
   },
 });
 

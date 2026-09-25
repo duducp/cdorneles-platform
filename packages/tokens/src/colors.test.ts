@@ -18,10 +18,13 @@ describe("neutral palettes", () => {
     expect(gray[9]).toBe("#171717");
   });
 
-  it("maps the dark surfaces to the guide values", () => {
-    expect(dark[7]).toBe("#0c0c0c");
-    expect(dark[6]).toBe("#141414");
-    expect(dark[4]).toBe("#292929");
+  it("maps the dark surfaces to the GitHub Primer values", () => {
+    // Canvas (7), raised surface (6), control (5) and border (4), straight
+    // from `@primer/primitives` dark.css.
+    expect(dark[7]).toBe("#0d1117");
+    expect(dark[6]).toBe("#151b23");
+    expect(dark[5]).toBe("#212830");
+    expect(dark[4]).toBe("#3d444d");
   });
 
   it("keeps the light canvas distinct from the white surface", () => {

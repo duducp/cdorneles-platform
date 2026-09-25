@@ -277,7 +277,7 @@ export default function DesignSystemPage() {
                 </Text>
               </Stack>
             </Card>
-            <Card withBorder={false} bg="var(--mantine-color-gray-1)">
+            <Card withBorder={false} bg="var(--cd-surface-muted)">
               <Stack gap="xs">
                 <Text fw={fontWeights.semibold}>Borderless card</Text>
                 <Text size="sm" c="dimmed">

@@ -38,17 +38,23 @@ export const gray: ColorScale = [
 /**
  * Dark-mode neutrals consumed by Mantine's `dark` palette. Mantine maps
  * `--mantine-color-body` to index 7, surfaces to 6 and borders to 4.
+ *
+ * Anchored on GitHub's dark theme (Primer, `@primer/primitives` — the palette
+ * used on github.com), whose slate-blue canvas reads softer than pure black:
+ * canvas `#0d1117` (→ 7), raised surfaces `#151b23` (→ 6), controls `#212830`
+ * (→ 5) and borders `#3d444d` (→ 4). High shades flip to light text tones
+ * (`#e6edf3`, `#f0f6fc`) so index 0/1 keep working as "on-dark" text colors.
  */
 export const dark: ColorScale = [
-  "#fafafa",
-  "#e5e5e5",
+  "#f0f6fc",
+  "#e6edf3",
   "#d4d4d4",
-  "#a3a3a3",
-  "#292929",
-  "#1c1c1c",
-  "#141414",
-  "#0c0c0c",
-  "#0a0a0a",
+  "#9198a1",
+  "#3d444d",
+  "#212830",
+  "#151b23",
+  "#0d1117",
+  "#010409",
   "#000000",
 ];
 
@@ -119,7 +125,9 @@ export type PaletteName = keyof typeof palettes;
 /**
  * Semantic surface/text tokens per theme mode. Used by state components and the
  * theme's CSS-variable resolver so they adapt to Light/Dark without hardcoded
- * colors.
+ * colors. `error` feeds `--mantine-color-error` (invalid input borders/text):
+ * `danger[6]` reads on white in Light; `danger[4]` keeps AA contrast on the
+ * dark canvas (~6.7:1), matching GitHub's bright danger fg.
  */
 export const semanticColors = {
   light: {
@@ -129,6 +137,7 @@ export const semanticColors = {
     border: gray[2],
     text: gray[9],
     textMuted: gray[5],
+    error: danger[6],
   },
   dark: {
     background: dark[7],
@@ -137,5 +146,6 @@ export const semanticColors = {
     border: dark[4],
     text: dark[0],
     textMuted: dark[3],
+    error: danger[4],
   },
 } as const;
