@@ -30,8 +30,8 @@ describe("Client CustomersPage", () => {
       </ThemeProvider>,
     );
 
-    // Anchored: the EmptyState title ("No customers yet") is also a heading.
-    expect(screen.getByRole("heading", { name: /^customers$/i })).toBeInTheDocument();
+    // Anchored: the EmptyState title ("Nenhum cliente ainda") is also a heading.
+    expect(screen.getByRole("heading", { name: /^clientes$/i })).toBeInTheDocument();
     expect(screen.getByText(/Test Org/)).toBeInTheDocument();
   });
 });

@@ -11,9 +11,15 @@ import { flexRender, type RowData } from "@tanstack/react-table";
 export interface DataTableProps<TData extends RowData> {
   data: TData[];
   columns: LegacyColumnDef<TData, unknown>[];
+  /**
+   * Draws the component's own border. Keep it when the table sits directly on
+   * the page; turn it off inside a `PageBody` panel, which already draws one —
+   * otherwise the console panel shows a border within a border.
+   */
+  withBorder?: boolean;
 }
 
-export function DataTable<TData extends RowData>({ data, columns }: DataTableProps<TData>) {
+export function DataTable<TData extends RowData>({ data, columns, withBorder = true }: DataTableProps<TData>) {
   const table = useLegacyTable({
     data,
     columns,
@@ -21,7 +27,7 @@ export function DataTable<TData extends RowData>({ data, columns }: DataTablePro
   });
 
   return (
-    <Paper withBorder radius="md">
+    <Paper withBorder={withBorder} radius="md">
       <Table striped highlightOnHover>
         <Table.Thead>
           {table.getHeaderGroups().map((headerGroup) => (

@@ -27,13 +27,13 @@ interface CustomerRow {
 // Typed through DataTableProps instead of LegacyColumnDef so this app does
 // not need a direct @tanstack/react-table dependency.
 const columns: DataTableProps<CustomerRow>["columns"] = [
-  { accessorKey: "name", header: "Name" },
-  { accessorKey: "email", header: "Email" },
-  { accessorKey: "phone", header: "Phone" },
+  { accessorKey: "name", header: "Nome" },
+  { accessorKey: "email", header: "E-mail" },
+  { accessorKey: "phone", header: "Telefone" },
   {
     accessorKey: "active",
-    header: "Status",
-    cell: ({ getValue }) => (getValue<boolean>() ? "Active" : "Inactive"),
+    header: "Situação",
+    cell: ({ getValue }) => (getValue<boolean>() ? "Ativo" : "Inativo"),
   },
 ];
 
@@ -55,7 +55,7 @@ function CreateCustomerForm({ onCancel }: { onCancel: () => void }) {
       await new Promise((resolve) => setTimeout(resolve, 300));
       onCancel();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create the customer.");
+      setError(cause instanceof Error ? cause.message : "Não foi possível criar o cliente.");
     } finally {
       setSubmitting(false);
     }
@@ -66,28 +66,27 @@ function CreateCustomerForm({ onCancel }: { onCancel: () => void }) {
       <Stack gap="md" maw={560}>
         <FormError>{error}</FormError>
         <TextInput
-          label="Name"
-          required
+          label="Nome"
           value={name}
           onChange={(event) => setName(event.currentTarget.value)}
         />
         <TextInput
-          label="Email"
+          label="E-mail"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.currentTarget.value)}
         />
         <TextInput
-          label="Phone"
+          label="Telefone"
           value={phone}
           onChange={(event) => setPhone(event.currentTarget.value)}
         />
         <Group justify="flex-end">
           <Button variant="subtle" type="button" onClick={onCancel} disabled={submitting}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" loading={submitting}>
-            Create customer
+            Criar cliente
           </Button>
         </Group>
       </Stack>
@@ -113,8 +112,8 @@ export function CustomersPage() {
   return (
     <PageContainer py="xl">
       <PageBody
-        title="Customers"
-        description={`Manage customers for ${organizationName}.`}
+        title="Clientes"
+        description={`Gerencie os clientes de ${organizationName}.`}
         action={
           <PermissionGate permission={permissionKey("customers.create")}>
             {formOpen ? (
@@ -123,19 +122,19 @@ export function CustomersPage() {
                 leftSection={<X size={16} />}
                 onClick={() => setFormOpen(false)}
               >
-                Close
+                Fechar
               </Button>
             ) : (
               <Button leftSection={<Plus size={16} />} onClick={() => setFormOpen(true)}>
-                Add customer
+                Novo cliente
               </Button>
             )}
           </PermissionGate>
         }
         toolbar={
           <TextInput
-            placeholder="Search customers..."
-            aria-label="Search customers"
+            placeholder="Buscar clientes..."
+            aria-label="Buscar clientes"
             leftSection={<Search size={14} aria-hidden />}
             size="xs"
             w={260}
@@ -148,16 +147,16 @@ export function CustomersPage() {
           permission={permissionKey("customers.read")}
           fallback={
             <EmptyState
-              title="Access denied"
-              description="You don't have permission to view customers."
+              title="Acesso negado"
+              description="Você não tem permissão para ver os clientes."
             />
           }
         >
           <Stack gap="md">
             {formOpen ? (
-              <Paper withBorder radius="md" p="lg">
+              <Paper radius="md" p="lg">
                 <Title order={3} fz="md" mb="sm">
-                  New customer
+                  Novo cliente
                 </Title>
                 <CreateCustomerForm onCancel={() => setFormOpen(false)} />
               </Paper>
@@ -165,11 +164,11 @@ export function CustomersPage() {
 
             {filtered.length === 0 ? (
               <EmptyState
-                title="No customers yet"
-                description="Add your first customer to get started."
+                title="Nenhum cliente ainda"
+                description="Adicione o primeiro cliente para começar."
               />
             ) : (
-              <DataTable data={filtered} columns={columns} />
+              <DataTable data={filtered} columns={columns} withBorder={false} />
             )}
           </Stack>
         </PermissionGate>

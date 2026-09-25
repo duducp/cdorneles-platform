@@ -15,13 +15,13 @@ interface CustomerRow {
 }
 
 const columns: LegacyColumnDef<CustomerRow, unknown>[] = [
-  { accessorKey: "name", header: "Name" },
-  { accessorKey: "email", header: "Email" },
-  { accessorKey: "phone", header: "Phone" },
+  { accessorKey: "name", header: "Nome" },
+  { accessorKey: "email", header: "E-mail" },
+  { accessorKey: "phone", header: "Telefone" },
   {
     accessorKey: "active",
-    header: "Status",
-    cell: ({ getValue }) => (getValue<boolean>() ? "Active" : "Inactive"),
+    header: "Situação",
+    cell: ({ getValue }) => (getValue<boolean>() ? "Ativo" : "Inativo"),
   },
 ];
 
@@ -31,11 +31,11 @@ export default function ClientsPage() {
   return (
     <PageContainer py="xl">
       <PageHeader
-        title="Clients"
-        description="Manage your client organizations."
+        title="Clientes"
+        description="Gerencie as organizações clientes."
         actions={
           <PermissionGate permission={permissionKey("customers.create")}>
-            <Button leftSection={<Plus size={16} />}>Add Client</Button>
+            <Button leftSection={<Plus size={16} />}>Novo cliente</Button>
           </PermissionGate>
         }
       />
@@ -43,13 +43,16 @@ export default function ClientsPage() {
         permission={permissionKey("customers.read")}
         fallback={
           <EmptyState
-            title="Access denied"
-            description="You don't have permission to view clients."
+            title="Acesso negado"
+            description="Você não tem permissão para ver os clientes."
           />
         }
       >
         {MOCK_DATA.length === 0 ? (
-          <EmptyState title="No clients yet" description="Add your first client to get started." />
+          <EmptyState
+            title="Nenhum cliente ainda"
+            description="Adicione o primeiro cliente para começar."
+          />
         ) : (
           <DataTable data={MOCK_DATA} columns={columns} />
         )}

@@ -56,10 +56,10 @@ export default function SelectOrgPage() {
           />
 
           <Button variant="subtle" onClick={openCreate}>
-            Create organization
+            Criar organização
           </Button>
 
-          <Modal opened={createOpened} onClose={closeCreate} title="New organization" centered>
+          <Modal opened={createOpened} onClose={closeCreate} title="Nova organização" centered>
             <CreateOrganizationForm onCreate={handleCreate} onCancel={closeCreate} />
           </Modal>
 

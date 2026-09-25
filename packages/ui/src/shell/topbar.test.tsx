@@ -68,7 +68,7 @@ describe("Topbar", () => {
 
     await userEvent.click(screen.getByLabelText(/conta: ana silva/i));
 
-    expect(await screen.findByRole("menuitem", { name: /logout/i })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: /sair/i })).toBeInTheDocument();
   });
 
   it("renders the breadcrumb trail when provided", () => {

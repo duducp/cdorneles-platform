@@ -68,7 +68,7 @@ describe("UserMenu", () => {
     renderMenu({ onLogout });
 
     await userEvent.click(screen.getByLabelText(/conta: ana silva/i));
-    await userEvent.click(await screen.findByRole("menuitem", { name: /logout/i }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: /sair/i }));
 
     expect(onLogout).toHaveBeenCalledOnce();
   });

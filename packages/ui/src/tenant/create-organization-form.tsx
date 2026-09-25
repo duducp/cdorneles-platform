@@ -32,7 +32,7 @@ export function CreateOrganizationForm({ onCreate, onCancel }: CreateOrganizatio
       form.reset();
     } catch (submitError) {
       setError(
-        submitError instanceof Error ? submitError.message : "Could not create the organization.",
+        submitError instanceof Error ? submitError.message : "Não foi possível criar a organização.",
       );
     } finally {
       setSubmitting(false);
@@ -48,7 +48,7 @@ export function CreateOrganizationForm({ onCreate, onCancel }: CreateOrganizatio
       <Stack gap="md">
         <FormError>{error}</FormError>
         <TextInput
-          label="Organization name"
+          label="Nome da organização"
           placeholder="Acme Ltda"
           required
           data-autofocus
@@ -56,7 +56,7 @@ export function CreateOrganizationForm({ onCreate, onCancel }: CreateOrganizatio
         />
         <Stack gap="xs">
           <Button type="submit" loading={submitting} fullWidth>
-            Create organization
+            Criar organização
           </Button>
           {onCancel && (
             <Button variant="subtle" onClick={onCancel} disabled={submitting} fullWidth>

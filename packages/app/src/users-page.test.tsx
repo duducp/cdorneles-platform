@@ -187,14 +187,14 @@ describe("UsersPage", () => {
 
     renderPage(DENIED, { listUsers });
 
-    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Access denied");
+    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Acesso negado");
     expect(listUsers).not.toHaveBeenCalled();
   });
 
   it("renders without an api (unconfigured build) without throwing or fetching", async () => {
     renderPage(READ, null);
 
-    expect(await screen.findByText(/No users yet/)).toBeInTheDocument();
+    expect(await screen.findByText(/Nenhum usuário ainda/)).toBeInTheDocument();
   });
 
   it("throws when the hook is used with no provider at all", () => {
@@ -224,7 +224,7 @@ describe("UsersPage", () => {
 
     renderPage(DENIED, { listUsers: vi.fn().mockResolvedValue(ONE_USER), listOrganizations });
 
-    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Access denied");
+    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Acesso negado");
     expect(listOrganizations).not.toHaveBeenCalled();
   });
 
@@ -238,7 +238,7 @@ describe("UsersPage", () => {
       listOrganizations,
     });
 
-    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
 
     expect(await screen.findByRole("option", { name: "Globex" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "Acme" })).not.toBeInTheDocument();
@@ -249,9 +249,9 @@ describe("UsersPage", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
 
-    expect(await screen.findByLabelText(/^Email/)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^E-mail/)).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -264,7 +264,7 @@ describe("UsersPage", () => {
     });
 
     await waitFor(() => expect(listOrganizations).toHaveBeenCalled());
-    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("boom");
   });
@@ -272,27 +272,27 @@ describe("UsersPage", () => {
   it("shows the 'New user' action when users.create is granted", async () => {
     renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
-    expect(await screen.findByRole("button", { name: /new user/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /novo usuário/i })).toBeInTheDocument();
   });
 
   it("hides the 'New user' action without users.create", async () => {
     renderPage(READ, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
     expect(await screen.findByText("ada@example.com")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /new user/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /novo usuário/i })).not.toBeInTheDocument();
   });
 
   it("shows the 'New organization' action when organizations.create is granted", async () => {
     renderPage(READ_CREATE_ORG, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
-    expect(await screen.findByRole("button", { name: /new organization/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /nova organização/i })).toBeInTheDocument();
   });
 
   it("hides the 'New organization' action without organizations.create", async () => {
     renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
     expect(await screen.findByText("ada@example.com")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /new organization/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /nova organização/i })).not.toBeInTheDocument();
   });
 
   it("creates an organization and refreshes the platform list", async () => {
@@ -313,14 +313,14 @@ describe("UsersPage", () => {
       listOrganizations,
     });
 
-    await userEvent.click(await screen.findByRole("button", { name: /new organization/i }));
-    await userEvent.type(await screen.findByLabelText(/^Organization name/), "New Org");
-    await userEvent.click(screen.getByRole("button", { name: /create organization/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /nova organização/i }));
+    await userEvent.type(await screen.findByLabelText(/^Nome da organização/), "New Org");
+    await userEvent.click(screen.getByRole("button", { name: /criar organização/i }));
 
     expect(createOrganization).toHaveBeenCalledWith("New Org", { makeActive: false });
     await waitFor(() => expect(listOrganizations).toHaveBeenCalledTimes(2));
 
-    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
     expect(await screen.findByRole("option", { name: "New Org" })).toBeInTheDocument();
   });
 
@@ -330,26 +330,33 @@ describe("UsersPage", () => {
       createUser: vi.fn().mockResolvedValue({ userId: "u2" }),
     });
 
-    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
 
-    expect(await screen.findByLabelText(/^Email/)).toBeInTheDocument();
-    expect(screen.queryByText("Permissions")).not.toBeInTheDocument();
+    expect(await screen.findByLabelText(/^E-mail/)).toBeInTheDocument();
+    expect(screen.queryByText("Permissões")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("customers.read")).not.toBeInTheDocument();
   });
 
-  it("prefills the organization and keeps create disabled until required fields are set", async () => {
+  it("prefills the organization and validates required fields on submit", async () => {
+    // The submit stays enabled (a disabled button hides why nothing happens);
+    // submitting incomplete surfaces the inline FormError instead.
     renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue({ users: [] }) });
 
-    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
-    await screen.findByLabelText(/^Email/);
+    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
+    await screen.findByLabelText(/^E-mail/);
 
-    expect(screen.getByLabelText("Organization")).toHaveValue("org-1");
-    const create = screen.getByRole("button", { name: /create user/i });
-    expect(create).toBeDisabled();
+    expect(screen.getByLabelText("Organização")).toHaveValue("org-1");
+    const create = screen.getByRole("button", { name: /criar usuário/i });
+    expect(create).toBeEnabled();
 
-    await userEvent.type(screen.getByLabelText(/^Email/), "ada@example.com");
-    await userEvent.type(screen.getByLabelText(/^Name/), "Ada Lovelace");
-    await userEvent.selectOptions(screen.getByLabelText("Role"), "member");
+    await userEvent.click(create);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Preencha e-mail, nome, organização e papel.",
+    );
+
+    await userEvent.type(screen.getByLabelText(/^E-mail/), "ada@example.com");
+    await userEvent.type(screen.getByLabelText(/^Nome/), "Ada Lovelace");
+    await userEvent.selectOptions(screen.getByLabelText("Papel"), "member");
 
     expect(create).toBeEnabled();
   });
@@ -357,7 +364,7 @@ describe("UsersPage", () => {
   it("offers the org-seeded organization permissions but not the platform capability", async () => {
     renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue({ users: [] }) });
 
-    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
 
     expect(await screen.findByLabelText("organizations.read")).toBeInTheDocument();
     expect(screen.getByLabelText("organizations.update")).toBeInTheDocument();
@@ -370,14 +377,14 @@ describe("UsersPage", () => {
 
     renderPage(READ_CREATE, { listUsers, createUser });
 
-    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
 
-    await userEvent.type(await screen.findByLabelText(/^Email/), "ada@example.com");
-    await userEvent.type(screen.getByLabelText(/^Name/), "Ada Lovelace");
-    await userEvent.selectOptions(screen.getByLabelText("Organization"), "org-1");
-    await userEvent.selectOptions(screen.getByLabelText("Role"), "member");
+    await userEvent.type(await screen.findByLabelText(/^E-mail/), "ada@example.com");
+    await userEvent.type(screen.getByLabelText(/^Nome/), "Ada Lovelace");
+    await userEvent.selectOptions(screen.getByLabelText("Organização"), "org-1");
+    await userEvent.selectOptions(screen.getByLabelText("Papel"), "member");
     await userEvent.click(screen.getByLabelText("customers.read"));
-    await userEvent.click(screen.getByRole("button", { name: /create user/i }));
+    await userEvent.click(screen.getByRole("button", { name: /criar usuário/i }));
 
     expect(createUser).toHaveBeenCalledWith({
       email: "ada@example.com",

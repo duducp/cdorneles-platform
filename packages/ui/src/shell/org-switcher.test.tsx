@@ -62,16 +62,16 @@ describe("OrgSwitcher", () => {
 
     await userEvent.click(screen.getByLabelText("Trocar organização"));
 
-    expect(screen.queryByText(/create organization/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/criar organização/i)).not.toBeInTheDocument();
   });
 
   it("shows the create item and opens the form when creation is allowed", async () => {
     renderSwitcher({ canCreate: true });
 
     await userEvent.click(screen.getByLabelText("Trocar organização"));
-    await userEvent.click(await screen.findByText(/create organization/i));
+    await userEvent.click(await screen.findByText(/criar organização/i));
 
-    expect(await screen.findByLabelText(/organization name/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/nome da organização/i)).toBeInTheDocument();
   });
 
   it("creates an organization and closes the modal", async () => {
@@ -79,12 +79,12 @@ describe("OrgSwitcher", () => {
     renderSwitcher({ canCreate: true, onCreate });
 
     await userEvent.click(screen.getByLabelText("Trocar organização"));
-    await userEvent.click(await screen.findByText(/create organization/i));
+    await userEvent.click(await screen.findByText(/criar organização/i));
 
     const dialog = await screen.findByRole("dialog");
-    const input = await within(dialog).findByLabelText(/organization name/i);
+    const input = await within(dialog).findByLabelText(/nome da organização/i);
     await userEvent.type(input, "Nova Org");
-    await userEvent.click(within(dialog).getByRole("button", { name: /create organization/i }));
+    await userEvent.click(within(dialog).getByRole("button", { name: /criar organização/i }));
 
     expect(onCreate).toHaveBeenCalledWith("Nova Org");
     await waitFor(() => expect(input).not.toBeVisible());

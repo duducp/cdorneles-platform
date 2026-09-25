@@ -75,7 +75,7 @@ export function OrgSwitcher({
               </Avatar>
               <Box visibleFrom="sm" maw={160}>
                 <Text size="sm" fw={500} truncate>
-                  {current?.name ?? "Organization"}
+                  {current?.name ?? "Organização"}
                 </Text>
               </Box>
               <ChevronsUpDown size={14} aria-hidden style={{ opacity: 0.6 }} />
@@ -118,7 +118,7 @@ export function OrgSwitcher({
                 leftSection={<Plus size={16} aria-hidden />}
                 onClick={() => setCreateOpened(true)}
               >
-                Create organization
+                Criar organização
               </Menu.Item>
             </>
           )}
@@ -128,7 +128,7 @@ export function OrgSwitcher({
       <Modal
         opened={createOpened}
         onClose={() => setCreateOpened(false)}
-        title="New organization"
+        title="Nova organização"
         centered
       >
         <CreateOrganizationForm onCreate={handleCreate} onCancel={() => setCreateOpened(false)} />

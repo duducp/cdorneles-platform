@@ -106,11 +106,11 @@ export const USER_PERMISSION_GROUPS: PermissionGroup[] = [
 export const USER_ROLES = ["owner", "admin", "member"] as const;
 
 const columns: DataTableProps<UserRow>["columns"] = [
-  { accessorKey: "email", header: "Email" },
-  { accessorKey: "name", header: "Name" },
+  { accessorKey: "email", header: "E-mail" },
+  { accessorKey: "name", header: "Nome" },
   {
     accessorKey: "labels",
-    header: "Labels",
+    header: "Rótulos",
     cell: ({ getValue }) => (getValue<string[]>() ?? []).join(", ") || "—",
   },
 ];
@@ -144,10 +144,16 @@ function CreateUserForm({
     );
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    void submit();
+  }
+
+  async function submit() {
+    // Validation happens on submit and the button stays enabled: a disabled
+    // submit hides why nothing happens (platform form checklist).
     if (!email || !name || !organizationId || !role) {
-      setError("Fill in the email, name, organization and role.");
+      setError("Preencha e-mail, nome, organização e papel.");
       return;
     }
     setSubmitting(true);
@@ -155,38 +161,33 @@ function CreateUserForm({
     try {
       await onCreate({ email, name, organizationId, role, permissions });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create the user.");
+      setError(cause instanceof Error ? cause.message : "Não foi possível criar o usuário.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  const incomplete = !email || !name || !organizationId || !role;
-
   return (
-    <form onSubmit={handleSubmit} aria-busy={submitting || undefined}>
+    <form onSubmit={handleSubmit} noValidate aria-busy={submitting || undefined}>
       <Stack gap="md">
         <FormError>{error}</FormError>
         {organizationsError ? <FormError>{organizationsError}</FormError> : null}
         <Group grow align="flex-start">
           <TextInput
-            label="Email"
-            required
+            label="E-mail"
             value={email}
             onChange={(event) => setEmail(event.currentTarget.value)}
           />
           <TextInput
-            label="Name"
-            required
+            label="Nome"
             value={name}
             onChange={(event) => setName(event.currentTarget.value)}
           />
         </Group>
         <Group grow align="flex-start">
           <Select
-            label="Organization"
-            required
-            placeholder="Select an organization"
+            label="Organização"
+            placeholder="Selecione uma organização"
             data={organizations.map((organization) => ({
               value: organization.id,
               label: organization.name,
@@ -195,9 +196,8 @@ function CreateUserForm({
             onChange={setOrganizationId}
           />
           <Select
-            label="Role"
-            required
-            placeholder="Select a role"
+            label="Papel"
+            placeholder="Selecione um papel"
             data={USER_ROLES.map((value) => ({ value, label: value }))}
             value={role}
             onChange={setRole}
@@ -205,7 +205,7 @@ function CreateUserForm({
         </Group>
         {canManagePermissions ? (
           <Stack gap="xs">
-            <Text fw={600}>Permissions</Text>
+            <Text fw={600}>Permissões</Text>
             {USER_PERMISSION_GROUPS.map((group) => (
               <Stack key={group.resource} gap={4}>
                 <Text size="sm" fw={500} tt="capitalize">
@@ -225,10 +225,10 @@ function CreateUserForm({
         ) : null}
         <Group justify="flex-end">
           <Button variant="subtle" type="button" onClick={onCancel} disabled={submitting}>
-            Cancel
+            Cancelar
           </Button>
-          <Button type="submit" loading={submitting} disabled={incomplete}>
-            Create user
+          <Button type="submit" loading={submitting}>
+            Criar usuário
           </Button>
         </Group>
       </Stack>
@@ -264,7 +264,9 @@ export function UsersPage() {
     void functionsApi
       .listUsers()
       .then((result) => setUsers(result.users))
-      .catch((cause) => setError(cause instanceof Error ? cause.message : "Could not load users."))
+      .catch((cause) =>
+        setError(cause instanceof Error ? cause.message : "Não foi possível carregar os usuários."),
+      )
       .finally(() => setLoading(false));
   }, [functionsApi]);
 
@@ -276,7 +278,7 @@ export function UsersPage() {
       .then((result) => setOrganizations(result.organizations))
       .catch((cause) =>
         setOrganizationsError(
-          cause instanceof Error ? cause.message : "Could not load organizations.",
+          cause instanceof Error ? cause.message : "Não foi possível carregar as organizações.",
         ),
       );
   }, [functionsApi]);
@@ -311,8 +313,8 @@ export function UsersPage() {
   return (
     <PageContainer py="xl">
       <PageBody
-        title="Users"
-        description="Manage platform users and their permissions."
+        title="Usuários"
+        description="Gerencie os usuários da plataforma e suas permissões."
         action={
           <Group gap="xs" wrap="nowrap">
             <PermissionGate permission={permissionKey("organizations.create")}>
@@ -322,7 +324,7 @@ export function UsersPage() {
                   leftSection={<X size={16} />}
                   onClick={() => setCreateOrgOpen(false)}
                 >
-                  Close
+                  Fechar
                 </Button>
               ) : (
                 <Button
@@ -330,7 +332,7 @@ export function UsersPage() {
                   leftSection={<Plus size={16} />}
                   onClick={() => setCreateOrgOpen(true)}
                 >
-                  New organization
+                  Nova organização
                 </Button>
               )}
             </PermissionGate>
@@ -341,11 +343,11 @@ export function UsersPage() {
                   leftSection={<X size={16} />}
                   onClick={() => setFormOpen(false)}
                 >
-                  Close
+                  Fechar
                 </Button>
               ) : (
                 <Button leftSection={<Plus size={16} />} onClick={() => setFormOpen(true)}>
-                  New user
+                  Novo usuário
                 </Button>
               )}
             </PermissionGate>
@@ -354,7 +356,7 @@ export function UsersPage() {
         toolbar={
           canCreate ? (
             <Text size="sm" c="dimmed">
-              {users.length} users
+              {users.length} usuários
             </Text>
           ) : undefined
         }
@@ -363,16 +365,16 @@ export function UsersPage() {
           permission={permissionKey("users.read")}
           fallback={
             <EmptyState
-              title="Access denied"
-              description="You don't have permission to view users."
+              title="Acesso negado"
+              description="Você não tem permissão para ver os usuários."
             />
           }
         >
           <Stack gap="md">
             {canCreateOrganizations && createOrgOpen ? (
-              <Paper withBorder radius="md" p="lg">
+              <Paper radius="md" p="lg">
                 <Title order={3} fz="md" mb="sm">
-                  New organization
+                  Nova organização
                 </Title>
                 <Box maw={480}>
                   <CreateOrganizationForm
@@ -384,9 +386,9 @@ export function UsersPage() {
             ) : null}
 
             {canCreate && formOpen ? (
-              <Paper withBorder radius="md" p="lg">
+              <Paper radius="md" p="lg">
                 <Title order={3} fz="md" mb="sm">
-                  New user
+                  Novo usuário
                 </Title>
                 <CreateUserForm
                   organizations={organizations}
@@ -401,17 +403,17 @@ export function UsersPage() {
 
             {error ? (
               <div role="alert">
-                <EmptyState title="Could not load users" description={error} />
+                <EmptyState title="Não foi possível carregar os usuários" description={error} />
               </div>
             ) : loading ? (
               <LoadingScreen />
             ) : users.length === 0 ? (
               <EmptyState
-                title="No users yet"
-                description="Create the first user to get started."
+                title="Nenhum usuário ainda"
+                description="Crie o primeiro usuário para começar."
               />
             ) : (
-              <DataTable data={users} columns={columns} />
+              <DataTable data={users} columns={columns} withBorder={false} />
             )}
           </Stack>
         </PermissionGate>

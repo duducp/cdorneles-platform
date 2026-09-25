@@ -64,9 +64,9 @@ export function UserMenu({ userName, userEmail, userPhoto, onLogout }: UserMenuP
           )}
         </Menu.Label>
         <Menu.Divider />
-        <Menu.Item leftSection={<Settings size={16} />}>Settings</Menu.Item>
+        <Menu.Item leftSection={<Settings size={16} />}>Configurações</Menu.Item>
         <Menu.Item leftSection={<LogOut size={16} />} color="red" onClick={onLogout}>
-          Logout
+          Sair
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>
