@@ -1,3 +1,5 @@
+"use client";
+
 import { GroupIndex, groupIndexItems, type RouteGroup } from "@cdorneles/ui/shell";
 import Link from "next/link";
 

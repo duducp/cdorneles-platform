@@ -1,3 +1,5 @@
+"use client";
+
 import { UsersListPage } from "@cdorneles/app";
 import Link from "next/link";
 
