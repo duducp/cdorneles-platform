@@ -31,6 +31,12 @@ export interface ThemeProviderProps {
 // to white in Light and `dark-7` in Dark; wiring it to the semantic tokens
 // gives Light its faint gray canvas and Dark GitHub's slate canvas (#0D1117).
 //
+// `--cd-surface` is the raised panel color (GitHub canvas vs card): pure white
+// in Light and dark-6 #151B23 in Dark. Mantine's `Paper` paints itself with the
+// body color, which would sink panels into the dark canvas; `createAppTheme`
+// re-points Paper at this variable so auth cards, the data table and upload
+// panels read as raised surfaces, matching our `Card`.
+//
 // Mantine's default `dimmed` (dark-2) fails AA on the dark body; use dark-3,
 // GitHub's fgColor-muted (#9198A1, ≈6.4:1 on the canvas).
 //
@@ -46,6 +52,7 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     "--cd-shadow-sm": elevationShadows.light.sm,
     "--cd-shadow-md": elevationShadows.light.md,
     "--cd-shadow-lg": elevationShadows.light.lg,
+    "--cd-surface": semanticColors.light.surface,
     "--cd-surface-muted": semanticColors.light.surfaceMuted,
   },
   light: {
@@ -55,10 +62,13 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     "--mantine-color-body": semanticColors.dark.background,
     "--mantine-color-dimmed": "var(--mantine-color-dark-3)",
     "--mantine-color-error": semanticColors.dark.error,
+    // GitHub's overlay ink instead of Mantine's pure black scrim.
+    "--overlay-bg": "rgba(1, 4, 9, 0.5)",
     "--cd-shadow-xs": elevationShadows.dark.xs,
     "--cd-shadow-sm": elevationShadows.dark.sm,
     "--cd-shadow-md": elevationShadows.dark.md,
     "--cd-shadow-lg": elevationShadows.dark.lg,
+    "--cd-surface": semanticColors.dark.surface,
     "--cd-surface-muted": semanticColors.dark.surfaceMuted,
     "--mantine-color-brand-light": "var(--mantine-color-brand-8)",
     "--mantine-color-success-light": "var(--mantine-color-success-8)",

@@ -79,6 +79,24 @@ export function createAppTheme(options: CreateAppThemeOptions = {}): MantineThem
     spacing: mantineSpacing,
     shadows: mantineShadows,
     breakpoints: mantineBreakpoints,
+    // Mantine paints `Paper` with the body color, which equals the page canvas;
+    // GitHub-style raised panels need the surface instead, so panels (auth
+    // cards, data table, upload, modal content) read above the dark canvas
+    // (#0D1117) with our surface (#151B23). `--cd-surface` resolves per scheme
+    // in the provider. The sticky modal header paints itself with the body
+    // color too, which would show a darker band across the Paper surface.
+    components: {
+      Paper: {
+        styles: {
+          root: { backgroundColor: "var(--cd-surface)" },
+        },
+      },
+      Modal: {
+        styles: {
+          header: { backgroundColor: "var(--cd-surface)" },
+        },
+      },
+    },
     other: {
       density,
       fontWeights,

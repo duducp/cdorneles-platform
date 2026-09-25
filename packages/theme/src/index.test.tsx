@@ -55,6 +55,26 @@ describe("createAppTheme", () => {
     expect(theme.headings?.fontWeight).toBe(String(fontWeights.bold));
     expect(theme.headings?.fontWeight).not.toBe(String(fontWeights.semibold));
   });
+
+  it("paints Paper with the raised surface instead of the body canvas", () => {
+    // Mantine's Paper background is the body color, which sinks panels into
+    // the dark canvas; GitHub-style panels use the surface.
+    const theme = createAppTheme();
+
+    expect(theme.components?.Paper?.styles?.root).toMatchObject({
+      backgroundColor: "var(--cd-surface)",
+    });
+  });
+
+  it("keeps the sticky modal header on the raised surface", () => {
+    // Mantine paints the sticky header with the body color, showing a darker
+    // band across the modal's Paper surface.
+    const theme = createAppTheme();
+
+    expect(theme.components?.Modal?.styles?.header).toMatchObject({
+      backgroundColor: "var(--cd-surface)",
+    });
+  });
 });
 
 describe("ThemeProvider", () => {
@@ -133,5 +153,19 @@ describe("css variables", () => {
 
     expect(resolved.variables?.["--cd-surface-muted"]).toBe(semanticColors.light.surfaceMuted);
     expect(resolved.dark?.["--cd-surface-muted"]).toBe(semanticColors.dark.surfaceMuted);
+  });
+
+  it("uses GitHub's overlay ink for the modal backdrop in dark", () => {
+    const resolved = resolve();
+
+    expect(resolved.dark?.["--overlay-bg"]).toBe("rgba(1, 4, 9, 0.5)");
+  });
+
+  it("exposes the raised panel surface per scheme", () => {
+    const resolved = resolve();
+
+    expect(resolved.variables?.["--cd-surface"]).toBe(semanticColors.light.surface);
+    expect(resolved.dark?.["--cd-surface"]).toBe(semanticColors.dark.surface);
+    expect(semanticColors.dark.surface).toBe("#151b23");
   });
 });
