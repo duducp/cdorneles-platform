@@ -7,16 +7,16 @@ import {
   Button,
   DataTable,
   EmptyState,
+  FormError,
   LoadingScreen,
+  PageBody,
   PageContainer,
-  PageHeader,
   type DataTableProps,
 } from "@cdorneles/ui";
 import { PermissionGate, useAccess } from "@cdorneles/ui/permissions";
 import { CreateOrganizationForm } from "@cdorneles/ui/tenant";
-import { Checkbox, Group, Modal, Select, Stack, Text, TextInput } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { Plus } from "lucide-react";
+import { Box, Checkbox, Group, Paper, Select, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Plus, X } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { useFunctionsApi } from "./functions-api-context";
@@ -166,42 +166,43 @@ function CreateUserForm({
   return (
     <form onSubmit={handleSubmit} aria-busy={submitting || undefined}>
       <Stack gap="md">
-        <TextInput
-          label="Email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.currentTarget.value)}
-        />
-        <TextInput
-          label="Name"
-          required
-          value={name}
-          onChange={(event) => setName(event.currentTarget.value)}
-        />
-        {organizationsError ? (
-          <Text c="red" role="alert">
-            {organizationsError}
-          </Text>
-        ) : null}
-        <Select
-          label="Organization"
-          required
-          placeholder="Select an organization"
-          data={organizations.map((organization) => ({
-            value: organization.id,
-            label: organization.name,
-          }))}
-          value={organizationId}
-          onChange={setOrganizationId}
-        />
-        <Select
-          label="Role"
-          required
-          placeholder="Select a role"
-          data={USER_ROLES.map((value) => ({ value, label: value }))}
-          value={role}
-          onChange={setRole}
-        />
+        <FormError>{error}</FormError>
+        {organizationsError ? <FormError>{organizationsError}</FormError> : null}
+        <Group grow align="flex-start">
+          <TextInput
+            label="Email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.currentTarget.value)}
+          />
+          <TextInput
+            label="Name"
+            required
+            value={name}
+            onChange={(event) => setName(event.currentTarget.value)}
+          />
+        </Group>
+        <Group grow align="flex-start">
+          <Select
+            label="Organization"
+            required
+            placeholder="Select an organization"
+            data={organizations.map((organization) => ({
+              value: organization.id,
+              label: organization.name,
+            }))}
+            value={organizationId}
+            onChange={setOrganizationId}
+          />
+          <Select
+            label="Role"
+            required
+            placeholder="Select a role"
+            data={USER_ROLES.map((value) => ({ value, label: value }))}
+            value={role}
+            onChange={setRole}
+          />
+        </Group>
         {canManagePermissions ? (
           <Stack gap="xs">
             <Text fw={600}>Permissions</Text>
@@ -222,11 +223,6 @@ function CreateUserForm({
             ))}
           </Stack>
         ) : null}
-        {error ? (
-          <Text c="red" role="alert">
-            {error}
-          </Text>
-        ) : null}
         <Group justify="flex-end">
           <Button variant="subtle" type="button" onClick={onCancel} disabled={submitting}>
             Cancel
@@ -245,14 +241,18 @@ export function UsersPage() {
   const { currentOrganization, createOrganization } = useTenant();
   const access = useAccess();
   const canRead = access.hasPermission(permissionKey("users.read"));
+  const canCreate = access.hasPermission(permissionKey("users.create"));
   const canManagePermissions = access.hasPermission(permissionKey("users.manage_permissions"));
+  const canCreateOrganizations = access.hasPermission(permissionKey("organizations.create"));
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationsError, setOrganizationsError] = useState<string | null>(null);
-  const [opened, { open, close }] = useDisclosure(false);
-  const [createOrgOpened, { open: openCreateOrg, close: closeCreateOrg }] = useDisclosure(false);
+  // The create form lives in the page body (Appwrite-console style), toggled
+  // by the "New user" action — no modal.
+  const [formOpen, setFormOpen] = useState(false);
+  const [createOrgOpen, setCreateOrgOpen] = useState(false);
 
   const load = useCallback(() => {
     if (!functionsApi) {
@@ -293,76 +293,129 @@ export function UsersPage() {
     async (input: CreateUserInput) => {
       if (!functionsApi) return;
       await functionsApi.createUser(input);
-      close();
+      setFormOpen(false);
       load();
     },
-    [functionsApi, close, load],
+    [functionsApi, load],
   );
 
   const handleCreateOrganization = useCallback(
     async (name: string) => {
       await createOrganization(name, { makeActive: false });
-      closeCreateOrg();
+      setCreateOrgOpen(false);
       loadOrganizations();
     },
-    [createOrganization, closeCreateOrg, loadOrganizations],
+    [createOrganization, loadOrganizations],
   );
 
   return (
     <PageContainer py="xl">
-      <PageHeader
+      <PageBody
         title="Users"
         description="Manage platform users and their permissions."
-        actions={
-          <Group gap="xs">
+        action={
+          <Group gap="xs" wrap="nowrap">
             <PermissionGate permission={permissionKey("organizations.create")}>
-              <Button onClick={openCreateOrg}>New organization</Button>
+              {createOrgOpen ? (
+                <Button
+                  variant="secondary"
+                  leftSection={<X size={16} />}
+                  onClick={() => setCreateOrgOpen(false)}
+                >
+                  Close
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  leftSection={<Plus size={16} />}
+                  onClick={() => setCreateOrgOpen(true)}
+                >
+                  New organization
+                </Button>
+              )}
             </PermissionGate>
             <PermissionGate permission={permissionKey("users.create")}>
-              <Button leftSection={<Plus size={16} />} onClick={open}>
-                New user
-              </Button>
+              {formOpen ? (
+                <Button
+                  variant="secondary"
+                  leftSection={<X size={16} />}
+                  onClick={() => setFormOpen(false)}
+                >
+                  Close
+                </Button>
+              ) : (
+                <Button leftSection={<Plus size={16} />} onClick={() => setFormOpen(true)}>
+                  New user
+                </Button>
+              )}
             </PermissionGate>
           </Group>
         }
-      />
-
-      <PermissionGate
-        permission={permissionKey("users.read")}
-        fallback={
-          <EmptyState
-            title="Access denied"
-            description="You don't have permission to view users."
-          />
+        toolbar={
+          canCreate ? (
+            <Text size="sm" c="dimmed">
+              {users.length} users
+            </Text>
+          ) : undefined
         }
       >
-        {error ? (
-          <div role="alert">
-            <EmptyState title="Could not load users" description={error} />
-          </div>
-        ) : loading ? (
-          <LoadingScreen />
-        ) : users.length === 0 ? (
-          <EmptyState title="No users yet" description="Create the first user to get started." />
-        ) : (
-          <DataTable data={users} columns={columns} />
-        )}
-      </PermissionGate>
+        <PermissionGate
+          permission={permissionKey("users.read")}
+          fallback={
+            <EmptyState
+              title="Access denied"
+              description="You don't have permission to view users."
+            />
+          }
+        >
+          <Stack gap="md">
+            {canCreateOrganizations && createOrgOpen ? (
+              <Paper withBorder radius="md" p="lg">
+                <Title order={3} fz="md" mb="sm">
+                  New organization
+                </Title>
+                <Box maw={480}>
+                  <CreateOrganizationForm
+                    onCreate={handleCreateOrganization}
+                    onCancel={() => setCreateOrgOpen(false)}
+                  />
+                </Box>
+              </Paper>
+            ) : null}
 
-      <Modal opened={opened} onClose={close} title="New user" centered>
-        <CreateUserForm
-          organizations={organizations}
-          organizationsError={organizationsError}
-          defaultOrganizationId={currentOrganization?.id ?? null}
-          canManagePermissions={canManagePermissions}
-          onCreate={handleCreate}
-          onCancel={close}
-        />
-      </Modal>
+            {canCreate && formOpen ? (
+              <Paper withBorder radius="md" p="lg">
+                <Title order={3} fz="md" mb="sm">
+                  New user
+                </Title>
+                <CreateUserForm
+                  organizations={organizations}
+                  organizationsError={organizationsError}
+                  defaultOrganizationId={currentOrganization?.id ?? null}
+                  canManagePermissions={canManagePermissions}
+                  onCreate={handleCreate}
+                  onCancel={() => setFormOpen(false)}
+                />
+              </Paper>
+            ) : null}
 
-      <Modal opened={createOrgOpened} onClose={closeCreateOrg} title="New organization" centered>
-        <CreateOrganizationForm onCreate={handleCreateOrganization} onCancel={closeCreateOrg} />
-      </Modal>
+            {error ? (
+              <div role="alert">
+                <EmptyState title="Could not load users" description={error} />
+              </div>
+            ) : loading ? (
+              <LoadingScreen />
+            ) : users.length === 0 ? (
+              <EmptyState
+                title="No users yet"
+                description="Create the first user to get started."
+              />
+            ) : (
+              <DataTable data={users} columns={columns} />
+            )}
+          </Stack>
+        </PermissionGate>
+      </PageBody>
     </PageContainer>
   );
 }
