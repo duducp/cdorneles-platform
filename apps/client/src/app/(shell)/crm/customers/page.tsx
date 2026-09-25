@@ -8,13 +8,14 @@ import {
   EmptyState,
   PageBody,
   PageContainer,
+  TableSkeleton,
   type DataTableProps,
 } from "@cdorneles/ui";
 import { PermissionGate } from "@cdorneles/ui/permissions";
 import { TextInput } from "@mantine/core";
 import { Plus, Search } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface CustomerRow {
   id: string;
@@ -43,15 +44,33 @@ export default function CustomersPage() {
   const { currentOrganization } = useTenant();
   const organizationName = currentOrganization?.name ?? "sua organização";
   const [filter, setFilter] = useState("");
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // The customers API is not wired yet; the load keeps the page's states
+  // (skeleton → empty/table) in place for when it lands.
+  useEffect(() => {
+    let active = true;
+    const timer = setTimeout(() => {
+      if (active) {
+        setCustomers(MOCK_DATA);
+        setLoading(false);
+      }
+    }, 300);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const term = filter.trim().toLowerCase();
-    if (!term) return MOCK_DATA;
-    return MOCK_DATA.filter(
+    if (!term) return customers;
+    return customers.filter(
       (customer) =>
         customer.name.toLowerCase().includes(term) || customer.email.toLowerCase().includes(term),
     );
-  }, [filter]);
+  }, [filter, customers]);
 
   return (
     <PageContainer py="xl">
@@ -86,7 +105,9 @@ export default function CustomersPage() {
             />
           }
         >
-          {filtered.length === 0 ? (
+          {loading ? (
+            <TableSkeleton rows={6} columns={columns.length} />
+          ) : filtered.length === 0 ? (
             <EmptyState
               title="Nenhum cliente ainda"
               description="Adicione o primeiro cliente para começar."

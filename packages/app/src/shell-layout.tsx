@@ -7,6 +7,7 @@ import { LoadingScreen, Logo } from "@cdorneles/ui";
 import {
   AppShell,
   deriveTrail,
+  NavigationProgress,
   OrgSwitcher,
   Sidebar,
   Topbar,
@@ -122,43 +123,45 @@ export function createShellLayout({
     );
 
     const shell = (
-      <AppShell
-        sidebar={
-          <Sidebar
-            items={navItems}
-            activeHref={pathname}
-            collapsed={!opened}
-            linkComponent={Link}
-            pendingComponent={NavPendingIndicator}
-          />
-        }
-        topbar={
-          <Topbar
-            logo={<Logo variant="symbol" alt={currentOrganization?.name ?? "Logo"} height={32} />}
-            leftSection={
-              organizationSwitcher ? (
-                <OrgSwitcher
-                  organizations={organizations}
-                  currentOrganizationId={currentOrganization?.id}
-                  onSelect={handleSwitchOrganization}
-                  canCreate={canCreateOrganizations}
-                  onCreateOrganization={handleCreateOrganization}
-                  loading={!ready}
-                />
-              ) : undefined
-            }
-            breadcrumbTrail={breadcrumbTrail}
-            breadcrumbLinkComponent={Link}
-            userName={user?.name ?? "User"}
-            userEmail={user?.email}
-            sidebarOpened={opened}
-            onToggleSidebar={() => setOpened((o) => !o)}
-            onLogout={handleLogout}
-          />
-        }
-      >
-        {children}
-      </AppShell>
+      <NavigationProgress>
+        <AppShell
+          sidebar={
+            <Sidebar
+              items={navItems}
+              activeHref={pathname}
+              collapsed={!opened}
+              linkComponent={Link}
+              pendingComponent={NavPendingIndicator}
+            />
+          }
+          topbar={
+            <Topbar
+              logo={<Logo variant="symbol" alt={currentOrganization?.name ?? "Logo"} height={32} />}
+              leftSection={
+                organizationSwitcher ? (
+                  <OrgSwitcher
+                    organizations={organizations}
+                    currentOrganizationId={currentOrganization?.id}
+                    onSelect={handleSwitchOrganization}
+                    canCreate={canCreateOrganizations}
+                    onCreateOrganization={handleCreateOrganization}
+                    loading={!ready}
+                  />
+                ) : undefined
+              }
+              breadcrumbTrail={breadcrumbTrail}
+              breadcrumbLinkComponent={Link}
+              userName={user?.name ?? "User"}
+              userEmail={user?.email}
+              sidebarOpened={opened}
+              onToggleSidebar={() => setOpened((o) => !o)}
+              onLogout={handleLogout}
+            />
+          }
+        >
+          {children}
+        </AppShell>
+      </NavigationProgress>
     );
 
     if (!requireOrganization) {

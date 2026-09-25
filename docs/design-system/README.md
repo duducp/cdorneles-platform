@@ -109,7 +109,7 @@ stay above the panel.
 
 ## Loading
 
-Four different waits, four different mechanisms — pick by what is actually
+Five different waits, five different mechanisms — pick by what is actually
 waiting, not by habit.
 
 | Wait | Mechanism |
@@ -117,7 +117,8 @@ waiting, not by habit.
 | A button's own action (submit, resend) | Mantine's `loading` prop on `Button` / `IconButton` |
 | A route segment being fetched | `loading.tsx` in that route group, rendering `LoadingScreen` |
 | The session and organization resolving | the `fallback` prop on `OrgGuard` |
-| A specific link's navigation | `useLinkStatus` (Next 16), rendered beside the nav label |
+| A specific link's navigation | `useLinkStatus` (Next 16), rendered beside the nav label **and** the top `NavigationProgress` bar |
+| A list page fetching its rows | `TableSkeleton` inside the page, never the full-page loader |
 
 Notes:
 
@@ -138,6 +139,17 @@ Notes:
   renders inside `AppShell.Main`, which is already the page's `<main>`.
 - **`LoadingState` stays for the non-route waits** (the `OrgGuard` fallback and
   the select-org page); it shows its label as visible dimmed text.
+- **`TableSkeleton` is the list-page loader**: a bordered table-shaped
+  placeholder (header + body bars) matching the `DataTable` panel so the swap
+  does not jump. List pages render it while their client-side fetch resolves —
+  route-level `loading.tsx` does not cover client-side data loading.
+- **`NavigationProgress` is the NProgress-style top bar** (`@cdorneles/ui/shell`):
+  mounted once by `createShellLayout` around the `AppShell`, it shows while any
+  `next/link` navigation is pending and completes with a short flash when the
+  last one settles. It is Next-free: `NavPendingIndicator` (in `@cdorneles/app`)
+  reports each link's `useLinkStatus` through `usePendingLink`. Concurrent
+  navigations keep it up until the last settles; a navigation starting during
+  the completion flash keeps the bar running.
 - **Live regions announce content changes, not their accessible name.** A
   `role="status"` region that carries only `aria-label` and no text node may not
   be announced on mount. When the message must reach screen readers, render it as

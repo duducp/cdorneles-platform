@@ -6,9 +6,9 @@ import {
   Button,
   DataTable,
   EmptyState,
-  LoadingScreen,
   PageBody,
   PageContainer,
+  TableSkeleton,
   type DataTableProps,
 } from "@cdorneles/ui";
 import { PermissionGate, useAccess } from "@cdorneles/ui/permissions";
@@ -154,7 +154,7 @@ export function UsersListPage({
               <EmptyState title="Não foi possível carregar os usuários" description={error} />
             </div>
           ) : loading ? (
-            <LoadingScreen />
+            <TableSkeleton rows={6} columns={columns.length} />
           ) : users.length === 0 ? (
             <EmptyState
               title="Nenhum usuário ainda"

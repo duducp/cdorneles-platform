@@ -47,6 +47,9 @@ vi.mock("@cdorneles/ui", () => ({
   FormError: ({ children }: { children?: ReactNode }) =>
     children ? <div role="alert">{children}</div> : null,
   LoadingScreen: () => <div data-testid="loading-screen" />,
+  TableSkeleton: ({ rows }: { rows?: number }) => (
+    <div data-testid="table-skeleton" aria-label={`${rows ?? 6} linhas`} />
+  ),
   PageBody: ({
     title,
     action,
@@ -246,6 +249,15 @@ describe("UsersListPage", () => {
     renderPage(READ, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
     expect(await screen.findByText(/1 usuário/)).toBeInTheDocument();
+  });
+
+  it("shows the table skeleton while loading instead of a full-page loader", async () => {
+    renderPage(READ, {
+      listUsers: vi.fn().mockReturnValue(new Promise(() => {})),
+    });
+
+    expect(await screen.findByTestId("table-skeleton")).toBeInTheDocument();
+    expect(screen.queryByTestId("loading-screen")).not.toBeInTheDocument();
   });
 });
 
