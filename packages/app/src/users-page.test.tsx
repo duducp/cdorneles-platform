@@ -44,25 +44,39 @@ vi.mock("@cdorneles/ui", () => ({
       {description ? ` — ${description}` : ""}
     </div>
   ),
+  FormError: ({ children }: { children?: ReactNode }) =>
+    children ? <div role="alert">{children}</div> : null,
   LoadingScreen: () => <div data-testid="loading-screen" />,
-  PageContainer: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
-  PageHeader: ({ title, actions }: { title?: ReactNode; actions?: ReactNode }) => (
-    <header>
-      <h1>{title}</h1>
-      {actions}
-    </header>
+  PageBody: ({
+    title,
+    action,
+    toolbar,
+    children,
+  }: {
+    title?: ReactNode;
+    action?: ReactNode;
+    toolbar?: ReactNode;
+    children?: ReactNode;
+  }) => (
+    <div>
+      <header>
+        <h2>{title}</h2>
+        {action}
+      </header>
+      {toolbar}
+      {children}
+    </div>
   ),
+  PageContainer: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 }));
 
-// Keep the real Mantine provider/inputs, but swap Select and Modal for plain
-// DOM equivalents so the form is driven the way a user would drive a native
+// Keep the real Mantine provider/inputs, but swap Select for a plain DOM
+// equivalent so the form is driven the way a user would drive a native
 // control (no combobox portal/timers in jsdom).
 vi.mock("@mantine/core", async (importOriginal) => {
   const actual = await importOriginal<typeof MantineCore>();
   return {
     ...actual,
-    Modal: ({ opened, children }: { opened?: boolean; children?: ReactNode }) =>
-      opened ? <div role="dialog">{children}</div> : null,
     Select: ({
       label,
       data,
@@ -228,6 +242,17 @@ describe("UsersPage", () => {
 
     expect(await screen.findByRole("option", { name: "Globex" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "Acme" })).not.toBeInTheDocument();
+  });
+
+  it("shows the create form inline in the page body, not in a modal", async () => {
+    renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue({ users: [] }) });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await userEvent.click(await screen.findByRole("button", { name: /new user/i }));
+
+    expect(await screen.findByLabelText(/^Email/)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("surfaces a load failure above the organization field", async () => {

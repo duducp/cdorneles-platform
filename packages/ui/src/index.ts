@@ -14,6 +14,7 @@ export * from "./components/card";
 export * from "./components/form-error";
 export * from "./components/icon-button";
 export * from "./components/logo";
+export * from "./components/page-body";
 export * from "./components/page-container";
 export * from "./components/page-header";
 export * from "./components/responsive-grid";

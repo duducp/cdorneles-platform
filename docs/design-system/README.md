@@ -51,6 +51,45 @@ page.
 - **Password visibility toggles**: rely on Mantine's `aria-pressed` for state; pass only a static `aria-label` via `visibilityToggleButtonProps` plus `visibilityToggleFocusable`. There is no `aria-label-pressed` — do not invent it.
 - Every new `@cdorneles/ui` component ships with a co-located `*.test.tsx`.
 
+## Shell topbar
+
+The authenticated shell topbar (`Topbar` in `@cdorneles/ui/shell`, composed by
+`createShellLayout`) follows a fixed left-to-right order:
+
+1. **Logo** — the platform `Logo` in the `symbol` variant (the small favicon
+   mark), passed through the `logo` slot. Apps may substitute the organization's
+   white-label brand.
+2. **Left section** — optional. Org-scoped apps pass the `OrgSwitcher` (also
+   `@cdorneles/ui/shell`), an Appwrite-console-style dropdown: current
+   organization on the trigger, the full list with the active one checked, and
+   — gated by the `organizations.create` permission (`PermissionGate` semantics,
+   never role-name checks) — a "Create organization" item at the end, which
+   opens the shared `CreateOrganizationForm` in a modal. The admin app does not
+   switch organizations and leaves the slot empty (the default).
+3. **Right section** — the filter `TextInput` (visual-only by default; wire it
+   by passing `filterValue`/`onFilterChange`), the `ThemeToggle`, and the
+   `UserMenu`.
+
+The `UserMenu` trigger shows the avatar (photo via the `userPhoto` prop when
+available, initials otherwise), the user's first name plus surname
+(`visibleFrom="sm"`), and a chevron. `createShellLayout` passes the **user's**
+name — not the organization's — and hides the name text on mobile so the
+topbar never overflows.
+
+4. **Breadcrumbs** — derived automatically from the pathname by
+   `createShellLayout` (`deriveTrail`): the first segment reuses the nav
+   item's label, deeper segments are capitalized, and the last crumb is the
+   current page (plain text with `aria-current="page"`). Hidden below `md`.
+
+The sidebar (`Sidebar`) groups its items into sections: `SidebarNavItem`
+accepts an optional `section`, items sharing one render under a caps dimmed
+title in first-appearance order, and unsectioned items render first in an
+untitled group. Collapsed sidebars hide the section titles.
+
+`PageBody` renders its toolbar and content inside one bordered `Paper`
+surface — the console panel look. The title, description and primary action
+stay above the panel.
+
 ## Theme and contrast
 
 - **Mantine 9 resolves the primary color at the fixed main shade (index 5)** — there is no index 10, and `primaryShade` does not change which swatch filled buttons use. The theme pins `primaryShade: 5` so rendered UI matches `tokens.<palette>[5]`; contrast must always be computed against index 5 (`brand[5]`, the CDorneles Orange `#F45D22`), never against the old `{ light: 6, dark: 4 }` assumption.

@@ -1,9 +1,18 @@
 "use client";
 
 import { useAuth } from "@cdorneles/auth";
+import { permissionKey } from "@cdorneles/permissions";
 import { OrgGuard, useTenant } from "@cdorneles/tenant";
-import { LoadingScreen } from "@cdorneles/ui";
-import { AppShell, Sidebar, Topbar, type SidebarNavItem } from "@cdorneles/ui/shell";
+import { LoadingScreen, Logo } from "@cdorneles/ui";
+import {
+  AppShell,
+  OrgSwitcher,
+  Sidebar,
+  Topbar,
+  deriveTrail,
+  type SidebarNavItem,
+} from "@cdorneles/ui/shell";
+import { useAccess } from "@cdorneles/ui/permissions";
 
 import { NavPendingIndicator } from "./nav-pending";
 import Link from "next/link";
@@ -22,6 +31,12 @@ export interface CreateShellLayoutOptions {
    * own. Defaults to `true`.
    */
   requireOrganization?: boolean;
+  /**
+   * Show the organization switcher in the topbar. Only meaningful on
+   * org-scoped apps where the user may belong to several organizations;
+   * defaults to `false` (the admin panel does not switch organizations).
+   */
+  organizationSwitcher?: boolean;
 }
 
 /**
@@ -35,13 +50,17 @@ export interface CreateShellLayoutOptions {
 export function createShellLayout({
   navItems,
   requireOrganization = true,
+  organizationSwitcher = false,
 }: CreateShellLayoutOptions) {
   return function ShellLayout({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const { user, logout } = useAuth();
-    const { currentOrganization } = useTenant();
+    const { currentOrganization, organizations, ready, switchOrganization, createOrganization } =
+      useTenant();
     const [opened, setOpened] = useState(true);
+    const access = useAccess();
+    const canCreateOrganizations = access.hasPermission(permissionKey("organizations.create"));
 
     const handleLogout = useCallback(async () => {
       await logout();
@@ -51,6 +70,26 @@ export function createShellLayout({
     const handleRedirectToSelectOrg = useCallback(() => {
       router.replace("/select-org");
     }, [router]);
+
+    const handleSwitchOrganization = useCallback(
+      (organizationId: string) => {
+        // Membership is re-checked inside switchOrganization; an unknown id is
+        // a no-op rather than a navigation.
+        switchOrganization(organizationId);
+      },
+      [switchOrganization],
+    );
+
+    const handleCreateOrganization = useCallback(
+      async (name: string) => {
+        await createOrganization(name);
+      },
+      [createOrganization],
+    );
+
+    // The console-style trail: nav item labels for known segments, capitalized
+    // fallbacks for deeper ones. Rendered in the Topbar on md+ screens.
+    const breadcrumbTrail = deriveTrail(pathname, navItems);
 
     const shell = (
       <AppShell
@@ -65,7 +104,22 @@ export function createShellLayout({
         }
         topbar={
           <Topbar
-            userName={currentOrganization?.name ?? user?.name ?? "User"}
+            logo={<Logo variant="symbol" alt={currentOrganization?.name ?? "Logo"} height={32} />}
+            leftSection={
+              organizationSwitcher ? (
+                <OrgSwitcher
+                  organizations={organizations}
+                  currentOrganizationId={currentOrganization?.id}
+                  onSelect={handleSwitchOrganization}
+                  canCreate={canCreateOrganizations}
+                  onCreateOrganization={handleCreateOrganization}
+                  loading={!ready}
+                />
+              ) : undefined
+            }
+            breadcrumbTrail={breadcrumbTrail}
+            breadcrumbLinkComponent={Link}
+            userName={user?.name ?? "User"}
             userEmail={user?.email}
             sidebarOpened={opened}
             onToggleSidebar={() => setOpened((o) => !o)}

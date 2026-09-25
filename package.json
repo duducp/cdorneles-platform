@@ -20,7 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "pnpm -r --workspace-concurrency=1 --if-present build",
-    "provision": "pnpm --filter @cdorneles/provisioning provision"
+    "provision": "pnpm --filter @cdorneles/provisioning provision",
+    "seed:dev": "pnpm --filter @cdorneles/provisioning seed:dev"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
