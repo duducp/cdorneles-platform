@@ -8,9 +8,9 @@ export default createShellLayout({
   // its own, so it must not be gated on /select-org.
   requireOrganization: false,
   navItems: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Clients", href: "/clients", icon: Users },
-    { label: "Users", href: "/users", icon: UserCog },
-    { label: "Settings", href: "/settings", icon: Settings },
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "General" },
+    { label: "Clients", href: "/clients", icon: Users, section: "General" },
+    { label: "Users", href: "/users", icon: UserCog, section: "General" },
+    { label: "Settings", href: "/settings", icon: Settings, section: "Configuration" },
   ],
 });
