@@ -21,7 +21,8 @@
     "test:watch": "vitest",
     "build": "pnpm -r --workspace-concurrency=1 --if-present build",
     "provision": "pnpm --filter @cdorneles/provisioning provision",
-    "seed:dev": "pnpm --filter @cdorneles/provisioning seed:dev"
+    "seed:dev": "pnpm --filter @cdorneles/provisioning seed:dev",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",
