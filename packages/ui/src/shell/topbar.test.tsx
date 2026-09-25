@@ -70,4 +70,19 @@ describe("Topbar", () => {
 
     expect(await screen.findByRole("menuitem", { name: /logout/i })).toBeInTheDocument();
   });
+
+  it("renders the breadcrumb trail when provided", () => {
+    renderTopbar({
+      breadcrumbTrail: [{ label: "Customers", href: "/customers" }],
+    });
+
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
+    expect(screen.getByText("Customers")).toHaveAttribute("aria-current", "page");
+  });
+
+  it("renders no breadcrumb navigation when the trail is empty", () => {
+    renderTopbar();
+
+    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).not.toBeInTheDocument();
+  });
 });

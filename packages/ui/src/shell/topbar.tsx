@@ -2,9 +2,10 @@
 
 import { Burger, Group, TextInput } from "@mantine/core";
 import { Search } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ElementType, ReactNode } from "react";
 
 import { ThemeToggle } from "../components/theme-toggle";
+import { BreadcrumbTrail, type Crumb } from "./breadcrumbs";
 import { UserMenu } from "./user-menu";
 
 export interface TopbarProps {
@@ -18,6 +19,13 @@ export interface TopbarProps {
    * apps. Nothing renders when omitted (e.g. the admin panel).
    */
   leftSection?: ReactNode;
+  /**
+   * Pre-derived breadcrumb trail. `createShellLayout` derives it from the
+   * pathname; apps can pass their own or leave it empty.
+   */
+  breadcrumbTrail?: Crumb[];
+  /** Anchor element for breadcrumb crumbs; Next apps pass `next/link`. */
+  breadcrumbLinkComponent?: ElementType;
   /**
    * Filter input value. Provided, the input renders as a controlled field;
    * omitted it renders visually only, without wiring.
@@ -36,6 +44,8 @@ export interface TopbarProps {
 export function Topbar({
   logo,
   leftSection,
+  breadcrumbTrail,
+  breadcrumbLinkComponent,
   filterValue,
   onFilterChange,
   userName,
@@ -51,6 +61,10 @@ export function Topbar({
         <Burger opened={sidebarOpened} onClick={onToggleSidebar} hiddenFrom="md" size="sm" />
         {logo}
         {leftSection}
+        <BreadcrumbTrail
+          trail={breadcrumbTrail ?? []}
+          linkComponent={breadcrumbLinkComponent ?? "a"}
+        />
       </Group>
 
       <Group gap="sm" wrap="nowrap">

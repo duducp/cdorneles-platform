@@ -53,7 +53,7 @@ export function BreadcrumbTrail({
   const rest = trail.slice(0, -1);
 
   return (
-    <Breadcrumbs separator="/" visibleFrom="md" aria-label="Breadcrumb">
+    <Breadcrumbs separator="/" visibleFrom="md" component="nav" aria-label="Breadcrumb">
       {rest.map((crumb) => (
         <Anchor
           key={crumb.href}
