@@ -41,6 +41,12 @@ test: cover permission resolver
 chore: update dependencies
 ```
 
+Conventional Commits are also enforced locally by the `commit-msg` git hook
+(commitlint). `pre-commit` formats/lints the staged files and `pre-push` runs
+`pnpm typecheck`. Use `HUSKY=0` to bypass the hooks for a single command when
+you have a reason to.
+```
+
 The type and scope are not cosmetic: release-please derives the version bump
 and the changelog from them (see [Releases](./README.md#releases) in the
 README). A `feat` produces a minor bump, a `fix` a patch, and a `!` or a

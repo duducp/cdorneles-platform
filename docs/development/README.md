@@ -43,6 +43,12 @@ pnpm format
 pnpm format:check
 ```
 
+Git hooks run locally on every commit: `pre-commit` formats and lints staged
+files (`lint-staged`), `commit-msg` validates Conventional Commits
+(`commitlint`), and `pre-push` runs `pnpm typecheck`. Bypass the hooks for a
+single command with `HUSKY=0 git commit ...`.
+```
+
 See [Local development login](./local-login.md) for the full local login flow
 (provision → seed → dev app) and the demo accounts. See
 [Resource pages](./resource-pages.md) for the list/add/change page pattern,
