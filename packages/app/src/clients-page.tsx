@@ -25,9 +25,7 @@ interface ClientRow {
 
 // Typed through DataTableProps so this app does not need a direct
 // @tanstack/react-table dependency.
-const columns: DataTableProps<ClientRow>["columns"] = [
-  { accessorKey: "name", header: "Nome" },
-];
+const columns: DataTableProps<ClientRow>["columns"] = [{ accessorKey: "name", header: "Nome" }];
 
 /**
  * The admin's client-organizations resource list. The rows come from the
@@ -77,7 +75,13 @@ export function ClientsPage({
             </Button>
           </PermissionGate>
         }
-        toolbar={!loading && !error ? <Text c="dimmed" size="sm">{clients.length} clientes</Text> : undefined}
+        toolbar={
+          !loading && !error ? (
+            <Text c="dimmed" size="sm">
+              {clients.length} clientes
+            </Text>
+          ) : undefined
+        }
       >
         <PermissionGate
           permission={permissionKey("customers.read")}

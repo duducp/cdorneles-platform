@@ -128,16 +128,10 @@ describe("css variables", () => {
     const resolved = resolve();
 
     expect(resolved.dark?.["--mantine-color-brand-light"]).toBe("var(--mantine-color-brand-8)");
-    expect(resolved.dark?.["--mantine-color-success-light"]).toBe(
-      "var(--mantine-color-success-8)",
-    );
+    expect(resolved.dark?.["--mantine-color-success-light"]).toBe("var(--mantine-color-success-8)");
     expect(resolved.dark?.["--mantine-color-gray-light"]).toBe("var(--mantine-color-gray-8)");
-    expect(resolved.dark?.["--mantine-color-gray-light-hover"]).toBe(
-      "var(--mantine-color-gray-7)",
-    );
-    expect(resolved.dark?.["--mantine-color-gray-light-color"]).toBe(
-      "var(--mantine-color-gray-2)",
-    );
+    expect(resolved.dark?.["--mantine-color-gray-light-hover"]).toBe("var(--mantine-color-gray-7)");
+    expect(resolved.dark?.["--mantine-color-gray-light-color"]).toBe("var(--mantine-color-gray-2)");
   });
 
   it("wires the error color to the danger palette per scheme", () => {

@@ -52,7 +52,11 @@ function CreateCustomerForm() {
     >
       <Stack gap="md" maw={720}>
         <FormError>{error}</FormError>
-        <TextInput label="Nome" value={name} onChange={(event) => setName(event.currentTarget.value)} />
+        <TextInput
+          label="Nome"
+          value={name}
+          onChange={(event) => setName(event.currentTarget.value)}
+        />
         <TextInput
           label="E-mail"
           type="email"

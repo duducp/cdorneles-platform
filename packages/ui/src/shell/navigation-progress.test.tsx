@@ -46,10 +46,9 @@ describe("NavigationProgress", () => {
     );
 
     // The bar lingers briefly to complete at 100%, then unmounts.
-    await waitFor(
-      () => expect(screen.queryByRole("progressbar")).not.toBeInTheDocument(),
-      { timeout: 2000 },
-    );
+    await waitFor(() => expect(screen.queryByRole("progressbar")).not.toBeInTheDocument(), {
+      timeout: 2000,
+    });
   });
 
   it("keeps the bar up while at least one link is still pending", async () => {

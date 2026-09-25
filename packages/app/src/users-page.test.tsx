@@ -268,9 +268,13 @@ describe("UsersAddPage", () => {
   });
 
   it("prefills the organization from the active tenant", async () => {
-    renderPage(READ_CREATE, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-    }, "add");
+    renderPage(
+      READ_CREATE,
+      {
+        listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      },
+      "add",
+    );
 
     expect(await screen.findByLabelText("Organização")).toHaveValue("org-1");
   });
@@ -282,9 +286,13 @@ describe("UsersAddPage", () => {
   });
 
   it("validates required fields on submit with the button enabled", async () => {
-    renderPage(READ_CREATE, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-    }, "add");
+    renderPage(
+      READ_CREATE,
+      {
+        listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      },
+      "add",
+    );
 
     await screen.findByLabelText(/^E-mail/);
 
@@ -300,10 +308,14 @@ describe("UsersAddPage", () => {
   it("creates a user with the email, name, organization, role and permissions", async () => {
     const createUser = vi.fn().mockResolvedValue({ userId: "u2" });
 
-    renderPage(READ_CREATE, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-      createUser,
-    }, "add");
+    renderPage(
+      READ_CREATE,
+      {
+        listUsers: vi.fn().mockResolvedValue({ users: [] }),
+        createUser,
+      },
+      "add",
+    );
 
     await userEvent.type(await screen.findByLabelText(/^E-mail/), "ada@example.com");
     await userEvent.type(screen.getByLabelText(/^Nome/), "Ada Lovelace");
@@ -324,10 +336,14 @@ describe("UsersAddPage", () => {
   it("shows a success state after creating", async () => {
     const createUser = vi.fn().mockResolvedValue({ userId: "u2" });
 
-    renderPage(READ_CREATE, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-      createUser,
-    }, "add");
+    renderPage(
+      READ_CREATE,
+      {
+        listUsers: vi.fn().mockResolvedValue({ users: [] }),
+        createUser,
+      },
+      "add",
+    );
 
     await userEvent.type(await screen.findByLabelText(/^E-mail/), "ada@example.com");
     await userEvent.type(screen.getByLabelText(/^Nome/), "Ada Lovelace");
@@ -339,9 +355,13 @@ describe("UsersAddPage", () => {
   });
 
   it("hides the permission checklist without users.manage_permissions", async () => {
-    renderPage(READ_CREATE_NO_MANAGE, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-    }, "add");
+    renderPage(
+      READ_CREATE_NO_MANAGE,
+      {
+        listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      },
+      "add",
+    );
 
     await userEvent.type(await screen.findByLabelText(/^E-mail/), "a@b.co");
     await userEvent.type(screen.getByLabelText(/^Nome/), "Ada");
@@ -355,10 +375,14 @@ describe("UsersAddPage", () => {
   it("surfaces a creation failure in the inline FormError", async () => {
     const createUser = vi.fn().mockRejectedValue(new Error("boom"));
 
-    renderPage(READ_CREATE, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-      createUser,
-    }, "add");
+    renderPage(
+      READ_CREATE,
+      {
+        listUsers: vi.fn().mockResolvedValue({ users: [] }),
+        createUser,
+      },
+      "add",
+    );
 
     await userEvent.type(await screen.findByLabelText(/^E-mail/), "a@b.co");
     await userEvent.type(screen.getByLabelText(/^Nome/), "Ada");

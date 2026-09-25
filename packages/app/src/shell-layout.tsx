@@ -42,7 +42,12 @@ function toNavItems(entries: readonly RouteEntry[]): SidebarNavItem[] {
     items.push({ label: entry.label, href: entry.href, icon: entry.icon });
     for (const child of entry.items) {
       if (child.kind === "page") {
-        items.push({ label: child.label, href: child.href, icon: child.icon, section: entry.label });
+        items.push({
+          label: child.label,
+          href: child.href,
+          icon: child.icon,
+          section: entry.label,
+        });
       }
     }
   }

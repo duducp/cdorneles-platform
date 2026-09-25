@@ -14,7 +14,11 @@ export interface CreateOrganizationFormProps {
   error?: string | null;
 }
 
-export function CreateOrganizationForm({ onCreate, onCancel, error: callerError }: CreateOrganizationFormProps) {
+export function CreateOrganizationForm({
+  onCreate,
+  onCancel,
+  error: callerError,
+}: CreateOrganizationFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,7 +38,9 @@ export function CreateOrganizationForm({ onCreate, onCancel, error: callerError 
       form.reset();
     } catch (submitError) {
       setError(
-        submitError instanceof Error ? submitError.message : "Não foi possível criar a organização.",
+        submitError instanceof Error
+          ? submitError.message
+          : "Não foi possível criar a organização.",
       );
     } finally {
       setSubmitting(false);

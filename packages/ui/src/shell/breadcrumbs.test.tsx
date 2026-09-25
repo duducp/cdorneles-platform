@@ -38,7 +38,9 @@ describe("deriveTrail", () => {
   });
 
   it("labels add and change verbs in pt-BR", () => {
-    expect(deriveTrail("/admin/users/add", [{ label: "Usuários", href: "/admin/users", icon: Home }])).toEqual([
+    expect(
+      deriveTrail("/admin/users/add", [{ label: "Usuários", href: "/admin/users", icon: Home }]),
+    ).toEqual([
       { label: "Admin", href: "/admin" },
       { label: "Usuários", href: "/admin/users" },
       { label: "Novo", href: "/admin/users/add" },

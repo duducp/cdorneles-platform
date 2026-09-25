@@ -83,7 +83,11 @@ describe("visibleRoutes", () => {
     });
 
     const visible = visibleRoutes(
-      [page({ permissions: { anyOf: [permissionKey("users.read"), permissionKey("customers.read")] } })],
+      [
+        page({
+          permissions: { anyOf: [permissionKey("users.read"), permissionKey("customers.read")] },
+        }),
+      ],
       checker,
     );
 
@@ -93,7 +97,9 @@ describe("visibleRoutes", () => {
   it("is deny-by-default", () => {
     const checker = createAccessChecker({ permissions: [], features: [] });
 
-    expect(visibleRoutes([page({ permissions: { allOf: [permissionKey("users.read")] } })], checker)).toHaveLength(0);
+    expect(
+      visibleRoutes([page({ permissions: { allOf: [permissionKey("users.read")] } })], checker),
+    ).toHaveLength(0);
     expect(visibleRoutes([page()], checker)).toHaveLength(1);
   });
 });
@@ -136,7 +142,12 @@ describe("groupIndexItems", () => {
     });
 
     expect(groupIndexItems(tree)).toEqual([
-      { href: "/admin/users", label: "Usuários", description: "Pessoas", icon: tree.items[0]!.icon },
+      {
+        href: "/admin/users",
+        label: "Usuários",
+        description: "Pessoas",
+        icon: tree.items[0]!.icon,
+      },
     ]);
   });
 });

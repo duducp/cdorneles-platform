@@ -3,13 +3,7 @@
 import { permissionKey, type PermissionKey } from "@cdorneles/permissions";
 import type { Organization } from "@cdorneles/tenant";
 import { useTenant } from "@cdorneles/tenant";
-import {
-  Button,
-  EmptyState,
-  FormError,
-  PageBody,
-  PageContainer,
-} from "@cdorneles/ui";
+import { Button, EmptyState, FormError, PageBody, PageContainer } from "@cdorneles/ui";
 import { PermissionGate, useAccess } from "@cdorneles/ui/permissions";
 import { Checkbox, Group, Select, Stack, Text, TextInput } from "@mantine/core";
 import { useCallback, useEffect, useState, type FormEvent } from "react";

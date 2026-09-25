@@ -11,10 +11,7 @@ import { EmptyState, PageBody, PageContainer } from "@cdorneles/ui";
 export function UsersChangePage({ userId }: { userId: string }) {
   return (
     <PageContainer py="xl">
-      <PageBody
-        title="Editar usuário"
-        description={`Edição do usuário ${userId}.`}
-      >
+      <PageBody title="Editar usuário" description={`Edição do usuário ${userId}.`}>
         <EmptyState
           title="Edição em preparação"
           description="A API de plataforma ainda não expõe leitura e atualização por usuário. A rota já segue o padrão /users/<id>/change."

@@ -19,7 +19,11 @@ export interface DataTableProps<TData extends RowData> {
   withBorder?: boolean;
 }
 
-export function DataTable<TData extends RowData>({ data, columns, withBorder = true }: DataTableProps<TData>) {
+export function DataTable<TData extends RowData>({
+  data,
+  columns,
+  withBorder = true,
+}: DataTableProps<TData>) {
   const table = useLegacyTable({
     data,
     columns,
