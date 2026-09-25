@@ -10,9 +10,11 @@ import { FormError } from "../components/form-error";
 export interface CreateOrganizationFormProps {
   onCreate: (name: string) => Promise<void>;
   onCancel?: () => void;
+  /** Caller-owned message (e.g. a list refresh failure) shown above the form. */
+  error?: string | null;
 }
 
-export function CreateOrganizationForm({ onCreate, onCancel }: CreateOrganizationFormProps) {
+export function CreateOrganizationForm({ onCreate, onCancel, error: callerError }: CreateOrganizationFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -46,7 +48,7 @@ export function CreateOrganizationForm({ onCreate, onCancel }: CreateOrganizatio
   return (
     <form onSubmit={submit} noValidate aria-busy={submitting || undefined}>
       <Stack gap="md">
-        <FormError>{error}</FormError>
+        <FormError>{error ?? callerError}</FormError>
         <TextInput
           label="Nome da organização"
           placeholder="Acme Ltda"

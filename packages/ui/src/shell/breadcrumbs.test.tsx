@@ -36,6 +36,44 @@ describe("deriveTrail", () => {
   it("returns an empty trail for the root", () => {
     expect(deriveTrail("/", [])).toEqual([]);
   });
+
+  it("labels add and change verbs in pt-BR", () => {
+    expect(deriveTrail("/admin/users/add", [{ label: "Usuários", href: "/admin/users", icon: Home }])).toEqual([
+      { label: "Admin", href: "/admin" },
+      { label: "Usuários", href: "/admin/users" },
+      { label: "Novo", href: "/admin/users/add" },
+    ]);
+    expect(deriveTrail("/admin/users/u1/change", [])).toEqual([
+      { label: "Admin", href: "/admin" },
+      { label: "Users", href: "/admin/users" },
+      { label: "U1", href: "/admin/users/u1" },
+      { label: "Editar", href: "/admin/users/u1/change" },
+    ]);
+  });
+
+  it("prefers the registry label for the matched route", () => {
+    const registry = [
+      {
+        kind: "group" as const,
+        href: "/admin",
+        label: "Administração",
+        icon: Home,
+        items: [
+          {
+            kind: "page" as const,
+            href: "/admin/users",
+            label: "Usuários",
+            icon: Home,
+          },
+        ],
+      },
+    ];
+
+    expect(deriveTrail("/admin/users", [], registry)).toEqual([
+      { label: "Administração", href: "/admin" },
+      { label: "Usuários", href: "/admin/users" },
+    ]);
+  });
 });
 
 describe("BreadcrumbTrail", () => {

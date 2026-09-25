@@ -44,7 +44,9 @@ pnpm format:check
 ```
 
 See [Local development login](./local-login.md) for the full local login flow
-(provision → seed → dev app) and the demo accounts.
+(provision → seed → dev app) and the demo accounts. See
+[Resource pages](./resource-pages.md) for the list/add/change page pattern,
+the route registry and permission-gated CRUD.
 
 `pnpm build` builds the workspace **serially** (`--workspace-concurrency=1`).
 Concurrent `next build` runs race while resolving `next/font/google` and fail

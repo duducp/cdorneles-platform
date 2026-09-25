@@ -3,6 +3,7 @@
 import { Anchor, Breadcrumbs, Text } from "@mantine/core";
 import type { ElementType } from "react";
 
+import { ROUTE_VERB_LABELS, flattenRoutes, type RouteEntry } from "./route-registry";
 import type { SidebarNavItem } from "./sidebar";
 
 export interface Crumb {
@@ -15,19 +16,33 @@ function capitalize(segment: string): string {
 }
 
 /**
- * Derives the breadcrumb trail from the pathname. The first segment uses the
- * matching nav item's label (so "Customers" never renders as "Customers");
- * deeper segments are capitalized. Exported for unit testing.
+ * Derives the breadcrumb trail from the pathname. Each segment resolves in
+ * this order: an exact registry declaration for its href (so `/admin` renders
+ * the group's full label), a nav item label, a pt-BR verb label (`add` →
+ * "Novo", `change` → "Editar"), then a capitalized fallback.
  */
-export function deriveTrail(pathname: string, items: SidebarNavItem[]): Crumb[] {
+export function deriveTrail(
+  pathname: string,
+  items: SidebarNavItem[],
+  registry?: readonly RouteEntry[],
+): Crumb[] {
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length === 0) return [];
+
+  // Exact-href index of the declared routes (groups and pages).
+  const declared = registry ? new Map(flattenRoutes(registry).map((r) => [r.href, r.entry])) : null;
 
   const trail: Crumb[] = [];
   for (let index = 0; index < segments.length; index += 1) {
     const href = `/${segments.slice(0, index + 1).join("/")}`;
+    const segment = segments[index]!;
     const matched = items.find((item) => item.href === href);
-    trail.push({ label: matched?.label ?? capitalize(segments[index]!), href });
+    const label =
+      declared?.get(href)?.label ??
+      matched?.label ??
+      ROUTE_VERB_LABELS[segment] ??
+      capitalize(segment);
+    trail.push({ label, href });
   }
   return trail;
 }

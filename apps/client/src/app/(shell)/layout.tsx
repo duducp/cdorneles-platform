@@ -1,14 +1,8 @@
 "use client";
 
-import { createShellLayout } from "@cdorneles/app";
-import { LayoutDashboard, Settings, Users } from "lucide-react";
+import { createShellLayout, CLIENT_ROUTES } from "@cdorneles/app";
 
 export default createShellLayout({
-  // The client app is org-scoped: show the topbar organization switcher.
+  routes: CLIENT_ROUTES,
   organizationSwitcher: true,
-  navItems: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "General" },
-    { label: "Customers", href: "/customers", icon: Users, section: "General" },
-    { label: "Settings", href: "/settings", icon: Settings, section: "Configuration" },
-  ],
 });

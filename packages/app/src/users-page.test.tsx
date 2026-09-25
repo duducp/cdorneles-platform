@@ -6,7 +6,7 @@ import { permissionKey } from "@cdorneles/permissions";
 import { AccessProvider } from "@cdorneles/ui/permissions";
 import { MantineProvider } from "@mantine/core";
 import type * as MantineCore from "@mantine/core";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,14 +20,14 @@ vi.mock("@cdorneles/ui", () => ({
     children,
     onClick,
     type,
-    disabled,
+    href,
   }: {
     children?: ReactNode;
     onClick?: () => void;
     type?: "button" | "submit";
-    disabled?: boolean;
+    href?: string;
   }) => (
-    <button type={type ?? "button"} onClick={onClick} disabled={disabled}>
+    <button type={type ?? "button"} onClick={onClick} data-href={href}>
       {children}
     </button>
   ),
@@ -108,7 +108,8 @@ vi.mock("@mantine/core", async (importOriginal) => {
 });
 
 const { FunctionsApiProvider, useFunctionsApi } = await import("./functions-api-context");
-const { UsersPage } = await import("./users-page");
+const { UsersListPage } = await import("./users-list-page");
+const { UsersAddPage } = await import("./users-add-page");
 
 const READ: GrantedAccess = { permissions: [permissionKey("users.read")], features: [] };
 const READ_CREATE: GrantedAccess = {
@@ -143,7 +144,11 @@ function tenantState() {
   };
 }
 
-function renderPage(granted: GrantedAccess, functionsApi: Partial<FunctionsApi> | null) {
+function renderPage(
+  granted: GrantedAccess,
+  functionsApi: Partial<FunctionsApi> | null,
+  page: "list" | "add" = "list",
+) {
   const value =
     functionsApi === null
       ? null
@@ -157,7 +162,7 @@ function renderPage(granted: GrantedAccess, functionsApi: Partial<FunctionsApi> 
     <MantineProvider>
       <FunctionsApiProvider value={value}>
         <AccessProvider granted={granted}>
-          <UsersPage />
+          {page === "list" ? <UsersListPage /> : <UsersAddPage />}
         </AccessProvider>
       </FunctionsApiProvider>
     </MantineProvider>,
@@ -166,7 +171,7 @@ function renderPage(granted: GrantedAccess, functionsApi: Partial<FunctionsApi> 
 
 const ONE_USER = { users: [{ id: "u1", email: "ada@example.com", name: "Ada", labels: [] }] };
 
-describe("UsersPage", () => {
+describe("UsersListPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useTenantMock.mockReturnValue(tenantState());
@@ -209,143 +214,68 @@ describe("UsersPage", () => {
     errorSpy.mockRestore();
   });
 
-  it("loads organizations from the platform API when users.read is granted", async () => {
-    const listOrganizations = vi.fn().mockResolvedValue({
-      organizations: [{ id: "org-1", name: "Acme" }],
-    });
-
-    renderPage(READ, { listUsers: vi.fn().mockResolvedValue(ONE_USER), listOrganizations });
-
-    await waitFor(() => expect(listOrganizations).toHaveBeenCalled());
-  });
-
-  it("does not load organizations without users.read", async () => {
-    const listOrganizations = vi.fn().mockResolvedValue({ organizations: [] });
-
-    renderPage(DENIED, { listUsers: vi.fn().mockResolvedValue(ONE_USER), listOrganizations });
-
-    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Acesso negado");
-    expect(listOrganizations).not.toHaveBeenCalled();
-  });
-
-  it("offers the platform organizations in the form, not the tenant's membership list", async () => {
-    const listOrganizations = vi.fn().mockResolvedValue({
-      organizations: [{ id: "org-9", name: "Globex" }],
-    });
-
-    renderPage(READ_CREATE, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-      listOrganizations,
-    });
-
-    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
-
-    expect(await screen.findByRole("option", { name: "Globex" })).toBeInTheDocument();
-    expect(screen.queryByRole("option", { name: "Acme" })).not.toBeInTheDocument();
-  });
-
-  it("shows the create form inline in the page body, not in a modal", async () => {
-    renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue({ users: [] }) });
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
-
-    expect(await screen.findByLabelText(/^E-mail/)).toBeInTheDocument();
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("surfaces a load failure above the organization field", async () => {
-    const listOrganizations = vi.fn().mockRejectedValue(new Error("boom"));
-
-    renderPage(READ_CREATE, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-      listOrganizations,
-    });
-
-    await waitFor(() => expect(listOrganizations).toHaveBeenCalled());
-    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("boom");
-  });
-
-  it("shows the 'New user' action when users.create is granted", async () => {
+  it("shows the 'Novo usuário' action only when users.create is granted", async () => {
     renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
-    expect(await screen.findByRole("button", { name: /novo usuário/i })).toBeInTheDocument();
+    await screen.findByText("ada@example.com");
+    expect(screen.getByRole("button", { name: /novo usuário/i })).toBeInTheDocument();
   });
 
-  it("hides the 'New user' action without users.create", async () => {
-    renderPage(READ, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
+  it("hides the 'Novo usuário' action without users.create", async () => {
+    renderPage(DENIED, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
-    expect(await screen.findByText("ada@example.com")).toBeInTheDocument();
+    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Acesso negado");
     expect(screen.queryByRole("button", { name: /novo usuário/i })).not.toBeInTheDocument();
   });
 
-  it("shows the 'New organization' action when organizations.create is granted", async () => {
+  it("shows the 'Nova organização' action when organizations.create is granted", async () => {
     renderPage(READ_CREATE_ORG, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
-    expect(await screen.findByRole("button", { name: /nova organização/i })).toBeInTheDocument();
+    await screen.findByText("ada@example.com");
+    expect(screen.getByRole("button", { name: /nova organização/i })).toBeInTheDocument();
   });
 
-  it("hides the 'New organization' action without organizations.create", async () => {
+  it("hides the 'Nova organização' action without organizations.create", async () => {
     renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
-    expect(await screen.findByText("ada@example.com")).toBeInTheDocument();
+    await screen.findByText("ada@example.com");
     expect(screen.queryByRole("button", { name: /nova organização/i })).not.toBeInTheDocument();
   });
 
-  it("creates an organization and refreshes the platform list", async () => {
-    const listOrganizations = vi
-      .fn()
-      .mockResolvedValueOnce({ organizations: [{ id: "org-1", name: "Acme" }] })
-      .mockResolvedValueOnce({
-        organizations: [
-          { id: "org-1", name: "Acme" },
-          { id: "org-9", name: "New Org" },
-        ],
-      });
-    const createOrganization = vi.fn().mockResolvedValue({ id: "org-9", name: "New Org" });
-    useTenantMock.mockReturnValue({ ...tenantState(), createOrganization });
+  it("shows the user count in the toolbar", async () => {
+    renderPage(READ, { listUsers: vi.fn().mockResolvedValue(ONE_USER) });
 
-    renderPage(READ_CREATE_ORG, {
-      listUsers: vi.fn().mockResolvedValue({ users: [] }),
-      listOrganizations,
-    });
+    expect(await screen.findByText(/1 usuário/)).toBeInTheDocument();
+  });
+});
 
-    await userEvent.click(await screen.findByRole("button", { name: /nova organização/i }));
-    await userEvent.type(await screen.findByLabelText(/^Nome da organização/), "New Org");
-    await userEvent.click(screen.getByRole("button", { name: /criar organização/i }));
-
-    expect(createOrganization).toHaveBeenCalledWith("New Org", { makeActive: false });
-    await waitFor(() => expect(listOrganizations).toHaveBeenCalledTimes(2));
-
-    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
-    expect(await screen.findByRole("option", { name: "New Org" })).toBeInTheDocument();
+describe("UsersAddPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useTenantMock.mockReturnValue(tenantState());
   });
 
-  it("hides the permission checklist without users.manage_permissions", async () => {
-    renderPage(READ_CREATE_NO_MANAGE, {
+  it("prefills the organization from the active tenant", async () => {
+    renderPage(READ_CREATE, {
       listUsers: vi.fn().mockResolvedValue({ users: [] }),
-      createUser: vi.fn().mockResolvedValue({ userId: "u2" }),
-    });
+    }, "add");
 
-    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
-
-    expect(await screen.findByLabelText(/^E-mail/)).toBeInTheDocument();
-    expect(screen.queryByText("Permissões")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("customers.read")).not.toBeInTheDocument();
+    expect(await screen.findByLabelText("Organização")).toHaveValue("org-1");
   });
 
-  it("prefills the organization and validates required fields on submit", async () => {
-    // The submit stays enabled (a disabled button hides why nothing happens);
-    // submitting incomplete surfaces the inline FormError instead.
-    renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue({ users: [] }) });
+  it("denies the form without users.create", async () => {
+    renderPage(READ, { listUsers: vi.fn().mockResolvedValue({ users: [] }) }, "add");
 
-    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
+    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Acesso negado");
+  });
+
+  it("validates required fields on submit with the button enabled", async () => {
+    renderPage(READ_CREATE, {
+      listUsers: vi.fn().mockResolvedValue({ users: [] }),
+    }, "add");
+
     await screen.findByLabelText(/^E-mail/);
 
-    expect(screen.getByLabelText("Organização")).toHaveValue("org-1");
     const create = screen.getByRole("button", { name: /criar usuário/i });
     expect(create).toBeEnabled();
 
@@ -353,31 +283,15 @@ describe("UsersPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Preencha e-mail, nome, organização e papel.",
     );
-
-    await userEvent.type(screen.getByLabelText(/^E-mail/), "ada@example.com");
-    await userEvent.type(screen.getByLabelText(/^Nome/), "Ada Lovelace");
-    await userEvent.selectOptions(screen.getByLabelText("Papel"), "member");
-
-    expect(create).toBeEnabled();
-  });
-
-  it("offers the org-seeded organization permissions but not the platform capability", async () => {
-    renderPage(READ_CREATE, { listUsers: vi.fn().mockResolvedValue({ users: [] }) });
-
-    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
-
-    expect(await screen.findByLabelText("organizations.read")).toBeInTheDocument();
-    expect(screen.getByLabelText("organizations.update")).toBeInTheDocument();
-    expect(screen.queryByLabelText("organizations.create")).not.toBeInTheDocument();
   });
 
   it("creates a user with the email, name, organization, role and permissions", async () => {
     const createUser = vi.fn().mockResolvedValue({ userId: "u2" });
-    const listUsers = vi.fn().mockResolvedValue({ users: [] });
 
-    renderPage(READ_CREATE, { listUsers, createUser });
-
-    await userEvent.click(await screen.findByRole("button", { name: /novo usuário/i }));
+    renderPage(READ_CREATE, {
+      listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      createUser,
+    }, "add");
 
     await userEvent.type(await screen.findByLabelText(/^E-mail/), "ada@example.com");
     await userEvent.type(screen.getByLabelText(/^Nome/), "Ada Lovelace");
@@ -393,5 +307,53 @@ describe("UsersPage", () => {
       role: "member",
       permissions: ["customers.read"],
     });
+  });
+
+  it("shows a success state after creating", async () => {
+    const createUser = vi.fn().mockResolvedValue({ userId: "u2" });
+
+    renderPage(READ_CREATE, {
+      listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      createUser,
+    }, "add");
+
+    await userEvent.type(await screen.findByLabelText(/^E-mail/), "ada@example.com");
+    await userEvent.type(screen.getByLabelText(/^Nome/), "Ada Lovelace");
+    await userEvent.selectOptions(screen.getByLabelText("Organização"), "org-1");
+    await userEvent.selectOptions(screen.getByLabelText("Papel"), "member");
+    await userEvent.click(screen.getByRole("button", { name: /criar usuário/i }));
+
+    expect(await screen.findByText(/Usuário criado/)).toBeInTheDocument();
+  });
+
+  it("hides the permission checklist without users.manage_permissions", async () => {
+    renderPage(READ_CREATE_NO_MANAGE, {
+      listUsers: vi.fn().mockResolvedValue({ users: [] }),
+    }, "add");
+
+    await userEvent.type(await screen.findByLabelText(/^E-mail/), "a@b.co");
+    await userEvent.type(screen.getByLabelText(/^Nome/), "Ada");
+    await userEvent.selectOptions(screen.getByLabelText("Organização"), "org-1");
+    await userEvent.selectOptions(screen.getByLabelText("Papel"), "member");
+
+    expect(screen.queryByText("Permissões")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("customers.read")).not.toBeInTheDocument();
+  });
+
+  it("surfaces a creation failure in the inline FormError", async () => {
+    const createUser = vi.fn().mockRejectedValue(new Error("boom"));
+
+    renderPage(READ_CREATE, {
+      listUsers: vi.fn().mockResolvedValue({ users: [] }),
+      createUser,
+    }, "add");
+
+    await userEvent.type(await screen.findByLabelText(/^E-mail/), "a@b.co");
+    await userEvent.type(screen.getByLabelText(/^Nome/), "Ada");
+    await userEvent.selectOptions(screen.getByLabelText("Organização"), "org-1");
+    await userEvent.selectOptions(screen.getByLabelText("Papel"), "member");
+    await userEvent.click(screen.getByRole("button", { name: /criar usuário/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("boom");
   });
 });
