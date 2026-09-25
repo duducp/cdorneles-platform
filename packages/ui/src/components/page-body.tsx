@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Divider, Group, Text, Title } from "@mantine/core";
+import { Box, Divider, Group, Paper, Text, Title } from "@mantine/core";
 import type { ReactNode } from "react";
 
 export interface PageBodyProps {
@@ -51,18 +51,18 @@ export function PageBody({ title, description, action, toolbar, children }: Page
         ) : null}
       </Group>
 
-      {toolbar ? (
-        <>
-          <Divider mt="md" mb="sm" />
-          <Group gap="sm" wrap="wrap">
-            {toolbar}
-          </Group>
-        </>
-      ) : (
-        <Divider mt="md" mb="md" />
-      )}
+      <Paper withBorder radius="md" p="md" mt="md" data-testid="page-body-surface">
+        {toolbar ? (
+          <>
+            <Group gap="sm" wrap="wrap" mb="md">
+              {toolbar}
+            </Group>
+            <Divider mb="md" />
+          </>
+        ) : null}
 
-      {children}
+        {children}
+      </Paper>
     </Box>
   );
 }

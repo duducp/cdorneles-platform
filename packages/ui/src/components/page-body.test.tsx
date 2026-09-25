@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { ThemeProvider } from "@cdorneles/theme";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { PageBody, type PageBodyProps } from "./page-body";
@@ -47,5 +47,24 @@ describe("PageBody", () => {
 
     expect(screen.queryByLabelText("Search")).not.toBeInTheDocument();
     expect(screen.getByTestId("content")).toBeInTheDocument();
+  });
+});
+
+describe("PageBody panel", () => {
+  it("renders toolbar and content inside one bordered surface", () => {
+    renderBody({ toolbar: <input aria-label="Search" /> });
+
+    const surface = screen.getByTestId("page-body-surface");
+    expect(surface).toHaveAttribute("data-with-border", "true");
+    expect(within(surface).getByLabelText("Search")).toBeInTheDocument();
+    expect(within(surface).getByTestId("content")).toBeInTheDocument();
+  });
+
+  it("keeps the title and action outside the surface", () => {
+    renderBody({ action: <button type="button">New user</button> });
+
+    const surface = screen.getByTestId("page-body-surface");
+    expect(within(surface).queryByRole("button", { name: "New user" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New user" })).toBeInTheDocument();
   });
 });
