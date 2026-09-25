@@ -76,6 +76,20 @@ available, initials otherwise), the user's first name plus surname
 name — not the organization's — and hides the name text on mobile so the
 topbar never overflows.
 
+4. **Breadcrumbs** — derived automatically from the pathname by
+   `createShellLayout` (`deriveTrail`): the first segment reuses the nav
+   item's label, deeper segments are capitalized, and the last crumb is the
+   current page (plain text with `aria-current="page"`). Hidden below `md`.
+
+The sidebar (`Sidebar`) groups its items into sections: `SidebarNavItem`
+accepts an optional `section`, items sharing one render under a caps dimmed
+title in first-appearance order, and unsectioned items render first in an
+untitled group. Collapsed sidebars hide the section titles.
+
+`PageBody` renders its toolbar and content inside one bordered `Paper`
+surface — the console panel look. The title, description and primary action
+stay above the panel.
+
 ## Theme and contrast
 
 - **Mantine 9 resolves the primary color at the fixed main shade (index 5)** — there is no index 10, and `primaryShade` does not change which swatch filled buttons use. The theme pins `primaryShade: 5` so rendered UI matches `tokens.<palette>[5]`; contrast must always be computed against index 5 (`brand[5]`, the CDorneles Orange `#F45D22`), never against the old `{ light: 6, dark: 4 }` assumption.

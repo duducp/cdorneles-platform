@@ -15,9 +15,7 @@ describe("deriveTrail", () => {
   ];
 
   it("uses the nav item label for the first segment", () => {
-    expect(deriveTrail("/dashboard", items)).toEqual([
-      { label: "Dashboard", href: "/dashboard" },
-    ]);
+    expect(deriveTrail("/dashboard", items)).toEqual([{ label: "Dashboard", href: "/dashboard" }]);
   });
 
   it("capitalizes deeper segments and keeps cumulative hrefs", () => {
