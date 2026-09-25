@@ -4,7 +4,14 @@ import { useAuth } from "@cdorneles/auth";
 import { permissionKey } from "@cdorneles/permissions";
 import { OrgGuard, useTenant } from "@cdorneles/tenant";
 import { LoadingScreen, Logo } from "@cdorneles/ui";
-import { AppShell, OrgSwitcher, Sidebar, Topbar, type SidebarNavItem } from "@cdorneles/ui/shell";
+import {
+  AppShell,
+  OrgSwitcher,
+  Sidebar,
+  Topbar,
+  deriveTrail,
+  type SidebarNavItem,
+} from "@cdorneles/ui/shell";
 import { useAccess } from "@cdorneles/ui/permissions";
 
 import { NavPendingIndicator } from "./nav-pending";
@@ -80,6 +87,10 @@ export function createShellLayout({
       [createOrganization],
     );
 
+    // The console-style trail: nav item labels for known segments, capitalized
+    // fallbacks for deeper ones. Rendered in the Topbar on md+ screens.
+    const breadcrumbTrail = deriveTrail(pathname, navItems);
+
     const shell = (
       <AppShell
         sidebar={
@@ -106,6 +117,8 @@ export function createShellLayout({
                 />
               ) : undefined
             }
+            breadcrumbTrail={breadcrumbTrail}
+            breadcrumbLinkComponent={Link}
             userName={user?.name ?? "User"}
             userEmail={user?.email}
             sidebarOpened={opened}
