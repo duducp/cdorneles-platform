@@ -24,6 +24,8 @@
     "seed:dev": "pnpm --filter @cdorneles/provisioning seed:dev"
   },
   "devDependencies": {
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
     "@eslint/js": "catalog:",
     "@next/eslint-plugin-next": "catalog:",
     "@testing-library/dom": "catalog:",
@@ -38,7 +40,9 @@
     "eslint-config-prettier": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "globals": "catalog:",
+    "husky": "catalog:",
     "jsdom": "catalog:",
+    "lint-staged": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
