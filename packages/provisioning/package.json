@@ -7,7 +7,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "provision": "tsx src/cli.ts"
+    "provision": "tsx src/cli.ts",
+    "seed:dev": "tsx src/seed-dev.ts"
   },
   "dependencies": {
     "node-appwrite": "^27.0.0"

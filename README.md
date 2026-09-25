@@ -95,6 +95,8 @@ anchor element (`next/link`) and the pending indicator (`useLinkStatus`) from
 ```bash
 pnpm install
 cp .env.example .env          # then fill in the values
+pnpm provision                # seeds the Appwrite schema (one-off per environment)
+pnpm seed:dev                 # creates demo users, organizations and memberships (idempotent)
 pnpm dev:design-system        # http://localhost:3004
 ```
 
@@ -103,6 +105,12 @@ pnpm dev:design-system        # http://localhost:3004
 | admin         | `pnpm dev:admin`        | 3001 |
 | client        | `pnpm dev:client`       | 3002 |
 | design-system | `pnpm dev:design-system`| 3004 |
+
+### Local login
+
+`pnpm seed:dev` creates demo users, organizations and memberships for local
+development. For the accounts, password and troubleshooting see
+[Local development login](./docs/development/local-login.md).
 
 ## Environment variables
 

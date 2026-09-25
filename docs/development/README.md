@@ -32,6 +32,8 @@ AI agents should search existing implementations before adding new abstractions 
 ## Commands
 
 ```text
+pnpm provision                    # seed the Appwrite schema (one-off per environment)
+pnpm seed:dev                     # demo users/organizations for local login (idempotent)
 pnpm dev:admin | dev:client | dev:design-system
 pnpm lint
 pnpm typecheck
@@ -40,6 +42,9 @@ pnpm build
 pnpm format
 pnpm format:check
 ```
+
+See [Local development login](./local-login.md) for the full local login flow
+(provision → seed → dev app) and the demo accounts.
 
 `pnpm build` builds the workspace **serially** (`--workspace-concurrency=1`).
 Concurrent `next build` runs race while resolving `next/font/google` and fail
