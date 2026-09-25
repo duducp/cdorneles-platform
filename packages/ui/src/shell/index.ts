@@ -1,4 +1,5 @@
 export { AppShell, type AppShellProps } from "./app-shell";
+export { BreadcrumbTrail, deriveTrail, type Crumb } from "./breadcrumbs";
 export { OrgSwitcher, type OrgSwitcherProps } from "./org-switcher";
 export { NavItem, type NavItemProps } from "./nav-item";
 export { Sidebar, type SidebarProps, type SidebarNavItem } from "./sidebar";
