@@ -132,10 +132,10 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
                 </Stack>
               ) : error ? (
                 <Stack gap="md">
+                  <FormError>{error}</FormError>
                   <Text component="h1" fw={600} fz="xl">
                     Verificação em duas etapas
                   </Text>
-                  <FormError>{error}</FormError>
                   <Button type="button" variant="subtle" fullWidth onClick={handleCancel}>
                     Cancelar
                   </Button>

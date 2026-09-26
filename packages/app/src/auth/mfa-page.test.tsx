@@ -107,6 +107,21 @@ describe("MfaPage", () => {
     expect(screen.getByRole("button", { name: /^cancelar$/i })).toBeInTheDocument();
   });
 
+  it("renders the bootstrap error alert before the heading", async () => {
+    listMfaFactors.mockRejectedValue(new Error("boom"));
+    render(
+      <ThemeProvider>
+        <MfaPage />
+      </ThemeProvider>,
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.parentElement?.firstElementChild).toBe(alert);
+    expect(
+      screen.getByRole("heading", { name: /verificação em duas etapas/i }),
+    ).toBeInTheDocument();
+  });
+
   it("offers cancel in the bootstrap-error state and discards the challenge", async () => {
     listMfaFactors.mockRejectedValue(new Error("boom"));
     const user = userEvent.setup();
