@@ -43,18 +43,30 @@ describe("LoginForm", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
-    // The message renders at the field and in the form-level alert.
-    expect(await screen.findAllByText("Informe um e-mail válido.")).not.toHaveLength(0);
+    // The message renders at the field only — never in the form-level alert.
+    expect(await screen.findByText("Informe um e-mail válido.")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("announces the first validation error through the form-level alert", async () => {
+  it("keeps field validation errors out of the form-level alert", async () => {
     renderForm({ onSubmit: vi.fn() });
 
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Informe um e-mail válido.");
+    expect(await screen.findByText("Informe um e-mail válido.")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("renders the form-level alert as the first element of the form", () => {
+    const { container } = renderForm({
+      onSubmit: vi.fn(),
+      error: "E-mail ou senha inválidos.",
+    });
+
+    const form = container.querySelector("form");
+    expect(form?.firstElementChild).toHaveAttribute("role", "alert");
+    expect(form?.firstElementChild).toHaveTextContent("E-mail ou senha inválidos.");
   });
 
   it("focuses the first invalid field on submit", async () => {

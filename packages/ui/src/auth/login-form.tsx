@@ -63,16 +63,18 @@ export function LoginForm({
     },
   );
 
-  const submitError = form.errors.email ?? form.errors.password ?? null;
-
   return (
     <Box
       component="form"
       onSubmit={handleSubmit}
       noValidate
       aria-busy={loading || undefined}
-      aria-describedby={submitError ? "login-form-error" : undefined}
+      aria-describedby={error ? "login-form-error" : undefined}
     >
+      <FormError id="login-form-error" mb="md">
+        {error}
+      </FormError>
+
       <Stack gap={4}>
         <Text component="h1" fw={600} fz="xl">
           {heading}
@@ -121,10 +123,6 @@ export function LoginForm({
         >
           Esqueci minha senha
         </Anchor>
-
-        <FormError id="login-form-error" mb="xs">
-          {submitError ?? error}
-        </FormError>
 
         <Button type="submit" fullWidth loading={loading} disabled={loading}>
           Entrar
