@@ -6,6 +6,7 @@ import {
   Button,
   DataTable,
   EmptyState,
+  ErrorState,
   PageBody,
   PageContainer,
   TableSkeleton,
@@ -150,9 +151,12 @@ export function UsersListPage({
           ) : null}
 
           {error ? (
-            <div role="alert">
-              <EmptyState title="Não foi possível carregar os usuários" description={error} />
-            </div>
+            <ErrorState
+              title="Não foi possível carregar os usuários"
+              description={error}
+              onRetry={load}
+              retryLabel="Tentar novamente"
+            />
           ) : loading ? (
             <TableSkeleton rows={6} columns={columns.length} />
           ) : users.length === 0 ? (

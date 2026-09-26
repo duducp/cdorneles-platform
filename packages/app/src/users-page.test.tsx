@@ -44,6 +44,23 @@ vi.mock("@cdorneles/ui", () => ({
       {description ? ` — ${description}` : ""}
     </div>
   ),
+  ErrorState: ({
+    title,
+    description,
+    onRetry,
+    retryLabel,
+  }: {
+    title: string;
+    description?: string;
+    onRetry?: () => void;
+    retryLabel?: string;
+  }) => (
+    <div role="alert">
+      {title}
+      {description ? ` — ${description}` : ""}
+      {onRetry ? <button onClick={onRetry}>{retryLabel ?? "Tentar novamente"}</button> : null}
+    </div>
+  ),
   FormError: ({ children }: { children?: ReactNode }) =>
     children ? <div role="alert">{children}</div> : null,
   LoadingScreen: () => <div data-testid="loading-screen" />,
@@ -258,6 +275,21 @@ describe("UsersListPage", () => {
 
     expect(await screen.findByTestId("table-skeleton")).toBeInTheDocument();
     expect(screen.queryByTestId("loading-screen")).not.toBeInTheDocument();
+  });
+
+  it("surfaces a load failure in an ErrorState with a retry action", async () => {
+    const listUsers = vi.fn().mockRejectedValueOnce(new Error("boom")).mockResolvedValue(ONE_USER);
+
+    renderPage(READ, { listUsers });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Não foi possível carregar os usuários");
+    expect(alert).toHaveTextContent("boom");
+
+    await userEvent.click(screen.getByRole("button", { name: /tentar novamente/i }));
+
+    expect(await screen.findByText("ada@example.com")).toBeInTheDocument();
+    expect(listUsers).toHaveBeenCalledTimes(2);
   });
 });
 
