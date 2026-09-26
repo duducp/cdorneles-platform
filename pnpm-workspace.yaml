@@ -32,7 +32,6 @@ catalog:
   "@types/react-dom": 19.3.0
 
   # Tooling
-  "esbuild": 0.23.1
   "typescript": 5.9.3
   "eslint": 10.11.0
   "@eslint/js": 10.0.1
@@ -46,7 +45,7 @@ catalog:
   "lint-staged": 17.5.1
   "@commitlint/cli": 21.2.3
   "@commitlint/config-conventional": 21.2.3
-  "tsx": 4.19.0
+  "tsx": 4.23.15
   "vitest": 5.0.1
   "vite": 8.3.0
   "@vitejs/plugin-react": 6.1.1
