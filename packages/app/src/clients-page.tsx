@@ -5,6 +5,7 @@ import {
   Button,
   DataTable,
   EmptyState,
+  ErrorState,
   PageBody,
   PageContainer,
   TableSkeleton,
@@ -93,9 +94,12 @@ export function ClientsPage({
           }
         >
           {error ? (
-            <div role="alert">
-              <EmptyState title="Não foi possível carregar os clientes" description={error} />
-            </div>
+            <ErrorState
+              title="Não foi possível carregar os clientes"
+              description={error}
+              onRetry={load}
+              retryLabel="Tentar novamente"
+            />
           ) : loading ? (
             <TableSkeleton rows={6} columns={columns.length} />
           ) : clients.length === 0 ? (
