@@ -75,16 +75,18 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
     };
   }, [service]);
 
+  // Page-level `error` is reserved for bootstrap failures, which replace the
+  // form entirely. Submit/resend failures must rethrow so MfaChallengeForm
+  // shows them inline while keeping the pin input on screen.
   const handleSubmit = useCallback(
     async (values: { code: string }) => {
       if (!challengeId) return;
-      setError(null);
       try {
         await completeMfa({ challengeId, code: values.code });
         // Carry the redirect the login page forwarded, if any.
         router.push(resolvePostAuthRedirect(window.location.search));
       } catch (err) {
-        setError(describeAuthError(err, "Código inválido."));
+        throw new Error(describeAuthError(err, "Código inválido."), { cause: err });
       }
     },
     [challengeId, completeMfa, router],
@@ -96,7 +98,7 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
       const challenge = await service.createMfaChallenge({ factor });
       setChallengeId(challenge.challengeId);
     } catch {
-      setError("Erro ao reenviar código. Tente novamente.");
+      throw new Error("Erro ao reenviar código. Tente novamente.");
     }
   }, [service, factor]);
 

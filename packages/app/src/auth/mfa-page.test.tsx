@@ -85,6 +85,28 @@ describe("MfaPage", () => {
     });
   });
 
+  it("keeps the challenge form and shows an inline alert when the submitted code is rejected", async () => {
+    completeMfa.mockRejectedValue(new Error("Código inválido."));
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <MfaPage />
+      </ThemeProvider>,
+    );
+
+    const inputs = await screen.findAllByLabelText(/código de verificação/i);
+    await user.click(inputs[0]);
+    await user.keyboard("123456");
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/código inválido/i);
+    });
+    // The form must survive a rejected code: pin inputs, submit and cancel stay.
+    expect(screen.getAllByLabelText(/código de verificação/i)).toHaveLength(6);
+    expect(screen.getByRole("button", { name: /verificar código/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^cancelar$/i })).toBeInTheDocument();
+  });
+
   it("offers cancel in the bootstrap-error state and discards the challenge", async () => {
     listMfaFactors.mockRejectedValue(new Error("boom"));
     const user = userEvent.setup();
