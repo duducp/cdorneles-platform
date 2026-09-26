@@ -49,13 +49,17 @@ describe("LoginForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("keeps field validation errors out of the form-level alert", async () => {
+  it("links the email input to its field error for assistive tech", async () => {
     renderForm({ onSubmit: vi.fn() });
 
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
-    expect(await screen.findByText("Informe um e-mail válido.")).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    const email = screen.getByLabelText("E-mail");
+    expect(email).toHaveAttribute("aria-invalid", "true");
+    const describedBy = email.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const errorEl = document.getElementById(describedBy as string);
+    expect(errorEl).toHaveTextContent("Informe um e-mail válido.");
   });
 
   it("renders the form-level alert as the first element of the form", () => {
