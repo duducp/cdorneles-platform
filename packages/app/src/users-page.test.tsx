@@ -58,7 +58,7 @@ vi.mock("@cdorneles/ui", () => ({
     <div role="alert">
       {title}
       {description ? ` — ${description}` : ""}
-      {onRetry ? <button onClick={onRetry}>{retryLabel ?? "Tentar novamente"}</button> : null}
+      {onRetry ? <button onClick={onRetry}>{retryLabel ?? "Try again"}</button> : null}
     </div>
   ),
   FormError: ({ children }: { children?: ReactNode }) =>
