@@ -67,6 +67,17 @@ describe("MfaChallengeForm", () => {
     expect(screen.getByText(/código de 6 dígitos/i)).toBeInTheDocument();
   });
 
+  it("announces the code field error as a live alert", async () => {
+    const user = userEvent.setup();
+    renderForm({ onSubmit: vi.fn() });
+
+    await user.click(screen.getByRole("button", { name: /verificar código/i }));
+
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveAttribute("id", "mfa-code-error");
+    expect(error).toHaveTextContent(/código/i);
+  });
+
   it("styles the code field error with the danger token", async () => {
     const user = userEvent.setup();
     renderForm({ onSubmit: vi.fn() });

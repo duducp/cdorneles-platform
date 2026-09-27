@@ -147,11 +147,10 @@ export function MfaChallengeForm({ onSubmit, onResend, onCancel }: MfaChallengeF
             error={Boolean(form.errors.code)}
             getInputProps={(index) => ({
               "aria-label": `Código de verificação, dígito ${index + 1} de 6`,
-              ...(form.errors.code ? { "aria-describedby": "mfa-code-error" } : {}),
             })}
           />
           {form.errors.code && (
-            <Text c="danger" size="sm" id="mfa-code-error" mt={5}>
+            <Text c="danger" size="sm" id="mfa-code-error" mt={5} role="alert">
               {form.errors.code}
             </Text>
           )}
