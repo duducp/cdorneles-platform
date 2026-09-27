@@ -66,6 +66,7 @@ export function ForgotPasswordForm({ onSubmit, initialEmail = "" }: ForgotPasswo
       onSubmit={form.onSubmit(handleSubmit)}
       noValidate
       aria-busy={status === "submitting" || undefined}
+      aria-describedby={error ? "forgot-password-form-error" : undefined}
     >
       <FormError id="forgot-password-form-error" mb="md">
         {error}

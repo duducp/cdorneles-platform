@@ -112,6 +112,7 @@ export function MfaChallengeForm({ onSubmit, onResend, onCancel }: MfaChallengeF
       onSubmit={form.onSubmit(handleSubmit)}
       noValidate
       aria-busy={status === "submitting" || undefined}
+      aria-describedby={error ? "mfa-form-error" : undefined}
     >
       <FormError id="mfa-form-error" mb="md">
         {error}

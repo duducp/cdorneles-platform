@@ -61,6 +61,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
       onSubmit={form.onSubmit(handleSubmit)}
       noValidate
       aria-busy={status === "submitting" || undefined}
+      aria-describedby={error ? "reset-password-form-error" : undefined}
     >
       <FormError id="reset-password-form-error" mb="md">
         {error}

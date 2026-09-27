@@ -245,4 +245,19 @@ describe("MfaChallengeForm", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it("points the form element at the alert while a submit error shows", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));
+    const { container } = renderForm({ onSubmit });
+
+    // The sixth digit auto-submits, so no explicit button click is needed.
+    await typeCode(user, "123456");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Erro simulado.");
+    const form = container.querySelector("form");
+    expect(form).toHaveAttribute("aria-describedby", "mfa-form-error");
+    expect(document.getElementById("mfa-form-error")).toBeInTheDocument();
+  });
 });

@@ -95,4 +95,20 @@ describe("ResetPasswordForm", () => {
       expect(screen.getByRole("alert")).toHaveTextContent(/Token expirado/i);
     });
   });
+
+  it("points the form element at the alert while a submit error shows", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));
+    const { container } = renderForm({ onSubmit });
+
+    await user.type(screen.getByLabelText(/^nova senha/i), "senha1234");
+    await user.type(screen.getByLabelText(/^confirmar nova senha/i), "senha1234");
+    await user.click(screen.getByRole("button", { name: /redefinir senha/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Erro simulado.");
+    const form = container.querySelector("form");
+    expect(form).toHaveAttribute("aria-describedby", "reset-password-form-error");
+    expect(document.getElementById("reset-password-form-error")).toBeInTheDocument();
+  });
 });
