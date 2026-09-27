@@ -16,6 +16,16 @@ function renderForm(props: Parameters<typeof ForgotPasswordForm>[0]) {
 }
 
 describe("ForgotPasswordForm", () => {
+  it("renders the captcha slot right before the submit button", () => {
+    const { container } = renderForm({
+      onSubmit: vi.fn(),
+      captchaSlot: <div data-testid="captcha" />,
+    });
+    const captcha = screen.getByTestId("captcha");
+    const submit = screen.getByRole("button", { name: /enviar link de recuperação/i });
+    expect(captcha.nextElementSibling).toBe(submit);
+    expect(container).toBeTruthy();
+  });
   it("renders the e-mail input and submit button", () => {
     const onSubmit = vi.fn();
     renderForm({ onSubmit });

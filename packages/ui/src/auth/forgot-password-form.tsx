@@ -4,7 +4,7 @@ import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@cdorneles/
 import { Box, Button, Stack, Text, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { MailIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 
 import { FormError } from "../components/form-error";
 
@@ -12,9 +12,15 @@ export interface ForgotPasswordFormProps {
   onSubmit: (values: ForgotPasswordFormValues) => Promise<void>;
   /** Pre-fills the e-mail, e.g. the one typed on the login screen. */
   initialEmail?: string;
+  /** Caller-owned Turnstile widget, rendered right before the submit. */
+  captchaSlot?: ReactNode;
 }
 
-export function ForgotPasswordForm({ onSubmit, initialEmail = "" }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm({
+  onSubmit,
+  initialEmail = "",
+  captchaSlot,
+}: ForgotPasswordFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -97,6 +103,7 @@ export function ForgotPasswordForm({ onSubmit, initialEmail = "" }: ForgotPasswo
           {...form.getInputProps("email")}
         />
 
+        {captchaSlot}
         <Button type="submit" fullWidth loading={status === "submitting"}>
           Enviar link de recuperação
         </Button>
