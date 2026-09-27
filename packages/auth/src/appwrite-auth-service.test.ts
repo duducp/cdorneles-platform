@@ -348,62 +348,78 @@ describe("createAppwriteAuthService", () => {
   });
 
   describe("requestPasswordRecovery", () => {
-    it("delegates to accountApi.createRecovery", async () => {
+    it("requests the recovery e-mail through public-auth", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.createRecovery).mockResolvedValue(undefined);
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicRequestRecovery).mockResolvedValue(undefined);
 
-      const service = createAppwriteAuthService(api);
+      const service = createAppwriteAuthService(api, functions);
       await service.requestPasswordRecovery({
         email: "a@b.com",
         redirectUrl: "https://app.test/reset-password",
+        turnstileToken: "tok",
       });
 
-      expect(api.createRecovery).toHaveBeenCalledWith({
+      expect(functions.publicRequestRecovery).toHaveBeenCalledWith({
         email: "a@b.com",
         url: "https://app.test/reset-password",
+        turnstileToken: "tok",
       });
     });
 
-    it("propagates SDK errors", async () => {
+    it("propagates function errors", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.createRecovery).mockRejectedValue(new Error("user_invalid_credentials"));
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicRequestRecovery).mockRejectedValue(
+        new Error("user_invalid_credentials"),
+      );
 
-      const service = createAppwriteAuthService(api);
+      const service = createAppwriteAuthService(api, functions);
       await expect(
         service.requestPasswordRecovery({
           email: "a@b.com",
           redirectUrl: "https://app.test/reset",
+          turnstileToken: "tok",
         }),
       ).rejects.toThrow("user_invalid_credentials");
     });
   });
 
   describe("confirmPasswordRecovery", () => {
-    it("delegates to accountApi.updateRecovery", async () => {
+    it("confirms the recovery through public-auth", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.updateRecovery).mockResolvedValue(undefined);
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicCompleteRecovery).mockResolvedValue(undefined);
 
-      const service = createAppwriteAuthService(api);
+      const service = createAppwriteAuthService(api, functions);
       await service.confirmPasswordRecovery({
         userId: "u1",
         secret: "s1",
         password: "new-pass",
+        turnstileToken: "tok",
       });
 
-      expect(api.updateRecovery).toHaveBeenCalledWith({
+      expect(functions.publicCompleteRecovery).toHaveBeenCalledWith({
         userId: "u1",
         secret: "s1",
         password: "new-pass",
+        turnstileToken: "tok",
       });
     });
 
-    it("propagates SDK errors", async () => {
+    it("propagates function errors", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.updateRecovery).mockRejectedValue(new Error("invalid_secret"));
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicCompleteRecovery).mockRejectedValue(new Error("invalid_secret"));
 
-      const service = createAppwriteAuthService(api);
+      const service = createAppwriteAuthService(api, functions);
       await expect(
-        service.confirmPasswordRecovery({ userId: "u1", secret: "bad", password: "p" }),
+        service.confirmPasswordRecovery({
+          userId: "u1",
+          secret: "bad",
+          password: "p",
+          turnstileToken: "tok",
+        }),
       ).rejects.toThrow("invalid_secret");
     });
   });

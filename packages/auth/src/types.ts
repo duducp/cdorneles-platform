@@ -51,12 +51,16 @@ export interface CompleteMfaInput {
 export interface PasswordRecoveryRequestInput {
   email: string;
   redirectUrl: string;
+  /** Single-use Cloudflare Turnstile token (public-auth gate). */
+  turnstileToken: string;
 }
 
 export interface PasswordRecoveryConfirmInput {
   userId: string;
   secret: string;
   password: string;
+  /** Single-use Cloudflare Turnstile token (public-auth gate). */
+  turnstileToken: string;
 }
 
 export interface MfaFactors {

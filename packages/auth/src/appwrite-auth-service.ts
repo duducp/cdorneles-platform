@@ -145,14 +145,25 @@ export function createAppwriteAuthService(
     },
 
     async requestPasswordRecovery(input) {
-      await accountApi.createRecovery({ email: input.email, url: input.redirectUrl });
+      if (!functionsApi) {
+        throw new Error("Public authentication is not available in this environment.");
+      }
+      await functionsApi.publicRequestRecovery({
+        email: input.email,
+        url: input.redirectUrl,
+        turnstileToken: input.turnstileToken,
+      });
     },
 
     async confirmPasswordRecovery(input) {
-      await accountApi.updateRecovery({
+      if (!functionsApi) {
+        throw new Error("Public authentication is not available in this environment.");
+      }
+      await functionsApi.publicCompleteRecovery({
         userId: input.userId,
         secret: input.secret,
         password: input.password,
+        turnstileToken: input.turnstileToken,
       });
     },
   };

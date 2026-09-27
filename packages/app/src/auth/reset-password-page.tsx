@@ -9,6 +9,8 @@ import {
   AppVersion,
   Logo,
   ThemeToggle,
+  Turnstile,
+  useTurnstile,
 } from "@cdorneles/ui";
 import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
@@ -18,19 +20,22 @@ import { Suspense, useCallback } from "react";
 function ResetPasswordContent() {
   const { service } = useAuth();
   const searchParams = useSearchParams();
+  const turnstile = useTurnstile();
   const userId = searchParams.get("userId");
   const secret = searchParams.get("secret");
 
   const handleSubmit = useCallback(
     async (values: { password: string; passwordConfirmation: string }) => {
       if (!userId || !secret) return;
+      const turnstileToken = await turnstile.nextToken();
       await service.confirmPasswordRecovery({
         userId,
         secret,
         password: values.password,
+        turnstileToken,
       });
     },
-    [service, userId, secret],
+    [service, userId, secret, turnstile],
   );
 
   if (!userId || !secret) {
@@ -52,7 +57,10 @@ function ResetPasswordContent() {
 
   return (
     <Stack gap="md">
-      <ResetPasswordForm onSubmit={handleSubmit} />
+      <ResetPasswordForm
+        onSubmit={handleSubmit}
+        captchaSlot={<Turnstile ref={turnstile.handleRef} />}
+      />
       <Anchor component={Link} href="/login" underline="always" display="block" ta="center">
         Voltar para o login
       </Anchor>
