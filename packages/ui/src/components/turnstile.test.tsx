@@ -59,7 +59,12 @@ describe("Turnstile", () => {
     const harness = installWidget();
     const { ref } = await renderTurnstile({ siteKey: "site-key" });
     expect(harness.options).toHaveLength(1);
-    expect(harness.options[0]).toMatchObject({ sitekey: "site-key" });
+    expect(harness.options[0]).toMatchObject({
+      sitekey: "site-key",
+      // Interaction-only: the widget stays invisible unless Cloudflare's risk
+      // analysis demands user interaction.
+      appearance: "interaction-only",
+    });
 
     (harness.options[0].callback as (t: string) => void)("tok-1");
     await expect(ref.current!.nextToken()).resolves.toBe("tok-1");

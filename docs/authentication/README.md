@@ -152,6 +152,14 @@ Os textos novos vivem em `@cdorneles/auth` (`describe-error.ts`) e no widget
 (`packages/ui/src/components/turnstile.tsx`); nenhum texto de erro existente
 mudou.
 
+### Aparência do widget
+
+O widget é renderizado com `appearance: "interaction-only"` (pinado em
+`packages/ui/src/components/turnstile.test.tsx`): o container só fica visível
+quando a análise de risco do Cloudflare exige interação do usuário; no fluxo
+comum ele permanece invisível. O widget type (Managed/Invisible/etc.) continua
+sendo escolhido no dashboard da Cloudflare por site key.
+
 ### Tokens single-use
 
 Cada token do Turnstile é single-use e expira em 300s. A tela é dona de **um**

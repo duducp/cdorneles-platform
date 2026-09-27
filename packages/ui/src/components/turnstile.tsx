@@ -160,6 +160,9 @@ export const Turnstile = forwardRef<TurnstileHandle, TurnstileProps>(function Tu
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: resolvedSiteKey,
           theme: colorScheme === "dark" ? "dark" : "light",
+          // Only render the widget when user interaction is required; the
+          // common no-interaction flow stays visually empty.
+          appearance: "interaction-only",
           callback: onToken,
           "error-callback": onError,
           "expired-callback": onExpired,
