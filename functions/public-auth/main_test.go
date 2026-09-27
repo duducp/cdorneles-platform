@@ -48,14 +48,52 @@ func stubTurnstile(t *testing.T, err error) (got *[]string) {
 func errInvalidToken() error { return &turnstile.ErrInvalid{Codes: []string{"invalid-input-response"}} }
 func errUnavailable() error  { return &turnstile.ErrUnavailable{Err: errors.New("boom")} }
 
+// fakeOps is an operations double that records calls and can force errors.
+type fakeOps struct {
+	login       loginSession
+	loginErr    error
+	loginCalls  int
+	token       tokenPair
+	tokenErr    error
+	tokenCalls  int
+	tokenUserID string
+	deleteErr   error
+	deleteCalls int
+}
+
+func (f *fakeOps) EmailLogin(email, password string) (loginSession, error) {
+	f.loginCalls++
+	if f.loginErr != nil {
+		return loginSession{}, f.loginErr
+	}
+	return f.login, nil
+}
+
+func (f *fakeOps) CreateLoginToken(userID string) (tokenPair, error) {
+	f.tokenCalls++
+	f.tokenUserID = userID
+	if f.tokenErr != nil {
+		return tokenPair{}, f.tokenErr
+	}
+	return f.token, nil
+}
+
+func (f *fakeOps) DeleteSession(session loginSession) error {
+	f.deleteCalls++
+	if f.deleteErr != nil {
+		return f.deleteErr
+	}
+	return nil
+}
+
 func TestRejectsInvalidJSON(t *testing.T) {
-	resp := handle(newContext("{"), "site-secret")
+	resp := handle(newContext("{"), &fakeOps{}, "site-secret")
 	assertError(t, resp, 400, "bad_request", "invalid JSON")
 }
 
 func TestRejectsMissingTokenBeforeAnythingElse(t *testing.T) {
 	args := stubTurnstile(t, nil)
-	resp := handle(newContext(`{"action":"login"}`), "site-secret")
+	resp := handle(newContext(`{"action":"login"}`), &fakeOps{}, "site-secret")
 	assertError(t, resp, 403, "invalid_turnstile_token", "turnstile token is required")
 	if len(*args) != 0 {
 		t.Fatalf("siteverify should not run, got %v", *args)
@@ -63,32 +101,32 @@ func TestRejectsMissingTokenBeforeAnythingElse(t *testing.T) {
 }
 
 func TestDeniesWhitespaceToken(t *testing.T) {
-	resp := handle(newContext(`{"action":"login","turnstileToken":"  "}`), "site-secret")
+	resp := handle(newContext(`{"action":"login","turnstileToken":"  "}`), &fakeOps{}, "site-secret")
 	assertError(t, resp, 403, "invalid_turnstile_token", "turnstile token is required")
 }
 
 func TestFailsClosedWithoutSecret(t *testing.T) {
 	// Deliberately unstubbed: the default seam (turnstile.Verify) returns
 	// ErrMissingSecret before any network I/O, proving fail-closed wiring.
-	resp := handle(newContext(`{"action":"login","turnstileToken":"tok"}`), "")
+	resp := handle(newContext(`{"action":"login","turnstileToken":"tok"}`), &fakeOps{}, "")
 	assertError(t, resp, 500, "turnstile_not_configured", "TURNSTILE_SECRET_KEY is not configured")
 }
 
 func TestDeniesRejectedToken(t *testing.T) {
 	stubTurnstile(t, errInvalidToken())
-	resp := handle(newContext(`{"action":"login","turnstileToken":"tok"}`), "site-secret")
+	resp := handle(newContext(`{"action":"login","turnstileToken":"tok"}`), &fakeOps{}, "site-secret")
 	assertError(t, resp, 403, "invalid_turnstile_token", "turnstile token was rejected")
 }
 
 func TestDeniesUnreachableSiteverify(t *testing.T) {
 	stubTurnstile(t, errUnavailable())
-	resp := handle(newContext(`{"action":"login","turnstileToken":"tok"}`), "site-secret")
+	resp := handle(newContext(`{"action":"login","turnstileToken":"tok"}`), &fakeOps{}, "site-secret")
 	assertError(t, resp, 502, "turnstile_verification_failed", "turnstile siteverify unreachable")
 }
 
 func TestPassesSecretTokenAndRemoteIP(t *testing.T) {
 	args := stubTurnstile(t, nil)
-	resp := handle(newContext(`{"action":"unknown","turnstileToken":"tok"}`), "site-secret")
+	resp := handle(newContext(`{"action":"unknown","turnstileToken":"tok"}`), &fakeOps{}, "site-secret")
 	assertError(t, resp, 400, "bad_request", "unknown action")
 	if len(*args) != 3 || (*args)[0] != "site-secret" || (*args)[1] != "tok" || (*args)[2] != "203.0.113.9" {
 		t.Fatalf("siteverify args = %v", *args)
@@ -97,6 +135,55 @@ func TestPassesSecretTokenAndRemoteIP(t *testing.T) {
 
 func TestKnownActionsAreUnknownUntilImplemented(t *testing.T) {
 	stubTurnstile(t, nil)
-	resp := handle(newContext(`{"action":"login","turnstileToken":"tok"}`), "s")
+	resp := handle(newContext(`{"action":"requestRecovery","turnstileToken":"tok"}`), &fakeOps{}, "s")
 	assertError(t, resp, 400, "bad_request", "unknown action")
+}
+
+func TestLoginExchangesCredentialsAndDeletesTempSession(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{
+		login: loginSession{ID: "s1", UserID: "u1", cookie: "a_session_p=c"},
+		token: tokenPair{UserID: "u1", Secret: "tok"},
+	}
+	resp := handle(newContext(`{"action":"login","turnstileToken":"tok","email":"a@b.com","password":"pass"}`), ops, "s")
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d (%s)", resp.StatusCode, resp.Body)
+	}
+	var out loginResponse
+	_ = json.Unmarshal(resp.Body, &out)
+	if out.UserID != "u1" || out.Secret != "tok" {
+		t.Fatalf("response = %+v", out)
+	}
+	if ops.loginCalls != 1 || ops.tokenUserID != "u1" || ops.deleteCalls != 1 {
+		t.Fatalf("ops = %+v", ops)
+	}
+}
+
+func TestLoginPassesAppwriteInvalidCredentials(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{loginErr: &appwriteError{status: 401, code: "user_invalid_credentials", message: "Invalid credentials"}}
+	resp := handle(newContext(`{"action":"login","turnstileToken":"tok","email":"a@b.com","password":"pass"}`), ops, "s")
+	assertError(t, resp, 401, "user_invalid_credentials", "Invalid credentials")
+	if ops.tokenCalls != 0 {
+		t.Fatal("must not mint a token after a failed login")
+	}
+}
+
+func TestLoginValidatesInput(t *testing.T) {
+	stubTurnstile(t, nil)
+	resp := handle(newContext(`{"action":"login","turnstileToken":"tok","email":"a@b.com"}`), &fakeOps{}, "s")
+	assertError(t, resp, 400, "bad_request", "email and password are required")
+}
+
+func TestLoginKeepsRunningWhenTempSessionDeleteFails(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{
+		login:     loginSession{ID: "s1", UserID: "u1", cookie: "a_session_p=c"},
+		token:     tokenPair{UserID: "u1", Secret: "tok"},
+		deleteErr: errors.New("boom"),
+	}
+	resp := handle(newContext(`{"action":"login","turnstileToken":"tok","email":"a@b.com","password":"pass"}`), ops, "s")
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d (%s)", resp.StatusCode, resp.Body)
+	}
 }

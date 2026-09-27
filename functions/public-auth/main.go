@@ -6,6 +6,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
@@ -48,6 +49,35 @@ type command struct {
 // verifyTurnstile is the siteverify seam (tests replace it).
 var verifyTurnstile = turnstile.Verify
 
+// operations is the Appwrite seam, so the handler is testable without a
+// server or the SDK.
+type operations interface {
+	EmailLogin(email, password string) (loginSession, error)
+	CreateLoginToken(userID string) (tokenPair, error)
+	DeleteSession(session loginSession) error
+}
+
+// loginResponse carries the credentials the browser exchanges for a session.
+type loginResponse struct {
+	UserID string `json:"userId"`
+	Secret string `json:"secret"`
+}
+
+// Main is the function entrypoint.
+func Main(ctx openruntimes.Context) openruntimes.Response {
+	return handle(ctx, newAppwriteOps(ctx.Req.Headers["x-appwrite-key"]), os.Getenv("TURNSTILE_SECRET_KEY"))
+}
+
+// opsError renders an upstream Appwrite error keeping its `type` as the code.
+func opsError(ctx openruntimes.Context, err error) openruntimes.Response {
+	var ae *appwriteError
+	if errors.As(err, &ae) {
+		return errorBody(ctx, ae.status, ae.code, ae.message)
+	}
+	ctx.Error(err)
+	return errorBody(ctx, http.StatusInternalServerError, errInternal, "appwrite request failed")
+}
+
 // errorBody writes the standard {error, reason} body; `error` is the stable
 // code. The reason must never contain secrets or tokens.
 func errorBody(ctx openruntimes.Context, status int, code, reason string) openruntimes.Response {
@@ -60,7 +90,7 @@ func errorBody(ctx openruntimes.Context, status int, code, reason string) openru
 // handle gates the request, then dispatches the action. Order is fixed:
 // parse → token present → siteverify → action. Unknown actions are only
 // revealed to a caller that already passed the gate.
-func handle(ctx openruntimes.Context, secret string) openruntimes.Response {
+func handle(ctx openruntimes.Context, ops operations, secret string) openruntimes.Response {
 	var body command
 	if err := ctx.Req.BodyJson(&body); err != nil {
 		return httpx.BadRequest(ctx, "invalid JSON")
@@ -85,6 +115,32 @@ func handle(ctx openruntimes.Context, secret string) openruntimes.Response {
 		}
 	}
 	switch body.Action {
+	case actionLogin:
+		if strings.TrimSpace(body.Email) == "" || body.Password == "" {
+			return httpx.BadRequest(ctx, "email and password are required")
+		}
+		session, err := ops.EmailLogin(body.Email, body.Password)
+		if err != nil {
+			return opsError(ctx, err)
+		}
+		token, err := ops.CreateLoginToken(session.UserID)
+		if err != nil {
+			return opsError(ctx, err)
+		}
+		if strings.TrimSpace(token.Secret) == "" {
+			ctx.Error(errors.New("appwrite returned an empty login token secret"))
+			return errorBody(ctx, http.StatusInternalServerError, errInternal, "failed to create login token")
+		}
+		// Failure here only leaves an inert orphan: the cookie never left the
+		// function, so nothing can use it. Login must not fail because of it.
+		if err := ops.DeleteSession(session); err != nil {
+			ctx.Error(err)
+		}
+		userID := token.UserID
+		if userID == "" {
+			userID = session.UserID
+		}
+		return ctx.Res.Json(loginResponse{UserID: userID, Secret: token.Secret})
 	default:
 		return httpx.BadRequest(ctx, "unknown action")
 	}
