@@ -115,6 +115,22 @@ describe("ResetPasswordForm", () => {
     expect(screen.getByLabelText(/^confirmar nova senha/i)).toHaveFocus();
   });
 
+  it("marks both password inputs invalid and links them to their field errors", async () => {
+    const user = userEvent.setup();
+    renderForm({ onSubmit: vi.fn() });
+
+    await user.click(screen.getByRole("button", { name: /redefinir senha/i }));
+
+    for (const label of [/^nova senha/i, /^confirmar nova senha/i]) {
+      const input = screen.getByLabelText(label);
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      const describedBy = input.getAttribute("aria-describedby");
+      expect(describedBy).toBeTruthy();
+      const errorEl = document.getElementById(describedBy as string);
+      expect(errorEl?.textContent).toBeTruthy();
+    }
+  });
+
   it("points the form element at the alert while a submit error shows", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));
