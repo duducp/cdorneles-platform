@@ -35,6 +35,7 @@ ALL_FUNCTIONS=(
   list-users
   list-organizations
   one-tap-login
+  public-auth
 )
 
 # API key scopes the function's per-execution key needs.
@@ -49,16 +50,19 @@ scopes_for() {
     list-users)                  echo "teams.read users.read" ;;
     list-organizations)         echo "teams.read" ;;
     one-tap-login)              echo "users.read users.write" ;;
+    public-auth)                echo "users.write" ;;
     *)                           echo "" ;;
   esac
 }
 
 # Execute roles per function. Every function runs behind an authenticated
 # session except one-tap-login, which pre-authentication visitors (guests)
-# must be able to reach.
+# must be able to reach. public-auth runs the Turnstile gate both before and
+# after login, so it serves guests and users.
 execute_for() {
   case "$1" in
     one-tap-login) echo "guests" ;;
+    public-auth)   echo "guests users" ;;
     *)             echo "$EXECUTE" ;;
   esac
 }
@@ -97,6 +101,10 @@ for fn in "${FUNCTIONS[@]}"; do
     scope_args+=(--scopes "$scope")
   done
   fn_execute=$(execute_for "$fn")
+  execute_args=()
+  for role in $fn_execute; do
+    execute_args+=(--execute "$role")
+  done
 
   if function_exists "$fn"; then
     # Keep an existing function's configuration in sync (name, runtime,
@@ -108,20 +116,20 @@ for fn in "${FUNCTIONS[@]}"; do
       --function-id "$fn" \
       --name "$fn" \
       --runtime "$RUNTIME" \
-      --execute "$fn_execute" \
       --entrypoint "$ENTRYPOINT" \
       --force \
-      ${scope_args[@]+"${scope_args[@]}"}
+      ${scope_args[@]+"${scope_args[@]}"} \
+      ${execute_args[@]+"${execute_args[@]}"}
   else
     echo "==> Creating $fn"
     appwrite functions create \
       --function-id "$fn" \
       --name "$fn" \
       --runtime "$RUNTIME" \
-      --execute "$fn_execute" \
       --entrypoint "$ENTRYPOINT" \
       --force \
-      ${scope_args[@]+"${scope_args[@]}"}
+      ${scope_args[@]+"${scope_args[@]}"} \
+      ${execute_args[@]+"${execute_args[@]}"}
   fi
 
   echo "==> Deploying $fn"
