@@ -19,6 +19,11 @@ function createMockFunctionsApi(): FunctionsApi {
     listUsers: vi.fn(),
     listOrganizations: vi.fn(),
     oneTapLogin: vi.fn(),
+    publicLogin: vi.fn(),
+    publicMfaChallenge: vi.fn(),
+    publicMfaVerify: vi.fn(),
+    publicRequestRecovery: vi.fn(),
+    publicCompleteRecovery: vi.fn(),
   };
 }
 
