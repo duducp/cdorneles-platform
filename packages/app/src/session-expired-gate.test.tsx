@@ -18,6 +18,9 @@ const {
   notifyInfoMock,
   notifyHideMock,
   notifyErrorMock,
+  useTurnstileMock,
+  nextTokenMock,
+  TurnstileErrorMock,
 } = vi.hoisted(() => ({
   useAuthMock: vi.fn(),
   SessionExpiredDialogMock: vi.fn((props: Record<string, unknown>) => (
@@ -48,6 +51,14 @@ const {
   notifyInfoMock: vi.fn(),
   notifyHideMock: vi.fn(),
   notifyErrorMock: vi.fn(),
+  useTurnstileMock: vi.fn(),
+  nextTokenMock: vi.fn(),
+  TurnstileErrorMock: class TurnstileError extends Error {
+    override name = "TurnstileError" as const;
+    constructor() {
+      super("Não foi possível concluir a verificação. Tente novamente.");
+    }
+  },
 }));
 
 vi.mock("@cdorneles/auth", async () => {
@@ -62,6 +73,9 @@ vi.mock("@cdorneles/auth", async () => {
 vi.mock("@cdorneles/ui", () => ({
   SessionExpiredDialog: SessionExpiredDialogMock,
   SessionExpiredMfaDialog: SessionExpiredMfaDialogMock,
+  Turnstile: () => null,
+  useTurnstile: useTurnstileMock,
+  TurnstileError: TurnstileErrorMock,
   notifyInfo: notifyInfoMock,
   notifyHide: notifyHideMock,
   notifyError: notifyErrorMock,
@@ -155,6 +169,8 @@ describe("SessionExpiredGate", () => {
     vi.clearAllMocks();
     window.localStorage.clear();
     oneTapProps.current = null;
+    nextTokenMock.mockResolvedValue("test-token");
+    useTurnstileMock.mockReturnValue({ handleRef: { current: null }, nextToken: nextTokenMock });
     vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "client-id.apps.googleusercontent.com");
   });
 
@@ -300,7 +316,11 @@ describe("SessionExpiredGate", () => {
       await dialogProps.onSubmit("secret");
     });
 
-    expect(reauthenticate).toHaveBeenCalledWith({ email: "user@example.com", password: "secret" });
+    expect(reauthenticate).toHaveBeenCalledWith({
+      email: "user@example.com",
+      password: "secret",
+      turnstileToken: "test-token",
+    });
     expect(queryClientMock.cancelQueries).toHaveBeenCalled();
     expect(queryClientMock.invalidateQueries).toHaveBeenCalled();
     expect(window.localStorage.getItem("cdorneles-session-renewed")).not.toBeNull();
@@ -332,7 +352,11 @@ describe("SessionExpiredGate", () => {
 
     expect(queryClientMock.cancelQueries).toHaveBeenCalled();
     expect(queryClientMock.cancelMutations).toHaveBeenCalled();
-    expect(reauthenticate).toHaveBeenCalledWith({ email: "user@example.com", password: "secret" });
+    expect(reauthenticate).toHaveBeenCalledWith({
+      email: "user@example.com",
+      password: "secret",
+      turnstileToken: "test-token",
+    });
 
     // Both cancels must settle before the credential exchange starts.
     const cancelQueriesOrder = queryClientMock.cancelQueries.mock.invocationCallOrder[0];
@@ -683,7 +707,12 @@ describe("SessionExpiredGate", () => {
       await dialogProps.onSubmit("secret").catch(() => {});
     });
 
-    await waitFor(() => expect(createMfaChallenge).toHaveBeenCalledWith({ factor: "email" }));
+    await waitFor(() =>
+      expect(createMfaChallenge).toHaveBeenCalledWith({
+        factor: "email",
+        turnstileToken: "test-token",
+      }),
+    );
     const mfaProps = SessionExpiredMfaDialogMock.mock.calls.at(-1)?.[0] as {
       onResend?: () => Promise<void>;
     };
@@ -693,7 +722,10 @@ describe("SessionExpiredGate", () => {
       await mfaProps.onResend?.();
     });
     expect(createMfaChallenge).toHaveBeenCalledTimes(2);
-    expect(createMfaChallenge).toHaveBeenLastCalledWith({ factor: "email" });
+    expect(createMfaChallenge).toHaveBeenLastCalledWith({
+      factor: "email",
+      turnstileToken: "test-token",
+    });
   });
 
   it("does not offer resend for the totp factor", async () => {
@@ -716,7 +748,12 @@ describe("SessionExpiredGate", () => {
       await dialogProps.onSubmit("secret").catch(() => {});
     });
 
-    await waitFor(() => expect(createMfaChallenge).toHaveBeenCalledWith({ factor: "totp" }));
+    await waitFor(() =>
+      expect(createMfaChallenge).toHaveBeenCalledWith({
+        factor: "totp",
+        turnstileToken: "test-token",
+      }),
+    );
     const mfaProps = SessionExpiredMfaDialogMock.mock.calls.at(-1)?.[0] as { onResend?: unknown };
     expect(mfaProps.onResend).toBeUndefined();
   });

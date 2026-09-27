@@ -141,4 +141,73 @@ describe("MfaPage", () => {
       expect(window.location.href).toBe("/login");
     });
   });
+
+  it("starts the challenge with the turnstile token", async () => {
+    const createMfaChallenge = vi.fn().mockResolvedValue({ challengeId: "challenge-1" });
+    useAuthMock.mockReturnValue({
+      service: { listMfaFactors, createMfaChallenge },
+      completeMfa,
+      logout,
+    });
+    render(
+      <ThemeProvider>
+        <MfaPage />
+      </ThemeProvider>,
+    );
+
+    await waitFor(() =>
+      expect(createMfaChallenge).toHaveBeenCalledWith({
+        factor: "email",
+        turnstileToken: "test-token",
+      }),
+    );
+  });
+
+  it("completes the MFA challenge with the turnstile token", async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <MfaPage />
+      </ThemeProvider>,
+    );
+
+    const inputs = await screen.findAllByLabelText(/código de verificação/i);
+    await user.click(inputs[0]);
+    await user.keyboard("123456");
+
+    await waitFor(() =>
+      expect(completeMfa).toHaveBeenCalledWith({
+        challengeId: "challenge-1",
+        code: "123456",
+        turnstileToken: "test-token",
+      }),
+    );
+  });
+
+  it("shows the Turnstile bootstrap failure and keeps the cancel path", async () => {
+    listMfaFactors.mockResolvedValue({ email: true, totp: false });
+    const createMfaChallenge = vi.fn().mockResolvedValue({ challengeId: "challenge-1" });
+    useAuthMock.mockReturnValue({
+      service: { listMfaFactors, createMfaChallenge },
+      completeMfa,
+      logout,
+    });
+    // Fail the token: clear the site key so nextToken rejects as unconfigured.
+    const previous = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "";
+    try {
+      render(
+        <ThemeProvider>
+          <MfaPage />
+        </ThemeProvider>,
+      );
+
+      expect(
+        await screen.findByText("Verificação de segurança não configurada neste ambiente."),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^cancelar$/i })).toBeInTheDocument();
+    } finally {
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = previous;
+    }
+  });
 });

@@ -79,7 +79,7 @@ const auth = createAppwriteAuthService(services.account);
 
 console.log(`[verify-auth] endpoint=${endpoint} project=${projectId}`);
 
-const session = await auth.login({ email, password });
+const session = await auth.login({ email, password, turnstileToken: "test-token" });
 console.log(`[verify-auth] 1. login ok -> session ${session.id} (user ${session.userId})`);
 
 if (session.userId.length === 0) {

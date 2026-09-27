@@ -62,6 +62,17 @@ describe("LoginForm", () => {
     expect(errorEl).toHaveTextContent("Informe um e-mail válido.");
   });
 
+  it("renders the captcha slot right before the submit button", () => {
+    const { container } = renderForm({
+      onSubmit: vi.fn(),
+      captchaSlot: <div data-testid="captcha" />,
+    });
+    const captcha = screen.getByTestId("captcha");
+    const submit = screen.getByRole("button", { name: /entrar/i });
+    expect(captcha.nextElementSibling).toBe(submit);
+    expect(container).toBeTruthy();
+  });
+
   it("renders the form-level alert as the first element of the form", () => {
     const { container } = renderForm({
       onSubmit: vi.fn(),

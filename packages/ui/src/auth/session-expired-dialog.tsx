@@ -62,6 +62,8 @@ export interface SessionExpiredDialogProps {
   googleResetToken?: number;
   /** Blocks the modal with an overlay while an external step runs. */
   loading?: boolean;
+  /** Caller-owned Turnstile widget, rendered right before the submit. */
+  captchaSlot?: ReactNode;
 }
 
 /** First step: the password. */
@@ -73,6 +75,7 @@ export function SessionExpiredDialog({
   errorMessage,
   googleResetToken,
   loading,
+  captchaSlot,
 }: SessionExpiredDialogProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +134,7 @@ export function SessionExpiredDialog({
             data-autofocus
           />
 
+          {captchaSlot}
           <Button type="submit" fullWidth loading={submitting}>
             Entrar
           </Button>
@@ -155,6 +159,8 @@ export interface SessionExpiredMfaDialogProps {
   onSubmit: (values: MfaChallengeFormValues) => Promise<void>;
   onResend?: () => Promise<void>;
   onSignOut: () => void;
+  /** Caller-owned Turnstile widget, passed through to the MFA form. */
+  captchaSlot?: ReactNode;
 }
 
 /**
@@ -165,10 +171,11 @@ export function SessionExpiredMfaDialog({
   onSubmit,
   onResend,
   onSignOut,
+  captchaSlot,
 }: SessionExpiredMfaDialogProps) {
   return (
     <ReauthModal>
-      <MfaChallengeForm onSubmit={onSubmit} onResend={onResend} />
+      <MfaChallengeForm onSubmit={onSubmit} onResend={onResend} captchaSlot={captchaSlot} />
       <Button type="button" variant="subtle" fullWidth mt="md" onClick={onSignOut}>
         Entrar com outra conta
       </Button>

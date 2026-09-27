@@ -3,9 +3,10 @@
 import { mfaChallengeSchema, type MfaChallengeFormValues } from "@cdorneles/schemas";
 import { Box, Button, PinInput, Stack, Text } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { FormError } from "../components/form-error";
+import { TurnstileError } from "../components/turnstile";
 
 export type { MfaChallengeFormValues };
 
@@ -16,9 +17,16 @@ export interface MfaChallengeFormProps {
   onSubmit: (values: MfaChallengeFormValues) => Promise<void>;
   onResend?: () => Promise<void>;
   onCancel?: () => void;
+  /** Caller-owned Turnstile widget, rendered right before the submit. */
+  captchaSlot?: ReactNode;
 }
 
-export function MfaChallengeForm({ onSubmit, onResend, onCancel }: MfaChallengeFormProps) {
+export function MfaChallengeForm({
+  onSubmit,
+  onResend,
+  onCancel,
+  captchaSlot,
+}: MfaChallengeFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting">("idle");
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,8 +107,10 @@ export function MfaChallengeForm({ onSubmit, onResend, onCancel }: MfaChallengeF
     try {
       await onResend();
       startCooldown();
-    } catch {
-      setError("Erro ao reenviar código. Tente novamente.");
+    } catch (err) {
+      setError(
+        err instanceof TurnstileError ? err.message : "Erro ao reenviar código. Tente novamente.",
+      );
     } finally {
       setResending(false);
     }
@@ -156,6 +166,7 @@ export function MfaChallengeForm({ onSubmit, onResend, onCancel }: MfaChallengeF
           )}
         </Box>
 
+        {captchaSlot}
         <Button type="submit" fullWidth loading={status === "submitting"}>
           Verificar código
         </Button>

@@ -111,5 +111,53 @@ export function createFunctionsApi(client: Client): FunctionsApi {
       });
       return parseResponse<{ userId: string; secret: string }>(execution);
     },
+
+    async publicLogin(input) {
+      const execution = await execute({
+        functionId: "public-auth",
+        body: { action: "login", ...input },
+        method: "POST",
+      });
+      const data = parseResponse<{ userId: string; secret: string }>(execution);
+      return { userId: data.userId, secret: data.secret };
+    },
+
+    async publicMfaChallenge(input) {
+      const execution = await execute({
+        functionId: "public-auth",
+        body: { action: "mfaChallenge", ...input },
+        method: "POST",
+      });
+      const data = parseResponse<{ challengeId: string }>(execution);
+      return { challengeId: data.challengeId };
+    },
+
+    async publicMfaVerify(input) {
+      const execution = await execute({
+        functionId: "public-auth",
+        body: { action: "mfaVerify", ...input },
+        method: "POST",
+      });
+      const data = parseResponse<{ $id: string; userId: string; expire: string }>(execution);
+      return { $id: data.$id, userId: data.userId, expire: data.expire };
+    },
+
+    async publicRequestRecovery(input) {
+      const execution = await execute({
+        functionId: "public-auth",
+        body: { action: "requestRecovery", ...input },
+        method: "POST",
+      });
+      parseResponse<Record<string, never>>(execution);
+    },
+
+    async publicCompleteRecovery(input) {
+      const execution = await execute({
+        functionId: "public-auth",
+        body: { action: "completeRecovery", ...input },
+        method: "POST",
+      });
+      parseResponse<Record<string, never>>(execution);
+    },
   };
 }

@@ -84,6 +84,7 @@ The generated directories are gitignored.
 | `list-users` | Lists the platform's users (`id`, `email`, `name`, `labels`), paging through every server `users.list` page | Authenticated; `users.read` (platform team or the caller's effective permissions) |
 | `list-organizations` | Lists every organization (`id`, `name`), paging through every server `teams` page and filtering out the platform team | Authenticated; `organizations.read` (platform team); non-platform callers denied |
 | `one-tap-login` | Verifies a Google One Tap ID token (RS256 signature against Google's keys, issuer, audience, expiry, verified e-mail) and creates an Appwrite login token (`users.createToken`) for the matching user, returning `userId`+`secret` that the browser exchanges with `account.createSession(userId, secret)` | Public (pre-authentication); deny-by-default on unknown e-mail, disabled account or Appwrite-unverified e-mail. Requires `GOOGLE_CLIENT_ID` env var and the `users.read`+`users.write` scopes |
+| `public-auth` | Deny-by-default Turnstile gate for public auth: `login`, `mfaChallenge`, `mfaVerify`, `requestRecovery`, `completeRecovery` | Runs for guests and users; verifies the Turnstile token first (siteverify), then performs the Appwrite call server-side. Requires the `TURNSTILE_SECRET_KEY` variable and the `users.write` scope |
 
 The `one-tap-login` function reads the `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED` kill
 switch at **runtime**, so disabling Google applies to it immediately. The sites
@@ -187,6 +188,7 @@ Per-function scopes for the per-execution API key:
 | `update-user-permissions` | `teams.read rows.read rows.write` |
 | `list-users` | `users.read` |
 | `list-organizations` | `teams.read` |
+| `public-auth` | `users.write` |
 
 Appwrite compiles the uploaded source. The runtime's environment provides
 `APPWRITE_FUNCTION_API_ENDPOINT` and `APPWRITE_FUNCTION_PROJECT_ID`, and the
@@ -235,7 +237,8 @@ per-execution API key arrives as the `x-appwrite-key` request header.
 
 4. Add the function to `FUNCTIONS` in the `Makefile`, to the `FUNCTIONS` array
    in `scripts/deploy.sh`, and to its `scopes_for` case with the API key scopes
-   the function needs.
+   the function needs. If it must run pre-authentication, add an `execute_for`
+   case (e.g. `public-auth` serves both `guests users`).
 
 5. `make build && make test`, then commit.
 

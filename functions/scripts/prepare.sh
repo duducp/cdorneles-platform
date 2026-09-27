@@ -10,7 +10,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-FUNCTIONS=(resolve-grants update-organization-profile get-organization-profile provision-organization create-user update-user-permissions list-users list-organizations one-tap-login)
+FUNCTIONS=(resolve-grants update-organization-profile get-organization-profile provision-organization create-user update-user-permissions list-users list-organizations one-tap-login public-auth)
 
 for fn in "${FUNCTIONS[@]}"; do
   rm -rf "$fn/internal"

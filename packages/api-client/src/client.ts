@@ -82,6 +82,36 @@ export interface FunctionsApi {
     idToken: string;
     expectedUserId?: string;
   }): Promise<{ userId: string; secret: string }>;
+  /**
+   * Runs a `public-auth` action. The function verifies a Cloudflare Turnstile
+   * token (siteverify) before touching Appwrite, so every input carries the
+   * single-use `turnstileToken`.
+   */
+  publicLogin(input: {
+    email: string;
+    password: string;
+    turnstileToken: string;
+  }): Promise<{ userId: string; secret: string }>;
+  publicMfaChallenge(input: {
+    factor: "totp" | "email";
+    turnstileToken: string;
+  }): Promise<{ challengeId: string }>;
+  publicMfaVerify(input: {
+    challengeId: string;
+    otp: string;
+    turnstileToken: string;
+  }): Promise<{ $id: string; userId: string; expire: string }>;
+  publicRequestRecovery(input: {
+    email: string;
+    url: string;
+    turnstileToken: string;
+  }): Promise<void>;
+  publicCompleteRecovery(input: {
+    userId: string;
+    secret: string;
+    password: string;
+    turnstileToken: string;
+  }): Promise<void>;
 }
 
 export interface StorageApi {

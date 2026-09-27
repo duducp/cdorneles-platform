@@ -30,6 +30,8 @@ export interface MfaChallenge {
 export interface LoginInput {
   email: string;
   password: string;
+  /** Single-use Cloudflare Turnstile token (public-auth gate). */
+  turnstileToken: string;
 }
 
 /**
@@ -42,17 +44,23 @@ export type OneTapLoginInput = { idToken: string; expectedUserId?: string };
 export interface CompleteMfaInput {
   challengeId: string;
   code: string;
+  /** Single-use Cloudflare Turnstile token (public-auth gate). */
+  turnstileToken: string;
 }
 
 export interface PasswordRecoveryRequestInput {
   email: string;
   redirectUrl: string;
+  /** Single-use Cloudflare Turnstile token (public-auth gate). */
+  turnstileToken: string;
 }
 
 export interface PasswordRecoveryConfirmInput {
   userId: string;
   secret: string;
   password: string;
+  /** Single-use Cloudflare Turnstile token (public-auth gate). */
+  turnstileToken: string;
 }
 
 export interface MfaFactors {
@@ -64,6 +72,8 @@ export interface MfaFactors {
 
 export interface CreateMfaChallengeInput {
   factor: "totp" | "email";
+  /** Single-use Cloudflare Turnstile token (public-auth gate). */
+  turnstileToken: string;
 }
 
 /**

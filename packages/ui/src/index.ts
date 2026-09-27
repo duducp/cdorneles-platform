@@ -20,6 +20,7 @@ export * from "./components/page-header";
 export * from "./components/responsive-grid";
 export * from "./components/section";
 export * from "./components/stack";
+export * from "./components/turnstile";
 export * from "./components/status-badge";
 export * from "./components/theme-toggle";
 export * from "./feedback";

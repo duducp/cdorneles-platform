@@ -41,6 +41,13 @@ function renderDialog(props: Partial<Parameters<typeof SessionExpiredDialog>[0]>
 }
 
 describe("SessionExpiredDialog", () => {
+  it("renders the captcha slot right before the submit button", () => {
+    renderDialog({ captchaSlot: <div data-testid="captcha" /> });
+
+    const captcha = screen.getByTestId("captcha");
+    const submit = screen.getByRole("button", { name: "Entrar" });
+    expect(captcha.nextElementSibling).toBe(submit);
+  });
   it("shows the known e-mail and focuses the password field", async () => {
     renderDialog();
 
@@ -151,6 +158,21 @@ describe("SessionExpiredDialog", () => {
 });
 
 describe("SessionExpiredMfaDialog", () => {
+  it("renders the captcha slot inside the MFA form, before its submit", () => {
+    render(
+      <MantineProvider>
+        <SessionExpiredMfaDialog
+          onSubmit={vi.fn()}
+          onSignOut={vi.fn()}
+          captchaSlot={<div data-testid="captcha" />}
+        />
+      </MantineProvider>,
+    );
+
+    const captcha = screen.getByTestId("captcha");
+    const submit = screen.getByRole("button", { name: /verificar código/i });
+    expect(captcha.nextElementSibling).toBe(submit);
+  });
   it("shows a single heading, from the challenge form", () => {
     render(
       <MantineProvider>

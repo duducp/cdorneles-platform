@@ -32,6 +32,12 @@ export function describeAuthError(
         return "Código inválido ou expirado. Solicite um novo código.";
       case "general_rate_limit_exceeded":
         return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
+      case "invalid_turnstile_token":
+        return "Não foi possível verificar que você é humano. Tente novamente.";
+      case "turnstile_verification_failed":
+        return "Não foi possível concluir a verificação. Tente novamente.";
+      case "turnstile_not_configured":
+        return "Verificação de segurança não configurada neste ambiente.";
       default:
         break;
     }

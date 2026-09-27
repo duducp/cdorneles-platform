@@ -3,6 +3,7 @@
 import { cancelStaleRequests } from "@cdorneles/api-client";
 import { describeAuthError, MfaRequiredError, useAuth } from "@cdorneles/auth";
 import { SessionExpiredDialog, SessionExpiredMfaDialog } from "@cdorneles/ui";
+import { Turnstile, TurnstileError, useTurnstile } from "@cdorneles/ui";
 import type { MfaChallengeFormValues } from "@cdorneles/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -28,6 +29,7 @@ export function SessionExpiredGate() {
     service,
   } = useAuth();
   const queryClient = useQueryClient();
+  const turnstile = useTurnstile();
   const [step, setStep] = useState<"password" | "mfa">("password");
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [factor, setFactor] = useState<"email" | "totp" | null>(null);
@@ -62,25 +64,33 @@ export function SessionExpiredGate() {
     if (!preferred) {
       throw new NoMfaFactorError("Nenhum fator de verificação disponível para esta conta.");
     }
-    const challenge = await service.createMfaChallenge({ factor: preferred });
+    const turnstileToken = await turnstile.nextToken();
+    const challenge = await service.createMfaChallenge({ factor: preferred, turnstileToken });
     setFactor(preferred);
     setChallengeId(challenge.challengeId);
     setStep("mfa");
-  }, [service]);
+  }, [service, turnstile]);
 
   const handlePassword = useCallback(
     async (password: string) => {
       if (!user) return;
       try {
         await cancelStaleRequests(queryClient);
-        await reauthenticate({ email: user.email, password });
+        const turnstileToken = await turnstile.nextToken();
+        await reauthenticate({ email: user.email, password, turnstileToken });
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
         finish();
       } catch (error) {
+        if (error instanceof TurnstileError) {
+          throw error; // already in pt-BR, ready for the dialog's FormError
+        }
         if (error instanceof MfaRequiredError) {
           try {
             await beginMfaChallenge();
           } catch (mfaError) {
+            if (mfaError instanceof TurnstileError) {
+              throw mfaError;
+            }
             throw new Error(
               mfaError instanceof NoMfaFactorError
                 ? mfaError.message
@@ -93,7 +103,7 @@ export function SessionExpiredGate() {
         throw new Error(describeAuthError(error), { cause: error });
       }
     },
-    [user, queryClient, reauthenticate, beginMfaChallenge, finish],
+    [user, queryClient, reauthenticate, beginMfaChallenge, finish, turnstile],
   );
 
   const handleMfa = useCallback(
@@ -101,21 +111,24 @@ export function SessionExpiredGate() {
       if (!challengeId) return;
       try {
         await cancelStaleRequests(queryClient);
-        await completeReauthMfa({ challengeId, code: values.code });
+        const turnstileToken = await turnstile.nextToken();
+        await completeReauthMfa({ challengeId, code: values.code, turnstileToken });
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
         finish();
       } catch (error) {
+        if (error instanceof TurnstileError) throw error;
         throw new Error(describeAuthError(error, "Código inválido."), { cause: error });
       }
     },
-    [challengeId, queryClient, completeReauthMfa, finish],
+    [challengeId, queryClient, completeReauthMfa, finish, turnstile],
   );
 
   const handleResend = useCallback(async () => {
     if (!factor) return;
-    const challenge = await service.createMfaChallenge({ factor });
+    const turnstileToken = await turnstile.nextToken();
+    const challenge = await service.createMfaChallenge({ factor, turnstileToken });
     setChallengeId(challenge.challengeId);
-  }, [service, factor]);
+  }, [service, factor, turnstile]);
 
   const handleGoogleCredential = useCallback(
     async (idToken: string) => {
@@ -196,6 +209,7 @@ export function SessionExpiredGate() {
           onSignOut={handleSignOut}
           errorMessage={googleMessage}
           loading={googleLoading}
+          captchaSlot={<Turnstile ref={turnstile.handleRef} />}
           googleResetToken={googleResetToken}
           google={
             googleAvailable ? (

@@ -18,6 +18,8 @@ export interface LoginFormProps {
   showGoogle?: boolean;
   /** Caller-owned Google sign-in content rendered with the divider. */
   googleSlot?: ReactNode;
+  /** Caller-owned Turnstile widget, rendered right before the submit. */
+  captchaSlot?: ReactNode;
   onForgotPassword?: (email: string) => void;
   onSignUp?: () => void;
 }
@@ -30,6 +32,7 @@ export function LoginForm({
   heading = "Bem-vindo de volta",
   showGoogle = true,
   googleSlot,
+  captchaSlot,
   onForgotPassword,
   onSignUp,
 }: LoginFormProps) {
@@ -124,6 +127,7 @@ export function LoginForm({
           Esqueci minha senha
         </Anchor>
 
+        {captchaSlot}
         <Button type="submit" fullWidth loading={loading} disabled={loading}>
           Entrar
         </Button>

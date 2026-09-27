@@ -8,6 +8,8 @@ import {
   ForgotPasswordForm,
   Logo,
   ThemeToggle,
+  Turnstile,
+  useTurnstile,
 } from "@cdorneles/ui";
 import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
@@ -27,18 +29,21 @@ export function ForgotPasswordPage({
 }: ForgotPasswordPageProps) {
   const { service } = useAuth();
   const router = useRouter();
+  const turnstile = useTurnstile();
   const goToApp = useCallback(() => router.replace("/"), [router]);
   const canRender = useRedirectIfAuthenticated(redirectWhenAuthenticated, goToApp);
 
   const handleSubmit = useCallback(
     async (values: { email: string }) => {
       const redirectUrl = `${window.location.origin}/reset-password`;
+      const turnstileToken = await turnstile.nextToken();
       await service.requestPasswordRecovery({
         email: values.email,
         redirectUrl,
+        turnstileToken,
       });
     },
-    [service],
+    [service, turnstile],
   );
 
   if (!canRender) {
@@ -56,7 +61,11 @@ export function ForgotPasswordPage({
           <AuthCard
             form={
               <Stack gap="md">
-                <ForgotPasswordForm onSubmit={handleSubmit} initialEmail={initialEmail} />
+                <ForgotPasswordForm
+                  onSubmit={handleSubmit}
+                  initialEmail={initialEmail}
+                  captchaSlot={<Turnstile ref={turnstile.handleRef} />}
+                />
                 <Anchor
                   component={Link}
                   href="/login"
