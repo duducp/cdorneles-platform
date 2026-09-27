@@ -5,7 +5,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { MfaChallengeForm } from "./mfa-challenge-form";
+import { RESEND_COOLDOWN_SECONDS, MfaChallengeForm } from "./mfa-challenge-form";
+import { TurnstileError } from "../components/turnstile";
 
 function renderForm(props: Parameters<typeof MfaChallengeForm>[0]) {
   return render(
@@ -25,6 +26,40 @@ async function typeCode(user: ReturnType<typeof userEvent.setup>, code: string) 
 }
 
 describe("MfaChallengeForm", () => {
+  it("renders the captcha slot right before the submit button", () => {
+    renderForm({
+      onSubmit: vi.fn(),
+      captchaSlot: <div data-testid="captcha" />,
+    });
+    const captcha = screen.getByTestId("captcha");
+    const submit = screen.getByRole("button", { name: /verificar código/i });
+    expect(captcha.nextElementSibling).toBe(submit);
+  });
+
+  it("shows the Turnstile message when resend hits a verification error", async () => {
+    vi.useFakeTimers();
+    try {
+      const onResend = vi.fn().mockRejectedValue(new TurnstileError("turnstile_unavailable"));
+      renderForm({ onSubmit: vi.fn(), onResend });
+
+      await act(async () => {
+        vi.advanceTimersByTime(RESEND_COOLDOWN_SECONDS * 1000);
+      });
+      const enabled = screen.getByRole("button", { name: /^reenviar código$/i });
+      expect(enabled).toBeEnabled();
+
+      await act(async () => {
+        fireEvent.click(enabled);
+      });
+
+      expect(
+        screen.getByText("Não foi possível concluir a verificação. Tente novamente."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Erro ao reenviar código. Tente novamente.")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it("renders six digit boxes, each individually labelled", () => {
     const onSubmit = vi.fn();
     renderForm({ onSubmit });

@@ -4,15 +4,17 @@ import { resetPasswordSchema, type ResetPasswordFormValues } from "@cdorneles/sc
 import { Box, Button, PasswordInput, Stack, Text } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { LockIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 
 import { FormError } from "../components/form-error";
 
 export interface ResetPasswordFormProps {
   onSubmit: (values: ResetPasswordFormValues) => Promise<void>;
+  /** Caller-owned Turnstile widget, rendered right before the submit. */
+  captchaSlot?: ReactNode;
 }
 
-export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ onSubmit, captchaSlot }: ResetPasswordFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -110,6 +112,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           {...form.getInputProps("passwordConfirmation")}
         />
 
+        {captchaSlot}
         <Button type="submit" fullWidth loading={status === "submitting"}>
           Redefinir senha
         </Button>
