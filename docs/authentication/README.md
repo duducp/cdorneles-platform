@@ -120,3 +120,51 @@ Está **fora de escopo**: auto-cadastro, negação por usuário, editar o papel 
 organização de um usuário depois de criado, e excluir ou desativar usuários.
 Editar as permissões de um usuário depois de criado ainda não está exposto: o
 cliente já tem `updateUserPermissions`, mas nenhuma tela o chama.
+
+## Turnstile (gate das páginas públicas)
+
+Toda ação pública de autenticação (`login`, `mfaChallenge`, `mfaVerify`,
+`requestRecovery`, `completeRecovery`) roda na function Appwrite `public-auth`,
+que só executa depois do siteverify do Cloudflare Turnstile — **deny-by-default**
+(AGENTS.md: a function é a fronteira de segurança, o frontend é só UX).
+
+### Variáveis de ambiente
+
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` — site key (browser) do widget, **por app**
+  (`admin`, `client`, `design-system` reusam as mesmas páginas); é inlined no
+  build, então mudar exige redeploy.
+- `TURNSTILE_SECRET_KEY` — secret do siteverify, **server-side**, em
+  function Settings → Variables da `public-auth`. Nunca em `NEXT_PUBLIC_*`.
+
+Para desenvolvimento, o `.env.example` traz as test keys oficiais do Cloudflare
+(que sempre passam e que sempre falham).
+
+### Comportamento em falha (fail-closed)
+
+- Sem `TURNSTILE_SECRET_KEY` na function → `500 turnstile_not_configured`.
+- Sem site key no app → o form mostra "Verificação de segurança não configurada
+  neste ambiente." ao submeter; o login nunca acontece silenciosamente.
+- Token rejeitado pelo Cloudflare → `403 invalid_turnstile_token`, com mensagem
+  própria no `describeAuthError`.
+- Siteverify inalcançável → `502 turnstile_verification_failed`.
+
+Os textos novos vivem em `@cdorneles/auth` (`describe-error.ts`) e no widget
+(`packages/ui/src/components/turnstile.tsx`); nenhum texto de erro existente
+mudou.
+
+### Tokens single-use
+
+Cada token do Turnstile é single-use e expira em 300s. A tela é dona de **um**
+widget (`useTurnstile`) e cada chamada de service consome um token via
+`nextToken()`, que dispara o reset imediatamente para pré-mintar o próximo.
+
+### Checklist de deploy
+
+1. Criar o widget no Cloudflare e obter as chaves reais (dev: test keys).
+2. `NEXT_PUBLIC_TURNSTILE_SITE_KEY` no env de build de `admin`, `client` e
+   `design-system`.
+3. `TURNSTILE_SECRET_KEY` em Settings → Variables da function `public-auth`.
+4. `make -C functions deploy public-auth`.
+5. Smoke: `/login`, `/forgot-password`, `/reset-password`, `/mfa` e o
+   `SessionExpiredGate` (senha + MFA) com o widget visível e token válido; com a
+   secret vazia → erro de configuração, nunca login silencioso.
