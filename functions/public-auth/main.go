@@ -57,12 +57,19 @@ type operations interface {
 	DeleteSession(session loginSession) error
 	MfaChallenge(jwt, factor string) (string, error)
 	MfaVerify(jwt, challengeID, otp string) (sessionResponse, error)
+	RequestRecovery(email, url string) error
+	CompleteRecovery(userID, secret, password string) error
 }
 
 // loginResponse carries the credentials the browser exchanges for a session.
 type loginResponse struct {
 	UserID string `json:"userId"`
 	Secret string `json:"secret"`
+}
+
+// okResponse acknowledges a side-effect-only action.
+type okResponse struct {
+	OK bool `json:"ok"`
 }
 
 // Main is the function entrypoint.
@@ -170,6 +177,22 @@ func handle(ctx openruntimes.Context, ops operations, secret string) openruntime
 			return opsError(ctx, err)
 		}
 		return ctx.Res.Json(session)
+	case actionRequestRecovery:
+		if strings.TrimSpace(body.Email) == "" || strings.TrimSpace(body.URL) == "" {
+			return httpx.BadRequest(ctx, "email and url are required")
+		}
+		if err := ops.RequestRecovery(body.Email, body.URL); err != nil {
+			return opsError(ctx, err)
+		}
+		return ctx.Res.Json(okResponse{OK: true})
+	case actionCompleteRecovery:
+		if body.UserID == "" || body.Secret == "" || body.Password == "" {
+			return httpx.BadRequest(ctx, "userId, secret and password are required")
+		}
+		if err := ops.CompleteRecovery(body.UserID, body.Secret, body.Password); err != nil {
+			return opsError(ctx, err)
+		}
+		return ctx.Res.Json(okResponse{OK: true})
 	default:
 		return httpx.BadRequest(ctx, "unknown action")
 	}

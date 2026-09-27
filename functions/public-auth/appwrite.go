@@ -212,6 +212,38 @@ func (o *appwriteOps) MfaChallenge(jwt, factor string) (string, error) {
 	return challenge.ID, nil
 }
 
+// RequestRecovery asks Appwrite to e-mail a recovery link.
+func (o *appwriteOps) RequestRecovery(email, url string) error {
+	payload, err := json.Marshal(map[string]string{"email": email, "url": url})
+	if err != nil {
+		return err
+	}
+	resp, body, err := o.doJSON(http.MethodPost, "/account/recovery", nil, payload)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode >= 400 {
+		return newAppwriteError(resp.StatusCode, body)
+	}
+	return nil
+}
+
+// CompleteRecovery sets the new password; the user then logs in normally.
+func (o *appwriteOps) CompleteRecovery(userID, secret, password string) error {
+	payload, err := json.Marshal(map[string]string{"userId": userID, "secret": secret, "password": password})
+	if err != nil {
+		return err
+	}
+	resp, body, err := o.doJSON(http.MethodPut, "/account/recovery", nil, payload)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode >= 400 {
+		return newAppwriteError(resp.StatusCode, body)
+	}
+	return nil
+}
+
 // MfaVerify submits the OTP; success upgrades the caller's own session.
 func (o *appwriteOps) MfaVerify(jwt, challengeID, otp string) (sessionResponse, error) {
 	payload, err := json.Marshal(map[string]string{"challengeId": challengeID, "otp": otp})

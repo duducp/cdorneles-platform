@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
@@ -45,6 +46,27 @@ func stubTurnstile(t *testing.T, err error) (got *[]string) {
 	return args
 }
 
+func (f *fakeOps) RequestRecovery(email, url string) error {
+	f.recoveryCalls++
+	f.recoveryEmail = email
+	f.recoveryURL = url
+	if f.recoveryErr != nil {
+		return f.recoveryErr
+	}
+	return nil
+}
+
+func (f *fakeOps) CompleteRecovery(userID, secret, password string) error {
+	f.completeCalls++
+	f.completeUserID = userID
+	f.completeSecret = secret
+	f.completePassword = password
+	if f.completeErr != nil {
+		return f.completeErr
+	}
+	return nil
+}
+
 func errInvalidToken() error { return &turnstile.ErrInvalid{Codes: []string{"invalid-input-response"}} }
 func errUnavailable() error  { return &turnstile.ErrUnavailable{Err: errors.New("boom")} }
 
@@ -71,6 +93,16 @@ type fakeOps struct {
 	verifyOTP        string
 	session          sessionResponse
 	verifyErr        error
+
+	recoveryCalls    int
+	recoveryEmail    string
+	recoveryURL      string
+	recoveryErr      error
+	completeCalls    int
+	completeUserID   string
+	completeSecret   string
+	completePassword string
+	completeErr      error
 }
 
 func (f *fakeOps) EmailLogin(email, password string) (loginSession, error) {
@@ -166,10 +198,67 @@ func TestPassesSecretTokenAndRemoteIP(t *testing.T) {
 	}
 }
 
-func TestKnownActionsAreUnknownUntilImplemented(t *testing.T) {
+func TestUnknownActionAfterGate(t *testing.T) {
 	stubTurnstile(t, nil)
-	resp := handle(newContext(`{"action":"requestRecovery","turnstileToken":"tok"}`), &fakeOps{}, "s")
+	resp := handle(newContext(`{"action":"nope","turnstileToken":"tok"}`), &fakeOps{}, "s")
 	assertError(t, resp, 400, "bad_request", "unknown action")
+}
+
+func TestRequestRecoveryValidatesInput(t *testing.T) {
+	stubTurnstile(t, nil)
+	resp := handle(newContext(`{"action":"requestRecovery","turnstileToken":"tok","email":""}`), &fakeOps{}, "s")
+	assertError(t, resp, 400, "bad_request", "email and url are required")
+}
+
+func TestRequestRecoverySendsEmailAndURL(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{}
+	resp := handle(newContext(`{"action":"requestRecovery","turnstileToken":"tok","email":"a@b.com","url":"https://x/reset"}`), ops, "s")
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d (%s)", resp.StatusCode, resp.Body)
+	}
+	if !strings.Contains(string(resp.Body), `"ok":true`) {
+		t.Fatalf("body = %s", resp.Body)
+	}
+	if ops.recoveryCalls != 1 || ops.recoveryEmail != "a@b.com" || ops.recoveryURL != "https://x/reset" {
+		t.Fatalf("ops = %+v", ops)
+	}
+}
+
+func TestRequestRecoveryPassesUpstreamType(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{recoveryErr: &appwriteError{status: 404, code: "user_not_found", message: "user not found"}}
+	resp := handle(newContext(`{"action":"requestRecovery","turnstileToken":"tok","email":"a@b.com","url":"https://x/reset"}`), ops, "s")
+	assertError(t, resp, 404, "user_not_found", "user not found")
+}
+
+func TestCompleteRecoveryValidatesInput(t *testing.T) {
+	stubTurnstile(t, nil)
+	resp := handle(newContext(`{"action":"completeRecovery","turnstileToken":"tok","userId":"u1","secret":"s"}`), &fakeOps{}, "s")
+	assertError(t, resp, 400, "bad_request", "userId, secret and password are required")
+}
+
+func TestCompleteRecoverySetsPasswordWithoutEchoingIt(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{}
+	resp := handle(newContext(`{"action":"completeRecovery","turnstileToken":"tok","userId":"u1","secret":"s","password":"pass"}`), ops, "s")
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d (%s)", resp.StatusCode, resp.Body)
+	}
+	if ops.completeCalls != 1 || ops.completeUserID != "u1" || ops.completeSecret != "s" || ops.completePassword != "pass" {
+		t.Fatalf("ops = %+v", ops)
+	}
+	// The password must never be echoed back or logged.
+	if strings.Contains(string(resp.Body), "pass") {
+		t.Fatalf("response leaks the password: %s", resp.Body)
+	}
+}
+
+func TestCompleteRecoveryPassesUpstreamType(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{completeErr: &appwriteError{status: 401, code: "user_invalid_token", message: "invalid secret"}}
+	resp := handle(newContext(`{"action":"completeRecovery","turnstileToken":"tok","userId":"u1","secret":"s","password":"pass"}`), ops, "s")
+	assertError(t, resp, 401, "user_invalid_token", "invalid secret")
 }
 
 func TestLoginExchangesCredentialsAndDeletesTempSession(t *testing.T) {
