@@ -1,7 +1,7 @@
 "use client";
 
 import { useMantineColorScheme } from "@mantine/core";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 
 /** The Cloudflare widget script, loaded at most once per page. */
 export const TURNSTILE_SCRIPT_SRC =
@@ -199,5 +199,8 @@ export function useTurnstile() {
     }
     return handleRef.current.nextToken();
   }, []);
-  return { handleRef, nextToken };
+  // Stable identity: pages put this object in effect/callback deps, so a fresh
+  // literal per render would re-run effects (e.g. the MFA bootstrap would mint
+  // a duplicate challenge every render).
+  return useMemo(() => ({ handleRef, nextToken }), [nextToken]);
 }
