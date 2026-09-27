@@ -49,6 +49,10 @@ export function ForgotPasswordForm({ onSubmit, initialEmail = "" }: ForgotPasswo
     [onSubmit],
   );
 
+  const submit = form.onSubmit(handleSubmit, () => {
+    form.getInputNode("email")?.focus();
+  });
+
   if (status === "sent") {
     return (
       <div role="status" aria-live="polite">
@@ -63,7 +67,7 @@ export function ForgotPasswordForm({ onSubmit, initialEmail = "" }: ForgotPasswo
   return (
     <Box
       component="form"
-      onSubmit={form.onSubmit(handleSubmit)}
+      onSubmit={submit}
       noValidate
       aria-busy={status === "submitting" || undefined}
       aria-describedby={error ? "forgot-password-form-error" : undefined}

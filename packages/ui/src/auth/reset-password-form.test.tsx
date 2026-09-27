@@ -96,6 +96,25 @@ describe("ResetPasswordForm", () => {
     });
   });
 
+  it("focuses the first invalid field on submit", async () => {
+    const user = userEvent.setup();
+    renderForm({ onSubmit: vi.fn() });
+
+    await user.click(screen.getByRole("button", { name: /redefinir senha/i }));
+
+    expect(screen.getByLabelText(/^nova senha/i)).toHaveFocus();
+  });
+
+  it("focuses the confirmation field when only the confirmation is invalid", async () => {
+    const user = userEvent.setup();
+    renderForm({ onSubmit: vi.fn() });
+
+    await user.type(screen.getByLabelText(/^nova senha/i), "senha1234");
+    await user.click(screen.getByRole("button", { name: /redefinir senha/i }));
+
+    expect(screen.getByLabelText(/^confirmar nova senha/i)).toHaveFocus();
+  });
+
   it("points the form element at the alert while a submit error shows", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));

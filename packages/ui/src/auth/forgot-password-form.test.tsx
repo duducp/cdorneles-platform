@@ -74,6 +74,15 @@ describe("ForgotPasswordForm", () => {
     });
   });
 
+  it("focuses the first invalid field on submit", async () => {
+    const user = userEvent.setup();
+    renderForm({ onSubmit: vi.fn() });
+
+    await user.click(screen.getByRole("button", { name: /enviar link/i }));
+
+    expect(screen.getByLabelText(/^e-mail/i)).toHaveFocus();
+  });
+
   it("points the form element at the alert while a submit error shows", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));

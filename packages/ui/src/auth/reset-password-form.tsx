@@ -47,6 +47,13 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
     [onSubmit],
   );
 
+  const submit = form.onSubmit(handleSubmit, (errors) => {
+    const first = (["password", "passwordConfirmation"] as const).find(
+      (field) => errors[field] !== undefined,
+    );
+    if (first) form.getInputNode(first)?.focus();
+  });
+
   if (status === "done") {
     return (
       <div role="status" aria-live="polite">
@@ -58,7 +65,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
   return (
     <Box
       component="form"
-      onSubmit={form.onSubmit(handleSubmit)}
+      onSubmit={submit}
       noValidate
       aria-busy={status === "submitting" || undefined}
       aria-describedby={error ? "reset-password-form-error" : undefined}
