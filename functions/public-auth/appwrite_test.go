@@ -59,7 +59,7 @@ func TestEmailLoginPostsCredentialsWithoutAPIKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmailLogin: %v", err)
 	}
-	if session.ID != "s1" || session.UserID != "u1" || session.cookie != "a_session_proj1=cookie-value" {
+	if session.session.ID != "s1" || session.session.UserID != "u1" || session.session.cookie != "a_session_proj1=cookie-value" {
 		t.Fatalf("session = %+v", session)
 	}
 }
@@ -79,6 +79,46 @@ func TestEmailLoginMapsAppwriteErrorType(t *testing.T) {
 	}
 	if ae.status != 401 || ae.code != "user_invalid_credentials" {
 		t.Fatalf("appwriteError = %+v", ae)
+	}
+}
+
+// Appwrite answers a password login for an MFA account with 401
+// user_more_factors_required AND a Set-Cookie for a pending session. The
+// pending session must be captured (not treated as an error) so the handler
+// can hand the browser a login token to recreate it as its own cookie.
+func TestEmailLoginMfaReturnsPendingOutcomeWithPendingSession(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/account/sessions/email" {
+			w.Header().Set("Set-Cookie", "a_session_proj1=pending-cookie; Path=/; HttpOnly")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"message":"More factors are required","code":401,"type":"user_more_factors_required"}`))
+			return
+		}
+		if r.URL.Path == "/account" {
+			if got := r.Header.Get("Cookie"); got != "a_session_proj1=pending-cookie" {
+				t.Errorf("account call cookie = %q, want the pending session cookie", got)
+			}
+			_, _ = w.Write([]byte(`{"$id":"u1","email":"a@b.com"}`))
+			return
+		}
+		if r.URL.Path == "/account/sessions" {
+			_, _ = w.Write([]byte(`{"sessions":[{"$id":"s9","userId":"u1"}]}`))
+			return
+		}
+		t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+	}))
+	defer server.Close()
+	ops := &appwriteOps{endpoint: server.URL, project: "proj1", doer: http.DefaultClient}
+
+	outcome, err := ops.EmailLogin("a@b.com", "pass")
+	if err != nil {
+		t.Fatalf("EmailLogin: %v", err)
+	}
+	if !outcome.pendingMFA || outcome.session.ID == "" || outcome.session.cookie != "a_session_proj1=pending-cookie" {
+		t.Fatalf("outcome = %+v", outcome)
+	}
+	if outcome.session.UserID != "u1" {
+		t.Fatalf("pending session userId = %q", outcome.session.UserID)
 	}
 }
 

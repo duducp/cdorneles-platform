@@ -72,27 +72,27 @@ func errUnavailable() error  { return &turnstile.ErrUnavailable{Err: errors.New(
 
 // fakeOps is an operations double that records calls and can force errors.
 type fakeOps struct {
-	login       loginSession
-	loginErr    error
-	loginCalls  int
-	token       tokenPair
-	tokenErr    error
-	tokenCalls  int
-	tokenUserID string
-	deleteErr   error
-	deleteCalls int
+	loginOutcome loginOutcome
+	loginErr     error
+	loginCalls   int
+	token        tokenPair
+	tokenErr     error
+	tokenCalls   int
+	tokenUserID  string
+	deleteErr    error
+	deleteCalls  int
 
-	challengeCalls   int
-	challengeJWT     string
-	challengeFactor  string
-	challengeID      string
-	challengeErr     error
-	verifyCalls      int
-	verifyJWT        string
+	challengeCalls    int
+	challengeJWT      string
+	challengeFactor   string
+	challengeID       string
+	challengeErr      error
+	verifyCalls       int
+	verifyJWT         string
 	verifyChallengeID string
-	verifyOTP        string
-	session          sessionResponse
-	verifyErr        error
+	verifyOTP         string
+	session           sessionResponse
+	verifyErr         error
 
 	recoveryCalls    int
 	recoveryEmail    string
@@ -105,12 +105,12 @@ type fakeOps struct {
 	completeErr      error
 }
 
-func (f *fakeOps) EmailLogin(email, password string) (loginSession, error) {
+func (f *fakeOps) EmailLogin(email, password string) (loginOutcome, error) {
 	f.loginCalls++
 	if f.loginErr != nil {
-		return loginSession{}, f.loginErr
+		return loginOutcome{}, f.loginErr
 	}
-	return f.login, nil
+	return f.loginOutcome, nil
 }
 
 func (f *fakeOps) CreateLoginToken(userID string) (tokenPair, error) {
@@ -264,8 +264,8 @@ func TestCompleteRecoveryPassesUpstreamType(t *testing.T) {
 func TestLoginExchangesCredentialsAndDeletesTempSession(t *testing.T) {
 	stubTurnstile(t, nil)
 	ops := &fakeOps{
-		login: loginSession{ID: "s1", UserID: "u1", cookie: "a_session_p=c"},
-		token: tokenPair{UserID: "u1", Secret: "tok"},
+		loginOutcome: loginOutcome{session: loginSession{ID: "s1", UserID: "u1", cookie: "a_session_p=c"}},
+		token:        tokenPair{UserID: "u1", Secret: "tok"},
 	}
 	resp := handle(newContext(`{"action":"login","turnstileToken":"tok","email":"a@b.com","password":"pass"}`), ops, "s")
 	if resp.StatusCode != 200 {
@@ -277,6 +277,33 @@ func TestLoginExchangesCredentialsAndDeletesTempSession(t *testing.T) {
 		t.Fatalf("response = %+v", out)
 	}
 	if ops.loginCalls != 1 || ops.tokenUserID != "u1" || ops.deleteCalls != 1 {
+		t.Fatalf("ops = %+v", ops)
+	}
+}
+
+// MFA accounts: the login lands as a pending session inside the function. The
+// handler must delete it and mint a token so the browser recreates the
+// pending session in its own cookie jar for the /mfa flow.
+func TestLoginMfaHandsOffPendingSessionAsToken(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{
+		loginOutcome: loginOutcome{
+			session:    loginSession{ID: "s9", UserID: "u1", cookie: "a_session_p=pending"},
+			pendingMFA: true,
+		},
+		token: tokenPair{UserID: "u1", Secret: "tok"},
+	}
+	resp := handle(newContext(`{"action":"login","turnstileToken":"tok","email":"a@b.com","password":"pass"}`), ops, "s")
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d (%s)", resp.StatusCode, resp.Body)
+	}
+	var out loginResponse
+	_ = json.Unmarshal(resp.Body, &out)
+	if out.UserID != "u1" || out.Secret != "tok" {
+		t.Fatalf("response = %+v", out)
+	}
+	// The pending session was deleted (id s9) and a token was minted for u1.
+	if ops.deleteCalls != 1 || ops.tokenCalls != 1 || ops.tokenUserID != "u1" {
 		t.Fatalf("ops = %+v", ops)
 	}
 }
@@ -375,9 +402,9 @@ func TestMfaUpstreamErrorPassesTypeThrough(t *testing.T) {
 func TestLoginKeepsRunningWhenTempSessionDeleteFails(t *testing.T) {
 	stubTurnstile(t, nil)
 	ops := &fakeOps{
-		login:     loginSession{ID: "s1", UserID: "u1", cookie: "a_session_p=c"},
-		token:     tokenPair{UserID: "u1", Secret: "tok"},
-		deleteErr: errors.New("boom"),
+		loginOutcome: loginOutcome{session: loginSession{ID: "s1", UserID: "u1", cookie: "a_session_p=c"}},
+		token:        tokenPair{UserID: "u1", Secret: "tok"},
+		deleteErr:    errors.New("boom"),
 	}
 	resp := handle(newContext(`{"action":"login","turnstileToken":"tok","email":"a@b.com","password":"pass"}`), ops, "s")
 	if resp.StatusCode != 200 {

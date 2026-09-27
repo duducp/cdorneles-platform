@@ -57,6 +57,17 @@ type loginSession struct {
 	cookie string
 }
 
+// loginOutcome distinguishes the two ways a password login lands: a full
+// session (no MFA) or Appwrite's 401 user_more_factors_required, which still
+// carries a Set-Cookie for a pending session. The pending session authorizes
+// MFA list/challenge calls — but it exists server-side here, so the handler
+// must hand the browser a login token to recreate it as its own cookie.
+type loginOutcome struct {
+	session     loginSession
+	pendingMFA  bool
+	appwriteErr *appwriteError
+}
+
 // tokenPair is what account.createSession(userId, secret) consumes.
 type tokenPair struct {
 	UserID string `json:"userId"`
@@ -118,28 +129,87 @@ func (o *appwriteOps) doJSON(method, path string, headers map[string]string, pay
 }
 
 // EmailLogin verifies e-mail/password server-side. The temporary session is
-// never handed to the browser; its cookie only serves DeleteSession.
-func (o *appwriteOps) EmailLogin(email, password string) (loginSession, error) {
+// never handed to the browser; its cookie only serves DeleteSession (or the
+// pending-MFA user lookup + delete).
+func (o *appwriteOps) EmailLogin(email, password string) (loginOutcome, error) {
 	payload, err := json.Marshal(map[string]string{"email": email, "password": password})
 	if err != nil {
-		return loginSession{}, err
+		return loginOutcome{}, err
 	}
 	resp, body, err := o.doJSON(http.MethodPost, "/account/sessions/email", nil, payload)
 	if err != nil {
-		return loginSession{}, err
+		return loginOutcome{}, err
 	}
+	cookie := sessionCookie(resp.Header.Values("Set-Cookie"), o.project)
 	if resp.StatusCode >= 400 {
-		return loginSession{}, newAppwriteError(resp.StatusCode, body)
+		ae := newAppwriteError(resp.StatusCode, body)
+		// MFA accounts: 401 user_more_factors_required still sets a pending
+		// session cookie. Capture it and resolve the user id through /account
+		// so the handler can broker the pending session to the browser.
+		if ae.code == "user_more_factors_required" && cookie != "" {
+			pending := loginSession{cookie: cookie}
+			pending.UserID, err = o.currentUserID(map[string]string{"Cookie": cookie})
+			if err != nil {
+				return loginOutcome{}, err
+			}
+			pending.ID = pendingSessionID(o, cookie)
+			return loginOutcome{session: pending, pendingMFA: true}, nil
+		}
+		return loginOutcome{}, ae
 	}
 	var session loginSession
 	if err := json.Unmarshal(body, &session); err != nil {
-		return loginSession{}, err
+		return loginOutcome{}, err
 	}
-	session.cookie = sessionCookie(resp.Header.Values("Set-Cookie"), o.project)
+	session.cookie = cookie
 	if session.ID == "" || session.UserID == "" || session.cookie == "" {
-		return loginSession{}, fmt.Errorf("login response missing session data")
+		return loginOutcome{}, fmt.Errorf("login response missing session data")
 	}
-	return session, nil
+	return loginOutcome{session: session}, nil
+}
+
+// currentUserID resolves /account with an explicit Cookie header, used only
+// for the pending-MFA session (which is not the function's default session).
+func (o *appwriteOps) currentUserID(headers map[string]string) (string, error) {
+	resp, body, err := o.doJSON(http.MethodGet, "/account", headers, nil)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode >= 400 {
+		return "", newAppwriteError(resp.StatusCode, body)
+	}
+	var user struct {
+		ID string `json:"$id"`
+	}
+	if err := json.Unmarshal(body, &user); err != nil {
+		return "", err
+	}
+	if user.ID == "" {
+		return "", fmt.Errorf("account response missing id")
+	}
+	return user.ID, nil
+}
+
+// pendingSessionID extracts the session id from the JWT claim Appwrite embeds
+// in the pending session's cookie value ("<id>.<secret>") — Appwrite session
+// cookies are "a_session_<project>=<id>.<secret>"... when the value does not
+// carry an id, fall back to listing the account's sessions and picking the
+// just-created pending one (the only session of a fresh password login).
+func pendingSessionID(o *appwriteOps, cookie string) string {
+	resp, body, err := o.doJSON(http.MethodGet, "/account/sessions", map[string]string{"Cookie": cookie}, nil)
+	if err != nil || resp.StatusCode >= 400 {
+		return ""
+	}
+	var sessions struct {
+		Sessions []loginSession `json:"sessions"`
+	}
+	if err := json.Unmarshal(body, &sessions); err != nil {
+		return ""
+	}
+	if len(sessions.Sessions) > 0 {
+		return sessions.Sessions[0].ID
+	}
+	return ""
 }
 
 // CreateLoginToken issues the single-use token the browser exchanges with

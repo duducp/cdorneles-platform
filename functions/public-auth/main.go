@@ -52,7 +52,7 @@ var verifyTurnstile = turnstile.Verify
 // operations is the Appwrite seam, so the handler is testable without a
 // server or the SDK.
 type operations interface {
-	EmailLogin(email, password string) (loginSession, error)
+	EmailLogin(email, password string) (loginOutcome, error)
 	CreateLoginToken(userID string) (tokenPair, error)
 	DeleteSession(session loginSession) error
 	MfaChallenge(jwt, factor string) (string, error)
@@ -85,6 +85,36 @@ func opsError(ctx openruntimes.Context, err error) openruntimes.Response {
 	}
 	ctx.Error(err)
 	return errorBody(ctx, http.StatusInternalServerError, errInternal, "appwrite request failed")
+}
+
+// mfaHandoff brokers Appwrite's pending MFA session to the browser. The
+// password login left a pending session (401 user_more_factors_required) with
+// its cookie inside the function — unusable there: MFA list/challenge calls
+// from the browser would carry no session at all. So: delete the orphan
+// server-side, mint a users.createToken for the same user, and return
+// {userId, secret}. account.createSession recreates the pending session in
+// the browser's cookie jar, the SDK raises user_more_factors_required, and
+// the existing /mfa flow runs against the browser's own pending session.
+func mfaHandoff(ctx openruntimes.Context, ops operations, pending loginSession) openruntimes.Response {
+	if err := ops.DeleteSession(pending); err != nil {
+		// An orphan pending session is inert (its cookie never left the
+		// function and it grants no authenticated access), so the handoff
+		// must not fail because of it.
+		ctx.Error(err)
+	}
+	token, err := ops.CreateLoginToken(pending.UserID)
+	if err != nil {
+		return opsError(ctx, err)
+	}
+	if strings.TrimSpace(token.Secret) == "" {
+		ctx.Error(errors.New("appwrite returned an empty mfa handoff token secret"))
+		return errorBody(ctx, http.StatusInternalServerError, errInternal, "failed to create login token")
+	}
+	userID := token.UserID
+	if userID == "" {
+		userID = pending.UserID
+	}
+	return ctx.Res.Json(loginResponse{UserID: userID, Secret: token.Secret})
 }
 
 // errorBody writes the standard {error, reason} body; `error` is the stable
@@ -135,7 +165,10 @@ func handle(ctx openruntimes.Context, ops operations, secret string) openruntime
 		if err != nil {
 			return opsError(ctx, err)
 		}
-		token, err := ops.CreateLoginToken(session.UserID)
+		if session.pendingMFA {
+			return mfaHandoff(ctx, ops, session.session)
+		}
+		token, err := ops.CreateLoginToken(session.session.UserID)
 		if err != nil {
 			return opsError(ctx, err)
 		}
@@ -145,12 +178,12 @@ func handle(ctx openruntimes.Context, ops operations, secret string) openruntime
 		}
 		// Failure here only leaves an inert orphan: the cookie never left the
 		// function, so nothing can use it. Login must not fail because of it.
-		if err := ops.DeleteSession(session); err != nil {
+		if err := ops.DeleteSession(session.session); err != nil {
 			ctx.Error(err)
 		}
 		userID := token.UserID
 		if userID == "" {
-			userID = session.UserID
+			userID = session.session.UserID
 		}
 		return ctx.Res.Json(loginResponse{UserID: userID, Secret: token.Secret})
 	case actionMfaChallenge:
