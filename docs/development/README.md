@@ -93,6 +93,13 @@ Mantine gotchas:
   "240px" })` will not match.
 - `container.firstChild` is Mantine's injected `<style data-mantine-styles>`
   element, not the component under test. Query the component by role or test id.
+- **Turnstile harness** (`vitest.setup.ts`): jsdom never loads Cloudflare's
+  `api.js`, so the global setup installs a `window.turnstile` mock that hands
+  `"test-token"` to the widget's callback on `render` and on every `reset`, and
+  stubs `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Page tests can therefore expect
+  `turnstileToken: "test-token"` on service calls. Component tests that need
+  manual control (delays, error-callback, expiry) install their own mock, like
+  `packages/ui/src/components/turnstile.test.tsx` does.
 
 ## Intentionally deferred
 
