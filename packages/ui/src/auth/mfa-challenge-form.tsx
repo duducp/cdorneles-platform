@@ -151,7 +151,7 @@ export function MfaChallengeForm({ onSubmit, onResend, onCancel }: MfaChallengeF
             })}
           />
           {form.errors.code && (
-            <Text c="red" size="sm" id="mfa-code-error" mt={5}>
+            <Text c="danger" size="sm" id="mfa-code-error" mt={5}>
               {form.errors.code}
             </Text>
           )}

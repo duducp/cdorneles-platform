@@ -67,6 +67,16 @@ describe("MfaChallengeForm", () => {
     expect(screen.getByText(/código de 6 dígitos/i)).toBeInTheDocument();
   });
 
+  it("styles the code field error with the danger token", async () => {
+    const user = userEvent.setup();
+    renderForm({ onSubmit: vi.fn() });
+
+    await user.click(screen.getByRole("button", { name: /verificar código/i }));
+
+    const error = await screen.findByText(/código/i, { selector: "#mfa-code-error" });
+    expect(error).toHaveStyle({ color: "var(--mantine-color-danger-text)" });
+  });
+
   it("auto-submits exactly once when the sixth digit lands", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
