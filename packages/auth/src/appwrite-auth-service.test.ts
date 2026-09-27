@@ -44,50 +44,66 @@ describe("createAppwriteAuthService", () => {
   });
 
   describe("login", () => {
-    it("calls createEmailPasswordSession and returns mapped AuthSession", async () => {
+    it("exchanges public-auth credentials for a session", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.createEmailPasswordSession).mockResolvedValue({
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicLogin).mockResolvedValue({ userId: "u1", secret: "the-secret" });
+      vi.mocked(api.createSessionFromToken).mockResolvedValue({
         $id: "s1",
         userId: "u1",
         expire: futureDate,
       });
 
-      const service = createAppwriteAuthService(api);
-      const session = await service.login({ email: "a@b.com", password: "pass" });
-
-      expect(api.createEmailPasswordSession).toHaveBeenCalledWith({
+      const service = createAppwriteAuthService(api, functions);
+      const session = await service.login({
         email: "a@b.com",
         password: "pass",
+        turnstileToken: "tok",
       });
-      expect(session).toEqual({
-        id: "s1",
+
+      expect(functions.publicLogin).toHaveBeenCalledWith({
+        email: "a@b.com",
+        password: "pass",
+        turnstileToken: "tok",
+      });
+      expect(api.createSessionFromToken).toHaveBeenCalledWith({
         userId: "u1",
-        expiresAt: futureDate,
+        secret: "the-secret",
       });
+      expect(session).toEqual({ id: "s1", userId: "u1", expiresAt: futureDate });
     });
 
-    it("propagates SDK errors", async () => {
+    it("propagates function errors", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.createEmailPasswordSession).mockRejectedValue(
-        new Error("user_invalid_credentials"),
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicLogin).mockRejectedValue(
+        new ApiError("Invalid credentials", { code: "user_invalid_credentials", status: 401 }),
       );
 
-      const service = createAppwriteAuthService(api);
-      await expect(service.login({ email: "a@b.com", password: "wrong" })).rejects.toThrow(
-        "user_invalid_credentials",
-      );
+      const service = createAppwriteAuthService(api, functions);
+      await expect(
+        service.login({ email: "a@b.com", password: "wrong", turnstileToken: "tok" }),
+      ).rejects.toThrow("Invalid credentials");
     });
 
     it("throws MfaRequiredError on user_more_factors_required", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.createEmailPasswordSession).mockRejectedValue(
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicLogin).mockRejectedValue(
         new ApiError("MFA required", { code: "user_more_factors_required", status: 401 }),
       );
 
-      const service = createAppwriteAuthService(api);
-      await expect(service.login({ email: "a@b.com", password: "pass" })).rejects.toBeInstanceOf(
-        MfaRequiredError,
-      );
+      const service = createAppwriteAuthService(api, functions);
+      await expect(
+        service.login({ email: "a@b.com", password: "pass", turnstileToken: "tok" }),
+      ).rejects.toBeInstanceOf(MfaRequiredError);
+    });
+
+    it("fails loudly without the functions service", async () => {
+      const service = createAppwriteAuthService(createMockAccountApi());
+      await expect(
+        service.login({ email: "a@b.com", password: "p", turnstileToken: "t" }),
+      ).rejects.toThrow("Public authentication is not available");
     });
   });
 
@@ -415,33 +431,46 @@ describe("createAppwriteAuthService", () => {
   });
 
   describe("createMfaChallenge", () => {
-    it("delegates to accountApi.createMfaChallenge", async () => {
+    it("creates the challenge through public-auth", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.createMfaChallenge).mockResolvedValue({ $id: "c1", factor: "email" });
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicMfaChallenge).mockResolvedValue({ challengeId: "c1" });
 
-      const service = createAppwriteAuthService(api);
-      const challenge = await service.createMfaChallenge({ factor: "email" });
+      const service = createAppwriteAuthService(api, functions);
+      const challenge = await service.createMfaChallenge({
+        factor: "email",
+        turnstileToken: "tok",
+      });
 
-      expect(api.createMfaChallenge).toHaveBeenCalledWith({ factor: "email" });
+      expect(functions.publicMfaChallenge).toHaveBeenCalledWith({
+        factor: "email",
+        turnstileToken: "tok",
+      });
       expect(challenge).toEqual({ challengeId: "c1", factor: "email" });
     });
   });
 
   describe("completeMfa", () => {
-    it("completes the challenge and returns a mapped session", async () => {
+    it("exchanges the verified session through public-auth", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.updateMfaChallenge).mockResolvedValue({
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicMfaVerify).mockResolvedValue({
         $id: "s1",
         userId: "u1",
         expire: futureDate,
       });
 
-      const service = createAppwriteAuthService(api);
-      const session = await service.completeMfa({ challengeId: "c1", code: "123456" });
+      const service = createAppwriteAuthService(api, functions);
+      const session = await service.completeMfa({
+        challengeId: "c1",
+        code: "123456",
+        turnstileToken: "tok",
+      });
 
-      expect(api.updateMfaChallenge).toHaveBeenCalledWith({
+      expect(functions.publicMfaVerify).toHaveBeenCalledWith({
         challengeId: "c1",
         otp: "123456",
+        turnstileToken: "tok",
       });
       expect(session).toEqual({
         id: "s1",
@@ -450,14 +479,15 @@ describe("createAppwriteAuthService", () => {
       });
     });
 
-    it("propagates SDK errors", async () => {
+    it("propagates function errors", async () => {
       const api = createMockAccountApi();
-      vi.mocked(api.updateMfaChallenge).mockRejectedValue(new Error("invalid_otp"));
+      const functions = createMockFunctionsApi();
+      vi.mocked(functions.publicMfaVerify).mockRejectedValue(new Error("invalid_otp"));
 
-      const service = createAppwriteAuthService(api);
-      await expect(service.completeMfa({ challengeId: "c1", code: "000000" })).rejects.toThrow(
-        "invalid_otp",
-      );
+      const service = createAppwriteAuthService(api, functions);
+      await expect(
+        service.completeMfa({ challengeId: "c1", code: "000000", turnstileToken: "tok" }),
+      ).rejects.toThrow("invalid_otp");
     });
   });
 });

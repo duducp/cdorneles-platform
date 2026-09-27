@@ -10,6 +10,7 @@ import {
   useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
 import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
+import { Turnstile, TurnstileError, useTurnstile } from "@cdorneles/ui";
 import { describeOneTapError, GoogleOneTap } from "./google-one-tap";
 import { isGoogleAuthEnabled } from "./google-auth-enabled";
 import { Flex, Stack, VisuallyHidden } from "@mantine/core";
@@ -31,6 +32,7 @@ export interface LoginPageProps {
 export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) {
   const { login, status } = useAuth();
   const router = useRouter();
+  const turnstile = useTurnstile();
   const goToApp = useCallback(() => {
     router.replace(resolvePostAuthRedirect(window.location.search));
   }, [router]);
@@ -89,7 +91,8 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
     setAnnouncement("Entrando...");
     setLoading(true);
     try {
-      await login(credentials);
+      const turnstileToken = await turnstile.nextToken();
+      await login({ ...credentials, turnstileToken });
       localStorage.setItem(LAST_METHOD_KEY, "email");
       // Honour the path the proxy sent the user away from.
       router.push(resolvePostAuthRedirect(window.location.search));
@@ -103,6 +106,8 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
         // The browser already holds a valid session — there is nothing to fix,
         // so let the user straight through instead of showing a failure.
         router.push(resolvePostAuthRedirect(window.location.search));
+      } else if (err instanceof TurnstileError) {
+        setError(err.message);
       } else {
         setError(describeAuthError(err));
       }
@@ -154,6 +159,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
                 error={error}
                 showSignUp={enableSignUp}
                 heading={heading}
+                captchaSlot={<Turnstile ref={turnstile.handleRef} />}
                 showGoogle={googleEnabled && !!googleClientId && status === "anonymous"}
                 googleSlot={
                   <div

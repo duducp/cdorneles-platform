@@ -86,7 +86,7 @@ function TestConsumer() {
       <span data-testid="session">{session?.id ?? "null"}</span>
       <button
         onClick={() =>
-          login({ email: "a@b.c", password: "pass" }).catch(() => {
+          login({ email: "a@b.c", password: "pass", turnstileToken: "test-token" }).catch(() => {
             /* intentionally empty */
           })
         }
@@ -95,9 +95,11 @@ function TestConsumer() {
       </button>
       <button
         onClick={() =>
-          completeMfa({ challengeId: "c1", code: "123456" }).catch(() => {
-            /* intentionally empty */
-          })
+          completeMfa({ challengeId: "c1", code: "123456", turnstileToken: "test-token" }).catch(
+            () => {
+              /* intentionally empty */
+            },
+          )
         }
       >
         completeMfa
@@ -176,7 +178,11 @@ describe("AuthProvider", () => {
     renderWithAuth(service);
     await user.click(screen.getByRole("button", { name: "login" }));
 
-    expect(service.login).toHaveBeenCalledWith({ email: "a@b.c", password: "pass" });
+    expect(service.login).toHaveBeenCalledWith({
+      email: "a@b.c",
+      password: "pass",
+      turnstileToken: "test-token",
+    });
     expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
     expect(screen.getByTestId("user")).toHaveTextContent("user@example.com");
     expect(screen.getByTestId("session")).toHaveTextContent("s1");
@@ -192,7 +198,11 @@ describe("AuthProvider", () => {
     renderWithAuth(service);
     await user.click(screen.getByRole("button", { name: "completeMfa" }));
 
-    expect(service.completeMfa).toHaveBeenCalledWith({ challengeId: "c1", code: "123456" });
+    expect(service.completeMfa).toHaveBeenCalledWith({
+      challengeId: "c1",
+      code: "123456",
+      turnstileToken: "test-token",
+    });
     expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
     expect(screen.getByTestId("user")).toHaveTextContent("user@example.com");
     expect(screen.getByTestId("session")).toHaveTextContent("s1");
@@ -280,7 +290,7 @@ describe("onUserChange", () => {
     // The callback fires from the transition itself as login resolves, before
     // any effect could run — not from a passive effect watching `user`.
     await act(async () => {
-      await current().login({ email: "a@b.c", password: "pass" });
+      await current().login({ email: "a@b.c", password: "pass", turnstileToken: "test-token" });
     });
     expect(onUserChange).toHaveBeenCalledTimes(1);
     expect(onUserChange).toHaveBeenCalledWith(null, "u1");
@@ -579,7 +589,11 @@ describe("session state", () => {
 
     // Reauthenticate while that poll is still in flight.
     await act(async () => {
-      await current().reauthenticate({ email: "user@example.com", password: "pw" });
+      await current().reauthenticate({
+        email: "user@example.com",
+        password: "pw",
+        turnstileToken: "test-token",
+      });
     });
     expect(current().sessionState).toBe("active");
     expect(current().session?.id).toBe("s2");
@@ -967,7 +981,11 @@ describe("reauthentication", () => {
     await waitFor(() => expect(current().sessionState).toBe("expired"));
 
     await act(async () => {
-      await current().reauthenticate({ email: "user@example.com", password: "pw" });
+      await current().reauthenticate({
+        email: "user@example.com",
+        password: "pw",
+        turnstileToken: "test-token",
+      });
     });
 
     expect(current().sessionState).toBe("active");
@@ -995,7 +1013,11 @@ describe("reauthentication", () => {
     await waitFor(() => expect(current().sessionState).toBe("expired"));
 
     await act(async () => {
-      await current().completeReauthMfa({ challengeId: "c1", code: "123456" });
+      await current().completeReauthMfa({
+        challengeId: "c1",
+        code: "123456",
+        turnstileToken: "test-token",
+      });
     });
 
     expect(current().sessionState).toBe("active");
@@ -1026,7 +1048,11 @@ describe("reauthentication", () => {
     let caught: unknown;
     await act(async () => {
       try {
-        await current().reauthenticate({ email: "user@example.com", password: "pw" });
+        await current().reauthenticate({
+          email: "user@example.com",
+          password: "pw",
+          turnstileToken: "test-token",
+        });
       } catch (error) {
         caught = error;
       }
@@ -1064,7 +1090,11 @@ describe("reauthentication", () => {
     await waitFor(() => expect(current().sessionState).toBe("expired"));
 
     await act(async () => {
-      await current().reauthenticate({ email: "user@example.com", password: "pw" });
+      await current().reauthenticate({
+        email: "user@example.com",
+        password: "pw",
+        turnstileToken: "test-token",
+      });
     });
     expect(current().sessionState).toBe("active");
 
@@ -1105,7 +1135,11 @@ describe("reauthentication", () => {
 
     // 2. Reauthenticate successfully — sessionState returns to "active".
     await act(async () => {
-      await current().reauthenticate({ email: "user@example.com", password: "pw" });
+      await current().reauthenticate({
+        email: "user@example.com",
+        password: "pw",
+        turnstileToken: "test-token",
+      });
     });
     expect(current().sessionState).toBe("active");
 
@@ -1143,7 +1177,11 @@ describe("reauthentication", () => {
     let caught: unknown;
     await act(async () => {
       try {
-        await current().completeReauthMfa({ challengeId: "c1", code: "000000" });
+        await current().completeReauthMfa({
+          challengeId: "c1",
+          code: "000000",
+          turnstileToken: "test-token",
+        });
       } catch (error) {
         caught = error;
       }

@@ -57,6 +57,33 @@ describe("describeAuthError", () => {
     );
   });
 
+  it("maps a rejected Turnstile token", () => {
+    const error = new ApiError("Rejected", { code: "invalid_turnstile_token", status: 403 });
+    expect(describeAuthError(error)).toBe(
+      "Não foi possível verificar que você é humano. Tente novamente.",
+    );
+  });
+
+  it("maps an unreachable siteverify", () => {
+    const error = new ApiError("Unreachable", {
+      code: "turnstile_verification_failed",
+      status: 502,
+    });
+    expect(describeAuthError(error)).toBe(
+      "Não foi possível concluir a verificação. Tente novamente.",
+    );
+  });
+
+  it("maps a missing Turnstile secret", () => {
+    const error = new ApiError("Unconfigured", {
+      code: "turnstile_not_configured",
+      status: 500,
+    });
+    expect(describeAuthError(error)).toBe(
+      "Verificação de segurança não configurada neste ambiente.",
+    );
+  });
+
   it("uses the provided fallback for an unknown error", () => {
     const error = new ApiError("odd", { code: "weird_thing", status: 500 });
     expect(describeAuthError(error, "Código inválido.")).toBe("Código inválido.");

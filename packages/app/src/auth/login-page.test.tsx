@@ -1,13 +1,15 @@
 import "@testing-library/jest-dom/vitest";
 
 import { ThemeProvider } from "@cdorneles/theme";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-const { pushMock, replaceMock, oneTapProps } = vi.hoisted(() => ({
+const { pushMock, replaceMock, oneTapProps, loginMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   replaceMock: vi.fn(),
+  loginMock: vi.fn(),
   oneTapProps: {
     current: null as null | {
       buttonText?: string;
@@ -21,7 +23,7 @@ const { pushMock, replaceMock, oneTapProps } = vi.hoisted(() => ({
 
 vi.mock("@cdorneles/auth", () => ({
   useAuth: () => ({
-    login: vi.fn(),
+    login: loginMock,
     status: "anonymous",
   }),
   useRedirectIfAuthenticated: () => true,
@@ -60,7 +62,9 @@ describe("LoginPage", () => {
   beforeEach(() => {
     localStorage.clear();
     oneTapProps.current = null;
+    loginMock.mockReset().mockResolvedValue(undefined);
     vi.clearAllMocks();
+    loginMock.mockResolvedValue(undefined);
     vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "client-id.apps.googleusercontent.com");
     window.history.replaceState({}, "", "/login");
   });
@@ -203,5 +207,37 @@ describe("LoginPage", () => {
 
     expect(oneTapProps.current).toBeNull();
     expect(screen.queryByText("OU CONTINUE COM")).not.toBeInTheDocument();
+  });
+
+  it("logs in with the turnstile token minted by the widget", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText("E-mail"), "user@example.com");
+    await user.type(screen.getByLabelText("Senha"), "secret");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() =>
+      expect(loginMock).toHaveBeenCalledWith({
+        email: "user@example.com",
+        password: "secret",
+        turnstileToken: "test-token",
+      }),
+    );
+  });
+
+  it("shows the configuration message and skips login without a site key", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText("E-mail"), "user@example.com");
+    await user.type(screen.getByLabelText("Senha"), "secret");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(
+      await screen.findByText("Verificação de segurança não configurada neste ambiente."),
+    ).toBeInTheDocument();
+    expect(loginMock).not.toHaveBeenCalled();
   });
 });

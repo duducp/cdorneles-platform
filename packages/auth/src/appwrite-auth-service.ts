@@ -28,9 +28,18 @@ export function createAppwriteAuthService(
 ): AuthService {
   return {
     async login(input) {
+      if (!functionsApi) {
+        // The public-auth gate enforces Turnstile; without the functions
+        // service there is no path to a session. Fail loudly.
+        throw new Error("Public authentication is not available in this environment.");
+      }
       try {
-        const session = await accountApi.createEmailPasswordSession(input);
-        return mapSession(session);
+        const credentials = await functionsApi.publicLogin({
+          email: input.email,
+          password: input.password,
+          turnstileToken: input.turnstileToken,
+        });
+        return mapSession(await accountApi.createSessionFromToken(credentials));
       } catch (error) {
         if (isApiError(error) && error.code === "user_more_factors_required") {
           throw new MfaRequiredError();
@@ -67,9 +76,13 @@ export function createAppwriteAuthService(
     },
 
     async completeMfa(input) {
-      const session = await accountApi.updateMfaChallenge({
+      if (!functionsApi) {
+        throw new Error("Public authentication is not available in this environment.");
+      }
+      const session = await functionsApi.publicMfaVerify({
         challengeId: input.challengeId,
         otp: input.code,
+        turnstileToken: input.turnstileToken,
       });
       return mapSession(session);
     },
@@ -85,8 +98,14 @@ export function createAppwriteAuthService(
     },
 
     async createMfaChallenge(input) {
-      const challenge = await accountApi.createMfaChallenge({ factor: input.factor });
-      return { challengeId: challenge.$id, factor: input.factor };
+      if (!functionsApi) {
+        throw new Error("Public authentication is not available in this environment.");
+      }
+      const challenge = await functionsApi.publicMfaChallenge({
+        factor: input.factor,
+        turnstileToken: input.turnstileToken,
+      });
+      return { challengeId: challenge.challengeId, factor: input.factor };
     },
 
     async logout(sessionId) {

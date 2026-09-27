@@ -46,9 +46,9 @@ describe("unconfigured auth service", () => {
   it("fails loudly for every operation", async () => {
     const service = createUnconfiguredAuthService();
     await expect(service.getCurrentUser()).rejects.toBeInstanceOf(AuthNotConfiguredError);
-    await expect(service.login({ email: "a@b.com", password: "x" })).rejects.toBeInstanceOf(
-      AuthNotConfiguredError,
-    );
+    await expect(
+      service.login({ email: "a@b.com", password: "x", turnstileToken: "test-token" }),
+    ).rejects.toBeInstanceOf(AuthNotConfiguredError);
   });
 });
 
@@ -59,7 +59,13 @@ describe("AuthProvider", () => {
       <div>
         <span data-testid="status">{status}</span>
         <span data-testid="email">{currentUser?.email ?? "none"}</span>
-        <button onClick={() => void login({ email: "a@b.com", password: "secret" })}>login</button>
+        <button
+          onClick={() =>
+            void login({ email: "a@b.com", password: "secret", turnstileToken: "test-token" })
+          }
+        >
+          login
+        </button>
         <button onClick={() => void logout()}>logout</button>
       </div>
     );
