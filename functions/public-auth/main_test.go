@@ -59,6 +59,18 @@ type fakeOps struct {
 	tokenUserID string
 	deleteErr   error
 	deleteCalls int
+
+	challengeCalls   int
+	challengeJWT     string
+	challengeFactor  string
+	challengeID      string
+	challengeErr     error
+	verifyCalls      int
+	verifyJWT        string
+	verifyChallengeID string
+	verifyOTP        string
+	session          sessionResponse
+	verifyErr        error
 }
 
 func (f *fakeOps) EmailLogin(email, password string) (loginSession, error) {
@@ -84,6 +96,27 @@ func (f *fakeOps) DeleteSession(session loginSession) error {
 		return f.deleteErr
 	}
 	return nil
+}
+
+func (f *fakeOps) MfaChallenge(jwt, factor string) (string, error) {
+	f.challengeCalls++
+	f.challengeJWT = jwt
+	f.challengeFactor = factor
+	if f.challengeErr != nil {
+		return "", f.challengeErr
+	}
+	return f.challengeID, nil
+}
+
+func (f *fakeOps) MfaVerify(jwt, challengeID, otp string) (sessionResponse, error) {
+	f.verifyCalls++
+	f.verifyJWT = jwt
+	f.verifyChallengeID = challengeID
+	f.verifyOTP = otp
+	if f.verifyErr != nil {
+		return sessionResponse{}, f.verifyErr
+	}
+	return f.session, nil
 }
 
 func TestRejectsInvalidJSON(t *testing.T) {
@@ -173,6 +206,81 @@ func TestLoginValidatesInput(t *testing.T) {
 	stubTurnstile(t, nil)
 	resp := handle(newContext(`{"action":"login","turnstileToken":"tok","email":"a@b.com"}`), &fakeOps{}, "s")
 	assertError(t, resp, 400, "bad_request", "email and password are required")
+}
+
+func TestMfaChallengeRequiresJWT(t *testing.T) {
+	stubTurnstile(t, nil)
+	resp := handle(newContext(`{"action":"mfaChallenge","turnstileToken":"tok","factor":"totp"}`), &fakeOps{}, "s")
+	assertError(t, resp, 401, "user_unauthorized", "an active session is required")
+}
+
+func TestMfaChallengeRejectsInvalidFactor(t *testing.T) {
+	stubTurnstile(t, nil)
+	ctx := newContext(`{"action":"mfaChallenge","turnstileToken":"tok","factor":"sms"}`)
+	ctx.Req.Headers["x-appwrite-user-jwt"] = "jwt-1"
+	resp := handle(ctx, &fakeOps{}, "s")
+	assertError(t, resp, 400, "bad_request", "factor must be email or totp")
+}
+
+func TestMfaChallengeCreatesChallengeWithCallerJWT(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{challengeID: "c1"}
+	ctx := newContext(`{"action":"mfaChallenge","turnstileToken":"tok","factor":"totp"}`)
+	ctx.Req.Headers["x-appwrite-user-jwt"] = "jwt-1"
+	resp := handle(ctx, ops, "s")
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d (%s)", resp.StatusCode, resp.Body)
+	}
+	var out challengeResponse
+	_ = json.Unmarshal(resp.Body, &out)
+	if out.ChallengeID != "c1" {
+		t.Fatalf("response = %+v", out)
+	}
+	if ops.challengeJWT != "jwt-1" || ops.challengeFactor != "totp" {
+		t.Fatalf("ops = %+v", ops)
+	}
+}
+
+func TestMfaVerifySubmitsOTPAndUpgradesSession(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{session: sessionResponse{ID: "s1", UserID: "u1", Expire: "2026-09-28T00:00:00.000+00:00"}}
+	ctx := newContext(`{"action":"mfaVerify","turnstileToken":"tok","challengeId":"c1","otp":"123456"}`)
+	ctx.Req.Headers["x-appwrite-user-jwt"] = "jwt-1"
+	resp := handle(ctx, ops, "s")
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d (%s)", resp.StatusCode, resp.Body)
+	}
+	var out sessionResponse
+	_ = json.Unmarshal(resp.Body, &out)
+	if out.ID != "s1" || out.UserID != "u1" {
+		t.Fatalf("response = %+v", out)
+	}
+	if ops.verifyJWT != "jwt-1" || ops.verifyChallengeID != "c1" || ops.verifyOTP != "123456" {
+		t.Fatalf("ops = %+v", ops)
+	}
+}
+
+func TestMfaVerifyRequiresOTP(t *testing.T) {
+	stubTurnstile(t, nil)
+	ctx := newContext(`{"action":"mfaVerify","turnstileToken":"tok","challengeId":"c1","otp":"  "}`)
+	ctx.Req.Headers["x-appwrite-user-jwt"] = "jwt-1"
+	resp := handle(ctx, &fakeOps{}, "s")
+	assertError(t, resp, 400, "bad_request", "challengeId and otp are required")
+}
+
+func TestMfaVerifyRequiresJWT(t *testing.T) {
+	stubTurnstile(t, nil)
+	resp := handle(newContext(`{"action":"mfaVerify","turnstileToken":"tok","challengeId":"c1","otp":"123456"}`), &fakeOps{}, "s")
+	assertError(t, resp, 401, "user_unauthorized", "an active session is required")
+}
+
+func TestMfaUpstreamErrorPassesTypeThrough(t *testing.T) {
+	stubTurnstile(t, nil)
+	ops := &fakeOps{verifyErr: &appwriteError{status: 401, code: "user_unauthorized", message: "challenge mismatch"}}
+	ctx := newContext(`{"action":"mfaVerify","turnstileToken":"tok","challengeId":"c1","otp":"000000"}`)
+	ctx.Req.Headers["x-appwrite-user-jwt"] = "jwt-1"
+	resp := handle(ctx, ops, "s")
+	assertError(t, resp, 401, "user_unauthorized", "challenge mismatch")
 }
 
 func TestLoginKeepsRunningWhenTempSessionDeleteFails(t *testing.T) {

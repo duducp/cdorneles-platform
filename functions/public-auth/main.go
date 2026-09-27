@@ -55,6 +55,8 @@ type operations interface {
 	EmailLogin(email, password string) (loginSession, error)
 	CreateLoginToken(userID string) (tokenPair, error)
 	DeleteSession(session loginSession) error
+	MfaChallenge(jwt, factor string) (string, error)
+	MfaVerify(jwt, challengeID, otp string) (sessionResponse, error)
 }
 
 // loginResponse carries the credentials the browser exchanges for a session.
@@ -114,6 +116,9 @@ func handle(ctx openruntimes.Context, ops operations, secret string) openruntime
 			return errorBody(ctx, http.StatusBadGateway, errTurnstileUnavailable, "turnstile siteverify unreachable")
 		}
 	}
+	// mfaJWT is the caller session JWT Appwrite injects into every execution
+	// of an authenticated caller.
+	jwt := strings.TrimSpace(ctx.Req.Headers["x-appwrite-user-jwt"])
 	switch body.Action {
 	case actionLogin:
 		if strings.TrimSpace(body.Email) == "" || body.Password == "" {
@@ -141,6 +146,30 @@ func handle(ctx openruntimes.Context, ops operations, secret string) openruntime
 			userID = session.UserID
 		}
 		return ctx.Res.Json(loginResponse{UserID: userID, Secret: token.Secret})
+	case actionMfaChallenge:
+		if body.Factor != "email" && body.Factor != "totp" {
+			return httpx.BadRequest(ctx, "factor must be email or totp")
+		}
+		if jwt == "" {
+			return errorBody(ctx, http.StatusUnauthorized, "user_unauthorized", "an active session is required")
+		}
+		challengeID, err := ops.MfaChallenge(jwt, body.Factor)
+		if err != nil {
+			return opsError(ctx, err)
+		}
+		return ctx.Res.Json(challengeResponse{ChallengeID: challengeID})
+	case actionMfaVerify:
+		if body.ChallengeID == "" || strings.TrimSpace(body.OTP) == "" {
+			return httpx.BadRequest(ctx, "challengeId and otp are required")
+		}
+		if jwt == "" {
+			return errorBody(ctx, http.StatusUnauthorized, "user_unauthorized", "an active session is required")
+		}
+		session, err := ops.MfaVerify(jwt, body.ChallengeID, body.OTP)
+		if err != nil {
+			return opsError(ctx, err)
+		}
+		return ctx.Res.Json(session)
 	default:
 		return httpx.BadRequest(ctx, "unknown action")
 	}

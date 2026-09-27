@@ -34,6 +34,19 @@ func newAppwriteOps(apiKey string) *appwriteOps {
 	}
 }
 
+// challengeResponse is the created MFA challenge.
+type challengeResponse struct {
+	ChallengeID string `json:"challengeId"`
+}
+
+// sessionResponse is the verified session; the browser session is the same
+// document, updated in place.
+type sessionResponse struct {
+	ID     string `json:"$id"`
+	UserID string `json:"userId"`
+	Expire string `json:"expire"`
+}
+
 // loginSession is the subset of an Appwrite session the login flow needs.
 // cookie is the raw "name=value" pair from Set-Cookie, used only to delete
 // the temporary session before responding.
@@ -171,4 +184,51 @@ func sessionCookie(setCookies []string, project string) string {
 		}
 	}
 	return ""
+}
+
+// MfaChallenge creates an MFA challenge as the caller's session.
+func (o *appwriteOps) MfaChallenge(jwt, factor string) (string, error) {
+	payload, err := json.Marshal(map[string]string{"factor": factor})
+	if err != nil {
+		return "", err
+	}
+	resp, body, err := o.doJSON(http.MethodPost, "/account/mfa/challenges",
+		map[string]string{"X-Appwrite-JWT": jwt}, payload)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode >= 400 {
+		return "", newAppwriteError(resp.StatusCode, body)
+	}
+	var challenge struct {
+		ID string `json:"$id"`
+	}
+	if err := json.Unmarshal(body, &challenge); err != nil {
+		return "", err
+	}
+	if challenge.ID == "" {
+		return "", fmt.Errorf("mfa challenge response missing id")
+	}
+	return challenge.ID, nil
+}
+
+// MfaVerify submits the OTP; success upgrades the caller's own session.
+func (o *appwriteOps) MfaVerify(jwt, challengeID, otp string) (sessionResponse, error) {
+	payload, err := json.Marshal(map[string]string{"challengeId": challengeID, "otp": otp})
+	if err != nil {
+		return sessionResponse{}, err
+	}
+	resp, body, err := o.doJSON(http.MethodPut, "/account/mfa/challenges",
+		map[string]string{"X-Appwrite-JWT": jwt}, payload)
+	if err != nil {
+		return sessionResponse{}, err
+	}
+	if resp.StatusCode >= 400 {
+		return sessionResponse{}, newAppwriteError(resp.StatusCode, body)
+	}
+	var session sessionResponse
+	if err := json.Unmarshal(body, &session); err != nil {
+		return sessionResponse{}, err
+	}
+	return session, nil
 }
