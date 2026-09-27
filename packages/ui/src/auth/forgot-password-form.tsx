@@ -94,8 +94,6 @@ export function ForgotPasswordForm({ onSubmit, initialEmail = "" }: ForgotPasswo
           autoComplete="email"
           required
           leftSection={<MailIcon size={16} aria-hidden />}
-          aria-invalid={form.errors.email ? true : undefined}
-          aria-describedby={form.errors.email ? "forgot-password-form-error" : undefined}
           {...form.getInputProps("email")}
         />
 

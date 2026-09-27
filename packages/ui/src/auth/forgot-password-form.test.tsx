@@ -83,6 +83,20 @@ describe("ForgotPasswordForm", () => {
     expect(screen.getByLabelText(/^e-mail/i)).toHaveFocus();
   });
 
+  it("links the email input to its field error for assistive tech", async () => {
+    const user = userEvent.setup();
+    renderForm({ onSubmit: vi.fn() });
+
+    await user.click(screen.getByRole("button", { name: /enviar link/i }));
+
+    const email = screen.getByLabelText(/^e-mail/i);
+    expect(email).toHaveAttribute("aria-invalid", "true");
+    const describedBy = email.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const errorEl = document.getElementById(describedBy as string);
+    expect(errorEl).toHaveTextContent(/e-mail válido/i);
+  });
+
   it("points the form element at the alert while a submit error shows", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));

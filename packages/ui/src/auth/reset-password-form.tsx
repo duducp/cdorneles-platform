@@ -92,8 +92,6 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           leftSection={<LockIcon size={16} aria-hidden />}
           visibilityToggleFocusable
           visibilityToggleButtonProps={{ "aria-label": "Alternar visibilidade da senha" }}
-          aria-invalid={form.errors.password ? true : undefined}
-          aria-describedby={form.errors.password ? "reset-password-form-error" : undefined}
           {...form.getInputProps("password")}
         />
 
@@ -107,10 +105,6 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
           visibilityToggleButtonProps={{
             "aria-label": "Alternar visibilidade da confirmação de senha",
           }}
-          aria-invalid={form.errors.passwordConfirmation ? true : undefined}
-          aria-describedby={
-            form.errors.passwordConfirmation ? "reset-password-form-error" : undefined
-          }
           {...form.getInputProps("passwordConfirmation")}
         />
 
