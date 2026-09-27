@@ -101,6 +101,8 @@ describe("ResetPasswordForm", () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));
     const { container } = renderForm({ onSubmit });
 
+    expect(container.querySelector("form")).not.toHaveAttribute("aria-describedby");
+
     await user.type(screen.getByLabelText(/^nova senha/i), "senha1234");
     await user.type(screen.getByLabelText(/^confirmar nova senha/i), "senha1234");
     await user.click(screen.getByRole("button", { name: /redefinir senha/i }));

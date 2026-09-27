@@ -79,6 +79,8 @@ describe("ForgotPasswordForm", () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));
     const { container } = renderForm({ onSubmit });
 
+    expect(container.querySelector("form")).not.toHaveAttribute("aria-describedby");
+
     await user.type(screen.getByLabelText(/^e-mail/i), "a@b.co");
     await user.click(screen.getByRole("button", { name: /enviar link/i }));
 

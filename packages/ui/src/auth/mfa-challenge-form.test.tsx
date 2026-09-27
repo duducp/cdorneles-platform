@@ -251,6 +251,8 @@ describe("MfaChallengeForm", () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error("Erro simulado."));
     const { container } = renderForm({ onSubmit });
 
+    expect(container.querySelector("form")).not.toHaveAttribute("aria-describedby");
+
     // The sixth digit auto-submits, so no explicit button click is needed.
     await typeCode(user, "123456");
 
