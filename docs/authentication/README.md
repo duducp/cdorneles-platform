@@ -160,6 +160,18 @@ quando a análise de risco do Cloudflare exige interação do usuário; no fluxo
 comum ele permanece invisível. O widget type (Managed/Invisible/etc.) continua
 sendo escolhido no dashboard da Cloudflare por site key.
 
+### Sessão pendente ausente em /mfa
+
+O login de uma conta MFA entrega ao browser uma **sessão pendente** (um fator),
+que o `/mfa` usa para listar fatores e criar o desafio. Se ela não estiver lá
+( cookie limpo, sessão expirada ou revogada, `/mfa` aberto direto), o bootstrap
+da página responde 401. Nesse caso a página **não** mostra um beco sem saída:
+faz logout, limpa o estado e redireciona para
+`/login?notice=session-expired&redirect=<path>`; o login anuncia o motivo no
+`FormError` do formulário ("Sessão não encontrada. Faça login novamente para
+iniciar a verificação em duas etapas."). O `redirect` preserva o destino
+depois do novo login (mesma validação do `resolvePostAuthRedirect`).
+
 ### Tokens single-use
 
 Cada token do Turnstile é single-use e expira em 300s. A tela é dona de **um**

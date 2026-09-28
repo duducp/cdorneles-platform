@@ -42,6 +42,16 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
   const [factor, setFactor] = useState<"email" | "totp">("email");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // A bootstrap 401 means the pending-MFA session is gone — there is no flow
+  // to recover on this page, so the effect hands off to the login screen.
+  const sessionExpired = useCallback(() => {
+    void logout()
+      .catch(() => undefined)
+      .finally(() => {
+        const redirect = encodeURIComponent(resolvePostAuthRedirect(window.location.search));
+        window.location.href = `/login?notice=session-expired&redirect=${redirect}`;
+      });
+  }, [logout]);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,9 +76,8 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
         } else if (err instanceof TurnstileError) {
           setError(err.message);
         } else if (isApiError(err) && isUnauthorized(err)) {
-          setError(
-            "Sessão não encontrada. Faça login novamente para iniciar a verificação em duas etapas.",
-          );
+          sessionExpired();
+          return;
         } else {
           setError("Erro ao iniciar desafio MFA.");
         }
@@ -80,7 +89,7 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [service, turnstile]);
+  }, [service, turnstile, sessionExpired]);
 
   // Page-level `error` is reserved for bootstrap failures, which replace the
   // form entirely. Submit/resend failures must rethrow so MfaChallengeForm

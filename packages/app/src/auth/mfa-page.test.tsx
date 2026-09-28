@@ -18,6 +18,11 @@ vi.mock("@cdorneles/auth", () => ({
   describeAuthError: (error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback,
   AuthNotConfiguredError: class AuthNotConfiguredError extends Error {},
+  isUnauthorized: (error: unknown) =>
+    !!error &&
+    typeof error === "object" &&
+    "status" in error &&
+    (error as { status?: number }).status === 401,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -182,6 +187,30 @@ describe("MfaPage", () => {
         turnstileToken: "test-token",
       }),
     );
+  });
+
+  it("redirects to /login with a session-expired notice when the bootstrap 401s", async () => {
+    // The pending-MFA session is gone (or was never handed over): the MFA flow
+    // cannot proceed, so the page must sign out and return the visitor to the
+    // login screen instead of showing a dead end.
+    const ApiErrorCtor = (await import("@cdorneles/api-client")).ApiError;
+    listMfaFactors.mockRejectedValue(
+      new ApiErrorCtor("More factors are required", {
+        code: "user_more_factors_required",
+        status: 401,
+      }),
+    );
+    render(
+      <ThemeProvider>
+        <MfaPage />
+      </ThemeProvider>,
+    );
+
+    await waitFor(() => {
+      expect(window.location.href).toBe("/login?notice=session-expired&redirect=%2Fdashboard");
+    });
+    expect(logout).toHaveBeenCalledTimes(1);
+    expect(completeMfa).not.toHaveBeenCalled();
   });
 
   it("shows the Turnstile bootstrap failure and keeps the cancel path", async () => {

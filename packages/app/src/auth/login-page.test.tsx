@@ -226,6 +226,15 @@ describe("LoginPage", () => {
     );
   });
 
+  it("announces the MFA session-expired notice carried by the /mfa redirect", async () => {
+    window.history.replaceState({}, "", "/login?notice=session-expired");
+    renderPage();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Fa\u00e7a login novamente para iniciar a verifica\u00e7\u00e3o em duas etapas/i,
+    );
+  });
+
   it("shows the configuration message and skips login without a site key", async () => {
     vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
     const user = userEvent.setup();

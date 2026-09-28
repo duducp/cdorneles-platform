@@ -20,6 +20,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const LAST_METHOD_KEY = "cdorneles-last-login-method";
 type LoginMethod = "email" | "google";
 
+/**
+ * Notices the auth screens forward as query params. The MFA page redirects
+ * here with `?notice=session-expired` when its bootstrap finds no pending-MFA
+ * session, so the reason is announced on the login form instead of dying on a
+ * dead-end screen. Read after hydration: the auth routes are prerendered, so
+ * touching `window.location` during render would mismatch the server output.
+ */
+const NOTICES = {
+  "session-expired":
+    "Sessão não encontrada. Faça login novamente para iniciar a verificação em duas etapas.",
+} as const;
+
+type NoticeKey = keyof typeof NOTICES;
+
+function readNotice(search: string): string | null {
+  const key = new URLSearchParams(search).get("notice");
+  if (!key || !(key in NOTICES)) return null;
+  return NOTICES[key as NoticeKey];
+}
+
 export interface LoginPageProps {
   /**
    * Send an already-authenticated visitor to the app instead of showing the
@@ -46,9 +66,11 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   // prerendered, so touching localStorage during render would mismatch the
   // server's neutral heading.
   const [lastMethod, setLastMethod] = useState<LoginMethod | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     const stored = localStorage.getItem(LAST_METHOD_KEY);
     setLastMethod(stored === "email" || stored === "google" ? stored : null);
+    setNotice(readNotice(window.location.search));
   }, []);
   const enableSignUp = process.env.NEXT_PUBLIC_ENABLE_SIGN_UP === "true";
   // One Tap only runs with a configured client id, and only for confirmed
@@ -156,7 +178,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
               <LoginForm
                 onSubmit={handleSubmit}
                 loading={loading}
-                error={error}
+                error={error ?? notice}
                 showSignUp={enableSignUp}
                 heading={heading}
                 captchaSlot={<Turnstile ref={turnstile.handleRef} />}
