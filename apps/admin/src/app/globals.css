@@ -39,3 +39,15 @@ html[data-mantine-color-scheme="light"] body::before {
   background-color: transparent !important;
   color-scheme: inherit;
 }
+
+/* Below Mantine's md (767.98px, same as the base breakpoint max): the auth
+   card goes full-bleed — body background flows edge to edge, no card chrome.
+   The Mantine Paper class is hashed and injected at runtime, so specificity
+   alone cannot win against it: the !important is intentional. */
+@media (max-width: 767.98px) {
+  [data-auth-card] {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
