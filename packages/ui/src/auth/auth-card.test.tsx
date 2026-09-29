@@ -81,7 +81,7 @@ describe("AuthCard", () => {
     const classNames = (panel?.className ?? "").split(/\s+/).filter(Boolean);
     const rules = styleSheetTexts().filter((text) => classNames.some((cls) => text.includes(cls)));
     const joined = rules.join("\n");
-    expect(joined).toContain("padding: var(--mantine-spacing-md)");
+    expect(joined).toContain("padding: 0rem");
     expect(joined).toContain("@media (min-width: 48em)");
     expect(joined).toContain("padding: var(--mantine-spacing-xl)");
   });

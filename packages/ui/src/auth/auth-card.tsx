@@ -37,13 +37,7 @@ export function AuthCard({ form, visual, loading }: AuthCardProps) {
         inert={loading || undefined}
         aria-busy={loading || undefined}
       >
-        <Flex
-          direction="column"
-          justify="center"
-          p={{ base: "md", md: "xl" }}
-          flex="1.05 1 0"
-          miw={0}
-        >
+        <Flex direction="column" justify="center" p={{ base: 0, md: "xl" }} flex="1.05 1 0" miw={0}>
           {form}
         </Flex>
         {visual ? (
