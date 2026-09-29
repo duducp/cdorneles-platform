@@ -6,6 +6,12 @@ import { describe, expect, it } from "vitest";
 
 import { AuthScreen, type AuthScreenProps } from "./auth-screen";
 
+function styleSheetTexts(): string[] {
+  return Array.from(document.styleSheets).flatMap((sheet) =>
+    Array.from(sheet.cssRules ?? []).map((rule) => rule.cssText ?? ""),
+  );
+}
+
 function renderAuthScreen(props: Partial<AuthScreenProps> = {}) {
   return render(
     <ThemeProvider>
@@ -34,6 +40,24 @@ describe("AuthScreen", () => {
     const main = container.querySelector("main");
     expect(main?.getAttribute("style") ?? "").toContain("flex");
     expect(main?.getAttribute("style") ?? "").toContain("padding");
+  });
+
+  it("aligns main responsively and pins the footer below md", () => {
+    const { container } = renderAuthScreen();
+
+    const main = container.querySelector("main");
+    expect(main).not.toBeNull();
+    const mainClasses = (main?.className ?? "").split(/\s+/).filter(Boolean);
+    const mainRules = styleSheetTexts()
+      .filter((text) => mainClasses.some((cls) => text.includes(cls)))
+      .join("\n");
+    expect(mainRules).toContain("align-items: stretch");
+    expect(mainRules).toContain("@media (min-width: 48em)");
+    expect(mainRules).toContain("align-items: center");
+
+    const stack = main?.querySelector(":scope > div");
+    expect(stack).not.toBeNull();
+    expect((stack as HTMLElement).style.getPropertyValue("--stack-justify")).toBe("space-between");
   });
 
   it("renders the form slot inside the card, and the visual only when provided", () => {
