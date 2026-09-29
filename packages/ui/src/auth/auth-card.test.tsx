@@ -6,6 +6,12 @@ import { describe, expect, it } from "vitest";
 
 import { AuthCard } from "./auth-card";
 
+function styleSheetTexts(): string[] {
+  return Array.from(document.styleSheets).flatMap((sheet) =>
+    Array.from(sheet.cssRules ?? []).map((rule) => rule.cssText ?? ""),
+  );
+}
+
 describe("AuthCard", () => {
   it("renders the form and the visual panel", () => {
     render(
@@ -60,7 +66,7 @@ describe("AuthCard", () => {
     expect(screen.queryByText("Entrando…")).not.toBeInTheDocument();
   });
 
-  it("owns the form panel padding so slots pass content only", () => {
+  it("owns the form panel padding responsively", () => {
     render(
       <ThemeProvider>
         <AuthCard form={<span>form-slot</span>} />
@@ -68,6 +74,43 @@ describe("AuthCard", () => {
     );
 
     const panel = screen.getByText("form-slot").parentElement;
-    expect(panel?.getAttribute("style")).toContain("padding");
+    expect(panel).not.toBeNull();
+    // Responsive style props emit classes — never inline padding.
+    expect(panel?.getAttribute("style") ?? "").not.toContain("padding");
+
+    const classNames = (panel?.className ?? "").split(/\s+/).filter(Boolean);
+    const rules = styleSheetTexts().filter((text) => classNames.some((cls) => text.includes(cls)));
+    const joined = rules.join("\n");
+    expect(joined).toContain("padding: var(--mantine-spacing-md)");
+    expect(joined).toContain("@media (min-width: 48em)");
+    expect(joined).toContain("padding: var(--mantine-spacing-xl)");
+  });
+
+  it("keeps the wrapper minHeight at auto below md", () => {
+    render(
+      <ThemeProvider>
+        <AuthCard form={<span>form-slot</span>} />
+      </ThemeProvider>,
+    );
+
+    const wrapper = screen.getByText("form-slot").parentElement?.parentElement;
+    expect(wrapper).not.toBeNull();
+    const classNames = (wrapper?.className ?? "").split(/\s+/).filter(Boolean);
+    const joined = styleSheetTexts()
+      .filter((text) => classNames.some((cls) => text.includes(cls)))
+      .join("\n");
+    expect(joined).toContain("min-height: auto");
+    expect(joined).toContain("@media (min-width: 48em)");
+    expect(joined).toContain("min-height: calc(35rem");
+  });
+
+  it("marks the root with data-auth-card for the full-bleed media query", () => {
+    render(
+      <ThemeProvider>
+        <AuthCard form={<span>form-slot</span>} />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText("form-slot").closest("[data-auth-card]")).not.toBeNull();
   });
 });
