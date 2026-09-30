@@ -38,7 +38,7 @@ describe("AuthScreen", () => {
     const { container } = renderAuthScreen();
 
     const main = container.querySelector("main");
-    expect(main?.getAttribute("style") ?? "").toContain("flex");
+    expect(main?.getAttribute("style") ?? "").toContain("flex: 1 1 0%");
     expect(main?.getAttribute("style") ?? "").toContain("padding");
   });
 

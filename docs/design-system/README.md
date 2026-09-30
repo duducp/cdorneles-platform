@@ -36,12 +36,14 @@ page.
   to "session missing/expired — log in again"; keep a generic fallback only for
   unknown errors. Never collapse an error into an unrelated generic message,
   and always give the user a next step (e.g. a link back to `/login`).
-- **`AuthCard` owns the form panel padding** (`p={{ base: "md", md: "xl" }}`).
+- **`AuthCard` owns the form panel padding** (`p={{ base: 0, md: "xl" }}`) —
+  below `md` the padding is 0 and `<main>`'s 16px is the single gutter.
   Slots pass content only — do not add padding to form components or to
   page-level wrappers inside the card.
 - **Public auth pages compose `AuthScreen`** (`packages/ui/src/auth/auth-screen.tsx`)
   instead of hand-rolling the shell: it renders the outer column, `ThemeToggle`
-  header, centered `main`, optional `announcement` (`VisuallyHidden aria-live="polite"`),
+  header, `main` (full-height stretch below `md`, centered at `md`+),
+  optional `announcement` (`VisuallyHidden aria-live="polite"`),
   and the `Logo`/`AppVersion` footer around an `AuthCard`. It accepts
   `{ form, visual?, loading?, announcement?, suspense? }`; pass `suspense` when
   the form itself is wrapped in `Suspense` (e.g. `useSearchParams` consumers).
