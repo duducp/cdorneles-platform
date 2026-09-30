@@ -104,4 +104,22 @@ describe("AuthScreen", () => {
 
     expect(screen.getByText("form-slot")).toBeInTheDocument();
   });
+
+  it("shows the Turnstile protection notice when the site key is configured", () => {
+    renderAuthScreen();
+
+    expect(screen.getByText("Protegido pelo Cloudflare Turnstile")).toBeInTheDocument();
+  });
+
+  it("omits the Turnstile notice when the site key is not configured", () => {
+    const original = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+    try {
+      renderAuthScreen();
+      expect(screen.queryByText("Protegido pelo Cloudflare Turnstile")).not.toBeInTheDocument();
+    } finally {
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = original;
+    }
+  });
 });

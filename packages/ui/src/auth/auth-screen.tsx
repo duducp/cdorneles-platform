@@ -1,6 +1,6 @@
 "use client";
 
-import { Flex, Stack, VisuallyHidden } from "@mantine/core";
+import { Flex, Stack, Text, VisuallyHidden } from "@mantine/core";
 import { Suspense, type ReactNode } from "react";
 
 import { AppVersion } from "../components/app-version";
@@ -55,6 +55,11 @@ export function AuthScreen({ form, visual, loading, announcement, suspense }: Au
           <Stack component="footer" align="center" gap="sm">
             <Logo alt="Carlos Dorneles" variant="horizontal" height={32} />
             <AppVersion />
+            {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? (
+              <Text size="xs" c="dimmed">
+                Protegido pelo Cloudflare Turnstile
+              </Text>
+            ) : null}
           </Stack>
         </Stack>
       </Flex>
