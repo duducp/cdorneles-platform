@@ -9,16 +9,18 @@ import {
   useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
 import {
-  AuthScreen,
+  AuthCard,
+  AuthFooter,
   AuthVisual,
   Button,
   FormError,
   MfaChallengeForm,
+  ThemeToggle,
   Turnstile,
   TurnstileError,
   useTurnstile,
 } from "@cdorneles/ui";
-import { Skeleton, Stack, Text } from "@mantine/core";
+import { Flex, Skeleton, Stack, Text } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -132,35 +134,47 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
   }
 
   return (
-    <AuthScreen
-      visual={<AuthVisual />}
-      form={
-        loading && !error ? (
-          <Stack gap="md">
-            <Skeleton h={36} />
-            <Skeleton h={36} />
-            <Skeleton h={40} />
-            <Turnstile ref={turnstile.handleRef} />
-          </Stack>
-        ) : error ? (
-          <Stack gap="md">
-            <FormError>{error}</FormError>
-            <Text component="h1" fw={600} fz="xl">
-              Verificação em duas etapas
-            </Text>
-            <Button type="button" variant="subtle" fullWidth onClick={handleCancel}>
-              Cancelar
-            </Button>
-          </Stack>
-        ) : (
-          <MfaChallengeForm
-            onSubmit={handleSubmit}
-            onResend={factor === "email" ? handleResend : undefined}
-            onCancel={handleCancel}
-            captchaSlot={<Turnstile ref={turnstile.handleRef} />}
+    <Flex direction="column" mih="100dvh">
+      <Flex justify="flex-end" p="sm">
+        <ThemeToggle />
+      </Flex>
+
+      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
+        <Stack w="100%" maw={920} gap="xl">
+          <AuthCard
+            form={
+              loading && !error ? (
+                <Stack gap="md">
+                  <Skeleton h={36} />
+                  <Skeleton h={36} />
+                  <Skeleton h={40} />
+                  <Turnstile ref={turnstile.handleRef} />
+                </Stack>
+              ) : error ? (
+                <Stack gap="md">
+                  <FormError>{error}</FormError>
+                  <Text component="h1" fw={600} fz="xl">
+                    Verificação em duas etapas
+                  </Text>
+                  <Button type="button" variant="subtle" fullWidth onClick={handleCancel}>
+                    Cancelar
+                  </Button>
+                </Stack>
+              ) : (
+                <MfaChallengeForm
+                  onSubmit={handleSubmit}
+                  onResend={factor === "email" ? handleResend : undefined}
+                  onCancel={handleCancel}
+                  captchaSlot={<Turnstile ref={turnstile.handleRef} />}
+                />
+              )
+            }
+            visual={<AuthVisual />}
           />
-        )
-      }
-    />
+
+          <AuthFooter />
+        </Stack>
+      </Flex>
+    </Flex>
   );
 }

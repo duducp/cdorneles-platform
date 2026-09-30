@@ -1,8 +1,16 @@
 "use client";
 
 import { useAuth, useRedirectIfAuthenticated } from "@cdorneles/auth";
-import { AuthScreen, AuthVisual, ForgotPasswordForm, Turnstile, useTurnstile } from "@cdorneles/ui";
-import { Anchor, Stack } from "@mantine/core";
+import {
+  AuthCard,
+  AuthFooter,
+  AuthVisual,
+  ForgotPasswordForm,
+  ThemeToggle,
+  Turnstile,
+  useTurnstile,
+} from "@cdorneles/ui";
+import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
@@ -42,20 +50,38 @@ export function ForgotPasswordPage({
   }
 
   return (
-    <AuthScreen
-      visual={<AuthVisual />}
-      form={
-        <Stack gap="md">
-          <ForgotPasswordForm
-            onSubmit={handleSubmit}
-            initialEmail={initialEmail}
-            captchaSlot={<Turnstile ref={turnstile.handleRef} />}
+    <Flex direction="column" mih="100dvh">
+      <Flex justify="flex-end" p="sm">
+        <ThemeToggle />
+      </Flex>
+
+      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
+        <Stack w="100%" maw={920} gap="xl">
+          <AuthCard
+            form={
+              <Stack gap="md">
+                <ForgotPasswordForm
+                  onSubmit={handleSubmit}
+                  initialEmail={initialEmail}
+                  captchaSlot={<Turnstile ref={turnstile.handleRef} />}
+                />
+                <Anchor
+                  component={Link}
+                  href="/login"
+                  underline="always"
+                  display="block"
+                  ta="center"
+                >
+                  Voltar para o login
+                </Anchor>
+              </Stack>
+            }
+            visual={<AuthVisual />}
           />
-          <Anchor component={Link} href="/login" underline="always" display="block" ta="center">
-            Voltar para o login
-          </Anchor>
+
+          <AuthFooter />
         </Stack>
-      }
-    />
+      </Flex>
+    </Flex>
   );
 }

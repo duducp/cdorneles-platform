@@ -2,17 +2,19 @@
 
 import { useAuth, useRedirectIfAuthenticated } from "@cdorneles/auth";
 import {
-  AuthScreen,
+  AuthCard,
+  AuthFooter,
   AuthVisual,
   FormError,
   ResetPasswordForm,
+  ThemeToggle,
   Turnstile,
   useTurnstile,
 } from "@cdorneles/ui";
-import { Anchor, Stack } from "@mantine/core";
+import { Anchor, Flex, Stack } from "@mantine/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { Suspense, useCallback } from "react";
 
 function ResetPasswordContent() {
   const { service } = useAuth();
@@ -79,5 +81,21 @@ export function ResetPasswordPage({ redirectWhenAuthenticated = true }: ResetPas
     return null;
   }
 
-  return <AuthScreen form={<ResetPasswordContent />} visual={<AuthVisual />} suspense />;
+  return (
+    <Flex direction="column" mih="100dvh">
+      <Flex justify="flex-end" p="sm">
+        <ThemeToggle />
+      </Flex>
+
+      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
+        <Stack w="100%" maw={920} gap="xl">
+          <Suspense>
+            <AuthCard form={<ResetPasswordContent />} visual={<AuthVisual />} />
+          </Suspense>
+
+          <AuthFooter />
+        </Stack>
+      </Flex>
+    </Flex>
+  );
 }
