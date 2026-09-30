@@ -20,6 +20,7 @@ export interface AuthCardProps {
 export function AuthCard({ form, visual, loading }: AuthCardProps) {
   return (
     <Paper
+      data-auth-card
       w="100%"
       maw={920}
       mx="auto"
@@ -32,11 +33,11 @@ export function AuthCard({ form, visual, loading }: AuthCardProps) {
       <BlockingOverlay visible={loading ?? false} />
       <Flex
         align="stretch"
-        mih={{ base: "auto", sm: 560 }}
+        mih={{ base: "auto", md: 560 }}
         inert={loading || undefined}
         aria-busy={loading || undefined}
       >
-        <Flex direction="column" justify="center" p="xl" flex="1.05 1 0" miw={0}>
+        <Flex direction="column" justify="center" p={{ base: 0, md: "xl" }} flex="1.05 1 0" miw={0}>
           {form}
         </Flex>
         {visual ? (

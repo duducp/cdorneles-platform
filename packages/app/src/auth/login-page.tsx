@@ -9,11 +9,10 @@ import {
   useAuth,
   useRedirectIfAuthenticated,
 } from "@cdorneles/auth";
-import { AppVersion, AuthCard, AuthVisual, LoginForm, Logo, ThemeToggle } from "@cdorneles/ui";
+import { AuthScreen, AuthVisual, LoginForm } from "@cdorneles/ui";
 import { Turnstile, TurnstileError, useTurnstile } from "@cdorneles/ui";
 import { describeOneTapError, GoogleOneTap } from "./google-one-tap";
 import { isGoogleAuthEnabled } from "./google-auth-enabled";
-import { Flex, Stack, VisuallyHidden } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -143,7 +142,7 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
   }
 
   return (
-    <Flex direction="column" mih="100dvh">
+    <>
       {googleEnabled && !!googleClientId ? (
         <GoogleOneTap
           clientId={googleClientId ?? ""}
@@ -166,42 +165,26 @@ export function LoginPage({ redirectWhenAuthenticated = true }: LoginPageProps) 
           onError={handleOneTapError}
         />
       ) : null}
-      <Flex justify="flex-end" p="sm">
-        <ThemeToggle />
-      </Flex>
-
-      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
-        <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
-        <Stack w="100%" maw={920} gap="xl">
-          <AuthCard
-            form={
-              <LoginForm
-                onSubmit={handleSubmit}
-                loading={loading}
-                error={error ?? notice}
-                showSignUp={enableSignUp}
-                heading={heading}
-                captchaSlot={<Turnstile ref={turnstile.handleRef} />}
-                showGoogle={googleEnabled && !!googleClientId && status === "anonymous"}
-                googleSlot={
-                  <div
-                    ref={googleButtonRef}
-                    style={{ display: "flex", justifyContent: "center" }}
-                  />
-                }
-                onForgotPassword={handleForgotPassword}
-              />
+      <AuthScreen
+        announcement={announcement}
+        loading={oneTapLoading}
+        visual={<AuthVisual />}
+        form={
+          <LoginForm
+            onSubmit={handleSubmit}
+            loading={loading}
+            error={error ?? notice}
+            showSignUp={enableSignUp}
+            heading={heading}
+            captchaSlot={<Turnstile ref={turnstile.handleRef} />}
+            showGoogle={googleEnabled && !!googleClientId && status === "anonymous"}
+            googleSlot={
+              <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center" }} />
             }
-            visual={<AuthVisual />}
-            loading={oneTapLoading}
+            onForgotPassword={handleForgotPassword}
           />
-
-          <Stack component="footer" align="center" gap="sm">
-            <Logo alt="Carlos Dorneles" variant="horizontal" height={32} />
-            <AppVersion />
-          </Stack>
-        </Stack>
-      </Flex>
-    </Flex>
+        }
+      />
+    </>
   );
 }

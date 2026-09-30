@@ -1,17 +1,8 @@
 "use client";
 
 import { useAuth, useRedirectIfAuthenticated } from "@cdorneles/auth";
-import {
-  AppVersion,
-  AuthCard,
-  AuthVisual,
-  ForgotPasswordForm,
-  Logo,
-  ThemeToggle,
-  Turnstile,
-  useTurnstile,
-} from "@cdorneles/ui";
-import { Anchor, Flex, Stack } from "@mantine/core";
+import { AuthScreen, AuthVisual, ForgotPasswordForm, Turnstile, useTurnstile } from "@cdorneles/ui";
+import { Anchor, Stack } from "@mantine/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
@@ -51,41 +42,20 @@ export function ForgotPasswordPage({
   }
 
   return (
-    <Flex direction="column" mih="100dvh">
-      <Flex justify="flex-end" p="sm">
-        <ThemeToggle />
-      </Flex>
-
-      <Flex component="main" align="center" justify="center" p="md" style={{ flex: 1 }}>
-        <Stack w="100%" maw={920} gap="xl">
-          <AuthCard
-            form={
-              <Stack gap="md">
-                <ForgotPasswordForm
-                  onSubmit={handleSubmit}
-                  initialEmail={initialEmail}
-                  captchaSlot={<Turnstile ref={turnstile.handleRef} />}
-                />
-                <Anchor
-                  component={Link}
-                  href="/login"
-                  underline="always"
-                  display="block"
-                  ta="center"
-                >
-                  Voltar para o login
-                </Anchor>
-              </Stack>
-            }
-            visual={<AuthVisual />}
+    <AuthScreen
+      visual={<AuthVisual />}
+      form={
+        <Stack gap="md">
+          <ForgotPasswordForm
+            onSubmit={handleSubmit}
+            initialEmail={initialEmail}
+            captchaSlot={<Turnstile ref={turnstile.handleRef} />}
           />
-
-          <Stack component="footer" align="center" gap="sm">
-            <Logo alt="Carlos Dorneles" variant="horizontal" height={32} />
-            <AppVersion />
-          </Stack>
+          <Anchor component={Link} href="/login" underline="always" display="block" ta="center">
+            Voltar para o login
+          </Anchor>
         </Stack>
-      </Flex>
-    </Flex>
+      }
+    />
   );
 }

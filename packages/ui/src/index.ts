@@ -1,4 +1,5 @@
 export * from "./auth/auth-card";
+export * from "./auth/auth-screen";
 export * from "./auth/auth-visual";
 export * from "./auth/forgot-password-form";
 export * from "./auth/login-form";
