@@ -53,6 +53,28 @@ describe("deriveTrail", () => {
     ]);
   });
 
+  it("skips a URL prefix without losing it from the crumb hrefs", () => {
+    expect(
+      deriveTrail(
+        "/p/admin/users",
+        [{ label: "Usuários", href: "/p/admin/users", icon: Home }],
+        [
+          {
+            kind: "group" as const,
+            href: "/p/admin",
+            label: "Administração",
+            icon: Home,
+            items: [],
+          },
+        ],
+        { skipPrefix: "/p" },
+      ),
+    ).toEqual([
+      { label: "Administração", href: "/p/admin" },
+      { label: "Usuários", href: "/p/admin/users" },
+    ]);
+  });
+
   it("prefers the registry label for the matched route", () => {
     const registry = [
       {

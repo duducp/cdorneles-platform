@@ -3,7 +3,7 @@ export { initObservability } from "./observability";
 export { FunctionsApiProvider, useFunctionsApi } from "./functions-api-context";
 export { createProviders } from "./providers";
 export { createShellLayout } from "./shell-layout";
-export { ADMIN_ROUTES, CLIENT_ROUTES } from "./routes";
+export { ADMIN_ROUTES, CLIENT_ROUTES, PORTAL_PREFIX } from "./routes";
 export { SelectOrgPage } from "./select-org-page";
 export { SessionExpiredGate } from "./session-expired-gate";
 export type { ShellNavItem } from "./shell-layout";

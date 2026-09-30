@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { isUnauthorized } from "@cdorneles/api-client";
+import { isApiError, isUnauthorized } from "@cdorneles/api-client";
 
 import { MfaRequiredError } from "./errors";
 import type { SessionSignal } from "./session-signal";
@@ -265,6 +265,14 @@ export function AuthProvider({
       if (isUnauthorized(error)) {
         // The server confirmed the session is gone — treat it exactly like a
         // missing session rather than a transient failure.
+        applySignedOut();
+        return;
+      }
+      if (isApiError(error) && error.status === 403) {
+        // The identity endpoint answered 403: the session cannot be verified,
+        // so this is a sign-out, not a transient failure. Falling through to
+        // the branch below would park the shell on anonymous without ever
+        // navigating, and the org guard would spin on LoadingScreen forever.
         applySignedOut();
         return;
       }

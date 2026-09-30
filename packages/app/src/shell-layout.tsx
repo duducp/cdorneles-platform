@@ -17,6 +17,7 @@ import {
 import { useAccess } from "@cdorneles/ui/permissions";
 
 import { NavPendingIndicator } from "./nav-pending";
+import { PORTAL_PREFIX } from "./portal";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
@@ -98,8 +99,9 @@ export function createShellLayout({
     // Sidebar entries and the breadcrumb trail derive from the registry.
     // `routes` is a module constant, so it is not a hook dependency.
     const navItems = useMemo(() => toNavItems(routes), []);
+    // `routes` is a module constant, so it is not a hook dependency.
     const breadcrumbTrail = useMemo(
-      () => deriveTrail(pathname, navItems, routes),
+      () => deriveTrail(pathname, navItems, routes, { skipPrefix: PORTAL_PREFIX }),
       [pathname, navItems],
     );
     const handleLogout = useCallback(async () => {
@@ -108,7 +110,9 @@ export function createShellLayout({
     }, [logout, router]);
 
     const handleRedirectToSelectOrg = useCallback(() => {
-      router.replace("/select-org");
+      // The picker lives inside the portal (`/p`) but outside this shell, so
+      // the org guard gating the shell cannot loop against it.
+      router.replace(`${PORTAL_PREFIX}/select-org`);
     }, [router]);
 
     const handleSwitchOrganization = useCallback(

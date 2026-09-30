@@ -11,6 +11,8 @@ import { useDisclosure } from "@mantine/hooks";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { PORTAL_PREFIX } from "./portal";
+
 export function SelectOrgPage() {
   const { status, logout } = useAuth();
   const { organizations, currentOrganization, ready, switchOrganization, createOrganization } =
@@ -23,7 +25,7 @@ export function SelectOrgPage() {
     setLoading(true);
     const success = switchOrganization(organizationId);
     if (success) {
-      router.push("/");
+      router.push(PORTAL_PREFIX);
       return;
     }
     setLoading(false);
@@ -33,7 +35,7 @@ export function SelectOrgPage() {
     const organization = await createOrganization(name);
     closeCreate();
     switchOrganization(organization.id);
-    router.push("/");
+    router.push(PORTAL_PREFIX);
   }
 
   function handleLogout() {

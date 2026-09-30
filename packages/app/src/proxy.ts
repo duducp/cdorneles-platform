@@ -1,8 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { PORTAL_PREFIX } from "./portal";
+
 const SESSION_COOKIE = "cdorneles-session";
 
-const protectedPaths = ["/dashboard", "/clients", "/settings", "/billing"];
+/**
+ * Every authenticated route lives under the portal prefix (`/p`), so the gate
+ * is a single subtree. Anything outside it is public by construction.
+ */
+const protectedPaths = [PORTAL_PREFIX];
 
 function matchesProtected(pathname: string): boolean {
   return protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -27,5 +33,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/clients/:path*", "/settings/:path*", "/billing/:path*"],
+  matcher: ["/p/:path*"],
 };

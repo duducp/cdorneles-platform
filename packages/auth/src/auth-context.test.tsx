@@ -748,6 +748,51 @@ describe("session state", () => {
     await waitFor(() => expect(screen.getByTestId("probe")).toHaveTextContent("anonymous:active"));
     expect(window.location.href).toBe("");
   });
+
+  it("redirects on bootstrap when the session check returns 403", async () => {
+    document.cookie = "cdorneles-session=1";
+    const service = createMockService({
+      getSession: vi
+        .fn()
+        .mockRejectedValue(
+          new ApiError("session unverifiable", { status: 403, code: "forbidden" }),
+        ),
+      getCurrentUser: vi.fn().mockResolvedValue(createMockUser()),
+    });
+    stubLocation("/crm");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    // A 403 from the identity endpoint means the session cannot be verified.
+    // Without a redirect the shell parks on anonymous and the guard spins on
+    // LoadingScreen forever — it must navigate exactly like a confirmed 401.
+    await waitFor(() => expect(window.location.href).toContain("/login"));
+  });
+
+  it("redirects on bootstrap when the user check returns 403", async () => {
+    document.cookie = "cdorneles-session=1";
+    const service = createMockService({
+      getSession: vi.fn().mockResolvedValue(createMockSession()),
+      getCurrentUser: vi
+        .fn()
+        .mockRejectedValue(
+          new ApiError("session unverifiable", { status: 403, code: "forbidden" }),
+        ),
+    });
+    stubLocation("/crm");
+
+    render(
+      <AuthProvider service={service}>
+        <SessionStateProbe />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(window.location.href).toContain("/login"));
+  });
 });
 
 describe("expiry warning", () => {

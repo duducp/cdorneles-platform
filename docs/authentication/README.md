@@ -54,7 +54,7 @@ O time de plataforma é configurado no app por `NEXT_PUBLIC_PLATFORM_TEAM_ID` e
 é **excluído** da lista de organizações, então nunca aparece como uma
 organização.
 
-Em `/select-org`: sem nenhuma organização, a tela mostra "Nenhuma organização
+Em `/p/select-org`: sem nenhuma organização, a tela mostra "Nenhuma organização
 vinculada. Fale com um administrador."; o botão "Create organization" só
 aparece com a capability.
 
@@ -110,7 +110,7 @@ Três Functions fazem o trabalho privilegiado. Todas identificam o chamador pelo
 
 ## Página de usuários (admin)
 
-Em `apps/admin` → `/users`, a página lista os usuários e permite criar um novo.
+Em `apps/admin` → `/p/admin/users`, a página lista os usuários e permite criar um novo.
 O gate é **UX, não segurança** (AGENTS.md): a lista aparece com `users.read`, o
 botão "New user" com `users.create`, e a lista de permissões do formulário só
 aparece com `users.manage_permissions`. O formulário pede e-mail, nome,
