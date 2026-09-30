@@ -3,15 +3,15 @@
 import { GroupIndex, groupIndexItems, type RouteGroup } from "@cdorneles/ui/shell";
 import Link from "next/link";
 
-import { CLIENT_ROUTES } from "@cdorneles/app";
+import { CLIENT_ROUTES, PORTAL_PREFIX } from "@cdorneles/app";
 
 /**
- * The `/crm` group index (Django-admin style): lists the group's pages.
+ * The `/p/crm` group index (Django-admin style): lists the group's pages.
  * Permission filtering is a UX courtesy here; every child page gates itself.
  */
 export default function CrmGroupIndexPage() {
   const group = CLIENT_ROUTES.find(
-    (route): route is RouteGroup => route.kind === "group" && route.href === "/crm",
+    (route): route is RouteGroup => route.kind === "group" && route.href === `${PORTAL_PREFIX}/crm`,
   );
   if (!group) return null;
 

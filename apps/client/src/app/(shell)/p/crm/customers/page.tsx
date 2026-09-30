@@ -17,6 +17,8 @@ import { Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { PORTAL_PREFIX } from "@cdorneles/app";
+
 interface CustomerRow {
   id: string;
   name: string;
@@ -79,7 +81,11 @@ export default function CustomersPage() {
         description={`Gerencie os clientes de ${organizationName}.`}
         action={
           <PermissionGate permission={permissionKey("customers.create")}>
-            <Button leftSection={<Plus size={16} />} component={Link} href="/crm/customers/add">
+            <Button
+              leftSection={<Plus size={16} />}
+              component={Link}
+              href={`${PORTAL_PREFIX}/crm/customers/add`}
+            >
               Novo cliente
             </Button>
           </PermissionGate>
