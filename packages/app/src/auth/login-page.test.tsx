@@ -27,7 +27,7 @@ vi.mock("@cdorneles/auth", () => ({
     status: "anonymous",
   }),
   useRedirectIfAuthenticated: () => true,
-  resolvePostAuthRedirect: () => "/dashboard",
+  resolvePostAuthRedirect: () => "/p",
   MfaRequiredError: class MfaRequiredError extends Error {},
 }));
 
@@ -147,7 +147,7 @@ describe("LoginPage", () => {
       oneTapProps.current?.onError(new MfaRequiredError());
     });
 
-    expect(pushMock).toHaveBeenCalledWith("/mfa?redirect=%2Fdashboard");
+    expect(pushMock).toHaveBeenCalledWith("/mfa?redirect=%2Fp");
   });
 
   it("maps other One Tap failures to a display message", async () => {
@@ -190,7 +190,7 @@ describe("LoginPage", () => {
       oneTapProps.current?.onSuccess?.();
     });
     expect(screen.queryByText("Entrando…")).not.toBeInTheDocument();
-    expect(replaceMock).toHaveBeenCalledWith("/dashboard");
+    expect(replaceMock).toHaveBeenCalledWith("/p");
   });
 
   it("hides Google when no client id is configured", () => {

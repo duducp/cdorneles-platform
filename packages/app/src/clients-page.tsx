@@ -30,8 +30,8 @@ const columns: DataTableProps<ClientRow>["columns"] = [{ accessorKey: "name", he
 
 /**
  * The admin's client-organizations resource list. The rows come from the
- * platform organizations API; the URL follows the platform pattern
- * (`/clients` list, `/clients/add` create).
+ * platform organizations API; the URL follows the portal pattern
+ * (`/p/clients` list, `/p/clients/add` create).
  */
 export function ClientsPage({
   linkComponent: Link,

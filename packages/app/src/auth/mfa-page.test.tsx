@@ -14,7 +14,7 @@ const { useAuthMock, pushMock, replaceMock } = vi.hoisted(() => ({
 vi.mock("@cdorneles/auth", () => ({
   useAuth: useAuthMock,
   useRedirectIfAuthenticated: () => true,
-  resolvePostAuthRedirect: () => "/dashboard",
+  resolvePostAuthRedirect: () => "/p",
   describeAuthError: (error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback,
   AuthNotConfiguredError: class AuthNotConfiguredError extends Error {},
@@ -207,7 +207,7 @@ describe("MfaPage", () => {
     );
 
     await waitFor(() => {
-      expect(window.location.href).toBe("/login?notice=session-expired&redirect=%2Fdashboard");
+      expect(window.location.href).toBe("/login?notice=session-expired&redirect=%2Fp");
     });
     expect(logout).toHaveBeenCalledTimes(1);
     expect(completeMfa).not.toHaveBeenCalled();
