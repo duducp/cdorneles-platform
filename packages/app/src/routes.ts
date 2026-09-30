@@ -2,24 +2,29 @@ import { permissionKey } from "@cdorneles/permissions";
 import type { RouteEntry } from "@cdorneles/ui/shell";
 import { Building2, LayoutDashboard, Settings, UserCog, Users } from "lucide-react";
 
+import { PORTAL_PREFIX } from "./portal";
+
+// Re-exported so app-level consumers (`app/p/page.tsx`) keep a single import.
+export { PORTAL_PREFIX } from "./portal";
+
 /**
  * The platform's route registry — the single source of truth for shell
  * navigation, breadcrumb labels, group index pages, visible page titles and
  * permission gating (UX only; the server remains the security boundary).
  *
- * URL pattern (Django-admin style):
- * - `/group`          → group index listing its pages;
- * - `/group/resource` → list;
- * - `.../add`         → dedicated create page;
- * - `.../<id>/change` → edit page (when the API supports it).
+ * URL pattern (Django-admin style, under the portal prefix `/p`):
+ * - `/p/group`          → group index listing its pages;
+ * - `/p/group/resource` → list;
+ * - `.../add`           → dedicated create page;
+ * - `.../<id>/change`   → edit page (when the API supports it).
  *
- * Dashboard and Settings stay top-level on purpose: they are not part of a
- * business resource group.
+ * Dashboard and Settings stay top-level (inside `/p`) on purpose: they are not
+ * part of a business resource group.
  */
 export const ADMIN_ROUTES: RouteEntry[] = [
   {
     kind: "group",
-    href: "/admin",
+    href: `${PORTAL_PREFIX}/admin`,
     label: "Administração",
     description: "Gestão da plataforma: usuários e organizações clientes.",
     tags: ["admin", "platform"],
@@ -27,7 +32,7 @@ export const ADMIN_ROUTES: RouteEntry[] = [
     items: [
       {
         kind: "page",
-        href: "/admin/users",
+        href: `${PORTAL_PREFIX}/admin/users`,
         label: "Usuários",
         description: "Pessoas com acesso à plataforma e suas permissões por organização.",
         tags: ["admin", "users", "iam"],
@@ -36,7 +41,7 @@ export const ADMIN_ROUTES: RouteEntry[] = [
       },
       {
         kind: "page",
-        href: "/admin/clients",
+        href: `${PORTAL_PREFIX}/admin/clients`,
         label: "Clientes",
         description: "Organizações clientes atendidas pela plataforma.",
         tags: ["admin", "organizations", "crm"],
@@ -47,7 +52,7 @@ export const ADMIN_ROUTES: RouteEntry[] = [
   },
   {
     kind: "page",
-    href: "/dashboard",
+    href: `${PORTAL_PREFIX}/dashboard`,
     label: "Dashboard",
     description: "Visão geral da plataforma.",
     tags: ["admin", "overview"],
@@ -55,7 +60,7 @@ export const ADMIN_ROUTES: RouteEntry[] = [
   },
   {
     kind: "page",
-    href: "/settings",
+    href: `${PORTAL_PREFIX}/settings`,
     label: "Configurações",
     description: "Preferências da conta e do ambiente.",
     tags: ["admin", "settings"],
@@ -66,7 +71,7 @@ export const ADMIN_ROUTES: RouteEntry[] = [
 export const CLIENT_ROUTES: RouteEntry[] = [
   {
     kind: "group",
-    href: "/crm",
+    href: `${PORTAL_PREFIX}/crm`,
     label: "CRM",
     description: "Gestão de clientes da sua organização.",
     tags: ["crm"],
@@ -74,7 +79,7 @@ export const CLIENT_ROUTES: RouteEntry[] = [
     items: [
       {
         kind: "page",
-        href: "/crm/customers",
+        href: `${PORTAL_PREFIX}/crm/customers`,
         label: "Clientes",
         description: "Cadastro de clientes da organização.",
         tags: ["crm", "customers"],
@@ -85,7 +90,7 @@ export const CLIENT_ROUTES: RouteEntry[] = [
   },
   {
     kind: "page",
-    href: "/dashboard",
+    href: `${PORTAL_PREFIX}/dashboard`,
     label: "Dashboard",
     description: "Visão geral da sua organização.",
     tags: ["overview"],
@@ -93,7 +98,7 @@ export const CLIENT_ROUTES: RouteEntry[] = [
   },
   {
     kind: "page",
-    href: "/settings",
+    href: `${PORTAL_PREFIX}/settings`,
     label: "Configurações",
     description: "Preferências da conta e da organização.",
     tags: ["settings"],

@@ -1,5 +1,5 @@
 export { AppShell, type AppShellProps } from "./app-shell";
-export { BreadcrumbTrail, deriveTrail, type Crumb } from "./breadcrumbs";
+export { BreadcrumbTrail, deriveTrail, type Crumb, type DeriveTrailOptions } from "./breadcrumbs";
 export { GroupIndex, type GroupIndexProps } from "./group-index";
 export { NavigationProgress, usePendingLink } from "./navigation-progress";
 export { OrgSwitcher, type OrgSwitcherProps } from "./org-switcher";

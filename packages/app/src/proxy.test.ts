@@ -10,32 +10,39 @@ function request(path: string, withCookie = false): NextRequest {
 }
 
 describe("proxy", () => {
-  it("redirects an unauthenticated /crm request to /login", () => {
-    const response = proxy(request("/crm/customers"));
+  it("redirects an unauthenticated portal request to /login", () => {
+    const response = proxy(request("/p/crm/customers"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "http://localhost/login?redirect=%2Fcrm%2Fcustomers",
+      "http://localhost/login?redirect=%2Fp%2Fcrm%2Fcustomers",
     );
   });
 
-  it("lets an authenticated /crm request through", () => {
-    const response = proxy(request("/crm/customers", true));
+  it("lets an authenticated portal request through", () => {
+    const response = proxy(request("/p/crm/customers", true));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
   });
 
-  it("still redirects unauthenticated /dashboard requests", () => {
-    const response = proxy(request("/dashboard"));
+  it("protects the bare portal root too", () => {
+    const response = proxy(request("/p"));
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("http://localhost/login?redirect=%2Fdashboard");
+    expect(response.headers.get("location")).toBe("http://localhost/login?redirect=%2Fp");
   });
 
-  it("keeps the matcher in sync with the protected paths", () => {
+  it("stays out of the public routes", () => {
+    const response = proxy(request("/login"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("keeps the matcher covering the portal subtree", () => {
     // Next only invokes proxy for paths the matcher covers, so a protected
     // path missing here silently bypasses the whole gate.
-    expect(config.matcher).toContain("/crm/:path*");
+    expect(config.matcher).toContain("/p/:path*");
   });
 });

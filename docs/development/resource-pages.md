@@ -4,19 +4,22 @@ Como criar páginas no padrão da plataforma (estilo Django admin). A **listagem
 sempre existe**; create, update e delete são opcionais e só aparecem quando a
 permissão correspondente foi concedida.
 
+Toda a área autenticada vive sob o prefixo **`/p`** (private/portal). Rotas
+públicas (`/login`, `/mfa`, recuperação de senha) ficam na raiz.
+
 ## Padrão de URL
 
 | Operação | URL                        | Obrigatória?                                      |
 | -------- | -------------------------- | ------------------------------------------------- |
-| Listar   | `/grupo/recurso`           | Sim — toda página começa aqui                     |
-| Criar    | `/grupo/recurso/add`       | Opcional (permissão `recurso.create`)             |
-| Editar   | `/grupo/recurso/<id>/change` | Opcional (permissão `recurso.update` + API)     |
+| Listar   | `/p/grupo/recurso`         | Sim — toda página começa aqui                     |
+| Criar    | `/p/grupo/recurso/add`     | Opcional (permissão `recurso.create`)             |
+| Editar   | `/p/grupo/recurso/<id>/change` | Opcional (permissão `recurso.update` + API)   |
 | Apagar   | ação na listagem ou na página de edição | Opcional (permissão `recurso.delete`) |
 
-- O **grupo** (`/admin`, `/crm`) tem uma página de índice listando seus
+- O **grupo** (`/p/admin`, `/p/crm`) tem uma página de índice listando seus
   recursos visíveis — como a home do admin do Django.
-- `dashboard` e `settings` ficam **fora de grupos** de propósito: não são
-  recursos de negócio.
+- `dashboard` e `settings` ficam **fora de grupos** (dentro de `/p`) de
+  propósito: não são recursos de negócio.
 
 ## O registro central de rotas (`routes.ts`)
 
@@ -27,7 +30,7 @@ página declara:
 ```ts
 {
   kind: "page",
-  href: "/admin/users",
+  href: "/p/admin/users",
   label: "Usuários",                    // sidebar, breadcrumbs, índice
   description: "Pessoas com acesso…",   // visível no índice do grupo
   tags: ["admin", "users", "iam"],      // classificação p/ filtros futuros
@@ -45,14 +48,14 @@ Consumidores do registry (não duplique nada disso à mão):
 | Índice do grupo             | `groupIndexItems(group)` + `<GroupIndex>`     |
 | Filtro por permissão        | `visibleRoutes(routes, checker)`              |
 
-### Como adicionar um recurso novo (exemplo: `/admin/invoices`)
+### Como adicionar um recurso novo (exemplo: `/p/admin/invoices`)
 
 1. **`packages/app/src/routes.ts`** — adicione a página ao grupo desejado
    (ou crie um grupo novo) com `label`, `description`, `tags`, `permissions`
    e `icon`.
 2. **`packages/app/src/<recurso>-list-page.tsx`** — crie a página de listagem
    (veja o esqueleto abaixo).
-3. **Rotas Next** — crie `apps/<app>/src/app/(shell)/admin/<recurso>/page.tsx`
+3. **Rotas Next** — crie `apps/<app>/src/app/(shell)/p/admin/<recurso>/page.tsx`
    exportando a página; adicione `add/page.tsx` e `[id]/change/page.tsx` só se
    a operação existir.
 4. **Permissões** — garanta que `recurso.read` (e as demais) existam no seed
