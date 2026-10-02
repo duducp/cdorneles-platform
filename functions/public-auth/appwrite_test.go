@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -86,26 +87,30 @@ func TestEmailLoginMapsAppwriteErrorType(t *testing.T) {
 // user_more_factors_required AND a Set-Cookie for a pending session. The
 // pending session must be captured (not treated as an error) so the handler
 // can hand the browser a login token to recreate it as its own cookie.
+//
+// IMPORTANT: with a pending session, Appwrite's shared api controller rejects
+// every route outside the `mfa` group with 401 user_more_factors_required —
+// including GET /account and GET /account/sessions (shared/api.php Step 13).
+// EmailLogin must therefore resolve the user id from the pending cookie
+// itself: the cookie value is base64 of JSON {"id": <userId>, "secret":
+// <sessionSecret>} (Auth Store::encode + account.php setProperty('id',
+// $user->getId())), with zero extra network calls.
 func TestEmailLoginMfaReturnsPendingOutcomeWithPendingSession(t *testing.T) {
+	// Mirrors a real pending cookie: base64("{"id":"u1","secret":"sec"}”).
+	pendingCookieValue := "eyJpZCI6InUxIiwic2VjcmV0Ijoic2VjIn0="
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/account/sessions/email" {
-			w.Header().Set("Set-Cookie", "a_session_proj1=pending-cookie; Path=/; HttpOnly")
+			w.Header().Set("Set-Cookie", "a_session_proj1="+pendingCookieValue+"; Path=/; HttpOnly")
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"message":"More factors are required","code":401,"type":"user_more_factors_required"}`))
 			return
 		}
-		if r.URL.Path == "/account" {
-			if got := r.Header.Get("Cookie"); got != "a_session_proj1=pending-cookie" {
-				t.Errorf("account call cookie = %q, want the pending session cookie", got)
-			}
-			_, _ = w.Write([]byte(`{"$id":"u1","email":"a@b.com"}`))
-			return
+		// Any other route with the pending cookie must be blocked exactly as
+		// production does, so the test proves EmailLogin needs no extra calls.
+		if got := r.Header.Get("Cookie"); got != "a_session_proj1="+pendingCookieValue {
+			t.Errorf("unexpected cookie %q for %s", got, r.URL.Path)
 		}
-		if r.URL.Path == "/account/sessions" {
-			_, _ = w.Write([]byte(`{"sessions":[{"$id":"s9","userId":"u1"}]}`))
-			return
-		}
-		t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+		t.Errorf("unexpected request %s %s: EmailLogin must resolve the pending user from the cookie alone", r.Method, r.URL.Path)
 	}))
 	defer server.Close()
 	ops := &appwriteOps{endpoint: server.URL, project: "proj1", doer: http.DefaultClient}
@@ -114,11 +119,34 @@ func TestEmailLoginMfaReturnsPendingOutcomeWithPendingSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmailLogin: %v", err)
 	}
-	if !outcome.pendingMFA || outcome.session.ID == "" || outcome.session.cookie != "a_session_proj1=pending-cookie" {
+	if !outcome.pendingMFA || outcome.session.cookie != "a_session_proj1="+pendingCookieValue {
 		t.Fatalf("outcome = %+v", outcome)
 	}
 	if outcome.session.UserID != "u1" {
-		t.Fatalf("pending session userId = %q", outcome.session.UserID)
+		t.Fatalf("pending session userId = %q, want u1 decoded from cookie", outcome.session.UserID)
+	}
+	if outcome.session.ID != "current" {
+		t.Fatalf("pending session id = %q, want literal %q for DeleteSession", outcome.session.ID, "current")
+	}
+}
+
+// The pending cookie value is base64(JSON {"id": <userId>, "secret":
+// <sessionSecret>}); decoding it must yield the user id and must never fail
+// on Appwrite's URL-safe base64 variants.
+func TestDecodePendingCookie(t *testing.T) {
+	value := base64.StdEncoding.EncodeToString([]byte(`{"id":"u1","secret":"abc.def"}`))
+	userID, ok := decodePendingCookie("a_session_proj1=" + value)
+	if !ok || userID != "u1" {
+		t.Fatalf("decodePendingCookie = %q, %v", userID, ok)
+	}
+	userID, ok = decodePendingCookie("a_session_proj1=" + base64.RawURLEncoding.EncodeToString([]byte(`{"id":"u2","secret":"x"}`)))
+	if !ok || userID != "u2" {
+		t.Fatalf("raw url-safe decode = %q, %v", userID, ok)
+	}
+	for _, broken := range []string{"", "a_session_proj1=", "a_session_proj1=!!!not-base64!!!", "a_session_proj1=" + base64.StdEncoding.EncodeToString([]byte(`[]`))} {
+		if _, ok := decodePendingCookie(broken); ok {
+			t.Errorf("decodePendingCookie(%q) accepted broken input", broken)
+		}
 	}
 }
 

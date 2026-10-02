@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -144,15 +145,20 @@ func (o *appwriteOps) EmailLogin(email, password string) (loginOutcome, error) {
 	if resp.StatusCode >= 400 {
 		ae := newAppwriteError(resp.StatusCode, body)
 		// MFA accounts: 401 user_more_factors_required still sets a pending
-		// session cookie. Capture it and resolve the user id through /account
-		// so the handler can broker the pending session to the browser.
+		// session cookie. Appwrite's shared controller rejects every route
+		// outside the `mfa` group while a session is pending — including
+		// GET /account and GET /account/sessions — so the user id must come
+		// from the cookie itself: its value is base64(JSON {"id": <userId>,
+		// "secret": <sessionSecret>}) (Auth Store::encode; account.php sets
+		// id = $user->getId() when creating a session). DeleteSession then
+		// targets DELETE /account/sessions/current, an allowed `mfa`-group
+		// route that Appwrite resolves against the pending cookie.
 		if ae.code == "user_more_factors_required" && cookie != "" {
-			pending := loginSession{cookie: cookie}
-			pending.UserID, err = o.currentUserID(map[string]string{"Cookie": cookie})
-			if err != nil {
-				return loginOutcome{}, err
+			userID, ok := decodePendingCookie(cookie)
+			if !ok {
+				return loginOutcome{}, fmt.Errorf("login returned a pending session cookie that could not be decoded")
 			}
-			pending.ID = pendingSessionID(o, cookie)
+			pending := loginSession{ID: "current", UserID: userID, cookie: cookie}
 			return loginOutcome{session: pending, pendingMFA: true}, nil
 		}
 		return loginOutcome{}, ae
@@ -168,48 +174,37 @@ func (o *appwriteOps) EmailLogin(email, password string) (loginOutcome, error) {
 	return loginOutcome{session: session}, nil
 }
 
-// currentUserID resolves /account with an explicit Cookie header, used only
-// for the pending-MFA session (which is not the function's default session).
-func (o *appwriteOps) currentUserID(headers map[string]string) (string, error) {
-	resp, body, err := o.doJSON(http.MethodGet, "/account", headers, nil)
-	if err != nil {
-		return "", err
-	}
-	if resp.StatusCode >= 400 {
-		return "", newAppwriteError(resp.StatusCode, body)
-	}
-	var user struct {
-		ID string `json:"$id"`
-	}
-	if err := json.Unmarshal(body, &user); err != nil {
-		return "", err
-	}
-	if user.ID == "" {
-		return "", fmt.Errorf("account response missing id")
-	}
-	return user.ID, nil
+// pendingCookieUser is the subset of Appwrite's session cookie payload the
+// login flow needs.
+type pendingCookieUser struct {
+	ID string `json:"id"`
 }
 
-// pendingSessionID extracts the session id from the JWT claim Appwrite embeds
-// in the pending session's cookie value ("<id>.<secret>") — Appwrite session
-// cookies are "a_session_<project>=<id>.<secret>"... when the value does not
-// carry an id, fall back to listing the account's sessions and picking the
-// just-created pending one (the only session of a fresh password login).
-func pendingSessionID(o *appwriteOps, cookie string) string {
-	resp, body, err := o.doJSON(http.MethodGet, "/account/sessions", map[string]string{"Cookie": cookie}, nil)
-	if err != nil || resp.StatusCode >= 400 {
-		return ""
+// decodePendingCookie extracts the user id from a pending session cookie
+// ("a_session_<project>=<value>"). The value is base64 of the JSON
+// {"id": <userId>, "secret": <sessionSecret>} produced by Auth Store::encode
+// (standard or URL-safe alphabet, with or without padding). Returns ok=false
+// for anything that does not decode to an object with a non-empty id.
+func decodePendingCookie(cookie string) (string, bool) {
+	pair := strings.SplitN(cookie, "=", 2)
+	if len(pair) != 2 || pair[1] == "" {
+		return "", false
 	}
-	var sessions struct {
-		Sessions []loginSession `json:"sessions"`
+	for _, enc := range []*base64.Encoding{
+		base64.StdEncoding, base64.RawStdEncoding,
+		base64.URLEncoding, base64.RawURLEncoding,
+	} {
+		decoded, err := enc.DecodeString(pair[1])
+		if err != nil {
+			continue
+		}
+		var payload pendingCookieUser
+		if json.Unmarshal(decoded, &payload) != nil || payload.ID == "" {
+			continue
+		}
+		return payload.ID, true
 	}
-	if err := json.Unmarshal(body, &sessions); err != nil {
-		return ""
-	}
-	if len(sessions.Sessions) > 0 {
-		return sessions.Sessions[0].ID
-	}
-	return ""
+	return "", false
 }
 
 // CreateLoginToken issues the single-use token the browser exchanges with
