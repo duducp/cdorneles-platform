@@ -122,26 +122,6 @@ export function createFunctionsApi(client: Client): FunctionsApi {
       return { userId: data.userId, secret: data.secret };
     },
 
-    async publicMfaChallenge(input) {
-      const execution = await execute({
-        functionId: "public-auth",
-        body: { action: "mfaChallenge", ...input },
-        method: "POST",
-      });
-      const data = parseResponse<{ challengeId: string }>(execution);
-      return { challengeId: data.challengeId };
-    },
-
-    async publicMfaVerify(input) {
-      const execution = await execute({
-        functionId: "public-auth",
-        body: { action: "mfaVerify", ...input },
-        method: "POST",
-      });
-      const data = parseResponse<{ $id: string; userId: string; expire: string }>(execution);
-      return { $id: data.$id, userId: data.userId, expire: data.expire };
-    },
-
     async publicRequestRecovery(input) {
       const execution = await execute({
         functionId: "public-auth",

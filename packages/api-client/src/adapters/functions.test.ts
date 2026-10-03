@@ -367,31 +367,6 @@ describe("createFunctionsApi public-auth", () => {
     expect(result).toEqual({ userId: "u1", secret: "the-secret" });
   });
 
-  it("forwards the turnstileToken on every action", async () => {
-    mockExecution(JSON.stringify({ challengeId: "c1" }));
-    const api = createFunctionsApi(client);
-    await api.publicMfaChallenge({ factor: "email", turnstileToken: "tok" });
-    const body = JSON.parse(
-      (mocks.functions.createExecution.mock.calls[0][0] as { body: string }).body,
-    );
-    expect(body).toEqual({ action: "mfaChallenge", factor: "email", turnstileToken: "tok" });
-  });
-
-  it("maps the MFA verify session response", async () => {
-    mockExecution(
-      JSON.stringify({ $id: "s1", userId: "u1", expire: "2026-09-28T00:00:00.000+00:00" }),
-    );
-    const api = createFunctionsApi(client);
-
-    const result = await api.publicMfaVerify({
-      challengeId: "c1",
-      otp: "123456",
-      turnstileToken: "tok",
-    });
-
-    expect(result).toEqual({ $id: "s1", userId: "u1", expire: "2026-09-28T00:00:00.000+00:00" });
-  });
-
   it("surfaces the function error code", async () => {
     mockExecution(
       JSON.stringify({ error: "invalid_turnstile_token", reason: "turnstile verification failed" }),

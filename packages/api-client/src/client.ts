@@ -92,15 +92,6 @@ export interface FunctionsApi {
     password: string;
     turnstileToken: string;
   }): Promise<{ userId: string; secret: string }>;
-  publicMfaChallenge(input: {
-    factor: "totp" | "email";
-    turnstileToken: string;
-  }): Promise<{ challengeId: string }>;
-  publicMfaVerify(input: {
-    challengeId: string;
-    otp: string;
-    turnstileToken: string;
-  }): Promise<{ $id: string; userId: string; expire: string }>;
   publicRequestRecovery(input: {
     email: string;
     url: string;

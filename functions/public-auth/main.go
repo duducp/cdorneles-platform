@@ -18,8 +18,6 @@ import (
 // Action names accepted by the router.
 const (
 	actionLogin            = "login"
-	actionMfaChallenge     = "mfaChallenge"
-	actionMfaVerify        = "mfaVerify"
 	actionRequestRecovery  = "requestRecovery"
 	actionCompleteRecovery = "completeRecovery"
 )
@@ -38,9 +36,6 @@ type command struct {
 	TurnstileToken string `json:"turnstileToken"`
 	Email          string `json:"email,omitempty"`
 	Password       string `json:"password,omitempty"`
-	Factor         string `json:"factor,omitempty"`
-	ChallengeID    string `json:"challengeId,omitempty"`
-	OTP            string `json:"otp,omitempty"`
 	URL            string `json:"url,omitempty"`
 	UserID         string `json:"userId,omitempty"`
 	Secret         string `json:"secret,omitempty"`
@@ -55,8 +50,6 @@ type operations interface {
 	EmailLogin(email, password string) (loginOutcome, error)
 	CreateLoginToken(userID string) (tokenPair, error)
 	DeleteSession(session loginSession) error
-	MfaChallenge(jwt, factor string) (string, error)
-	MfaVerify(jwt, challengeID, otp string) (sessionResponse, error)
 	RequestRecovery(email, url string) error
 	CompleteRecovery(userID, secret, password string) error
 }
@@ -153,9 +146,9 @@ func handle(ctx openruntimes.Context, ops operations, secret string) openruntime
 			return errorBody(ctx, http.StatusBadGateway, errTurnstileUnavailable, "turnstile siteverify unreachable")
 		}
 	}
-	// mfaJWT is the caller session JWT Appwrite injects into every execution
-	// of an authenticated caller.
-	jwt := strings.TrimSpace(ctx.Req.Headers["x-appwrite-user-jwt"])
+	// MFA list/challenge/verify are intentionally absent: those flows run
+	// through stock Appwrite endpoints with the browser's own pending-session
+	// cookie (ADR-015), never through this function.
 	switch body.Action {
 	case actionLogin:
 		if strings.TrimSpace(body.Email) == "" || body.Password == "" {
@@ -186,30 +179,6 @@ func handle(ctx openruntimes.Context, ops operations, secret string) openruntime
 			userID = session.session.UserID
 		}
 		return ctx.Res.Json(loginResponse{UserID: userID, Secret: token.Secret})
-	case actionMfaChallenge:
-		if body.Factor != "email" && body.Factor != "totp" {
-			return httpx.BadRequest(ctx, "factor must be email or totp")
-		}
-		if jwt == "" {
-			return errorBody(ctx, http.StatusUnauthorized, "user_unauthorized", "an active session is required")
-		}
-		challengeID, err := ops.MfaChallenge(jwt, body.Factor)
-		if err != nil {
-			return opsError(ctx, err)
-		}
-		return ctx.Res.Json(challengeResponse{ChallengeID: challengeID})
-	case actionMfaVerify:
-		if body.ChallengeID == "" || strings.TrimSpace(body.OTP) == "" {
-			return httpx.BadRequest(ctx, "challengeId and otp are required")
-		}
-		if jwt == "" {
-			return errorBody(ctx, http.StatusUnauthorized, "user_unauthorized", "an active session is required")
-		}
-		session, err := ops.MfaVerify(jwt, body.ChallengeID, body.OTP)
-		if err != nil {
-			return opsError(ctx, err)
-		}
-		return ctx.Res.Json(session)
 	case actionRequestRecovery:
 		if strings.TrimSpace(body.Email) == "" || strings.TrimSpace(body.URL) == "" {
 			return httpx.BadRequest(ctx, "email and url are required")

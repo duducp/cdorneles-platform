@@ -29,8 +29,6 @@ function createMockFunctionsApi(): FunctionsApi {
     listOrganizations: vi.fn(),
     oneTapLogin: vi.fn(),
     publicLogin: vi.fn(),
-    publicMfaChallenge: vi.fn(),
-    publicMfaVerify: vi.fn(),
     publicRequestRecovery: vi.fn(),
     publicCompleteRecovery: vi.fn(),
   };
@@ -451,13 +449,11 @@ describe("createAppwriteAuthService", () => {
       const api = createMockAccountApi();
       const functions = createMockFunctionsApi();
       vi.mocked(api.createMfaChallenge).mockResolvedValue({ $id: "c1", factor: "email" });
-      vi.mocked(functions.publicMfaChallenge).mockResolvedValue({ challengeId: "legacy" });
 
       const service = createAppwriteAuthService(api, functions);
       const challenge = await service.createMfaChallenge({ factor: "email" });
 
       expect(api.createMfaChallenge).toHaveBeenCalledWith({ factor: "email" });
-      expect(functions.publicMfaChallenge).not.toHaveBeenCalled();
       expect(challenge).toEqual({ challengeId: "c1", factor: "email" });
     });
 
@@ -481,11 +477,6 @@ describe("createAppwriteAuthService", () => {
         userId: "u1",
         expire: futureDate,
       });
-      vi.mocked(functions.publicMfaVerify).mockResolvedValue({
-        $id: "legacy",
-        userId: "u1",
-        expire: futureDate,
-      });
 
       const service = createAppwriteAuthService(api, functions);
       const session = await service.completeMfa({
@@ -497,7 +488,6 @@ describe("createAppwriteAuthService", () => {
         challengeId: "c1",
         otp: "123456",
       });
-      expect(functions.publicMfaVerify).not.toHaveBeenCalled();
       expect(session).toEqual({
         id: "s1",
         userId: "u1",

@@ -54,7 +54,11 @@ estado legítimo de MFA como expiração.
    (`packages/api-client/src/errors.ts`).
 3. **`functionsApi.publicMfaChallenge`/`publicMfaVerify` (e os handlers Go
    `MfaChallenge`/`MfaVerify`) ficam órfãos de uso no frontend** — mantidos
-   neste commit; aposentadoria é follow-up (TS + Go + escopo da function).
+   no commit do fix; **follow-up concluído**: as ações `mfaChallenge`/`mfaVerify`
+   foram aposentadas da `public-auth` (handlers Go, structs, interface
+   `operations` e o client TS `FunctionsApi` removidos). A action agora
+   responde `400 unknown action`; o restante da MFA roda só nos endpoints
+   stock do Appwrite, com a cookie de sessão pendente do navegador.
 
 ## Prevention (para a regressão não se repetir)
 
