@@ -181,6 +181,24 @@ For non-trivial tasks:
 13. Update documentation when architecture/patterns changed.
 14. Report what changed and validation results.
 
+## Auth flow changes (regression prevention)
+
+See `docs/decisions/ADR-015-mfa-stock-endpoints.md` for the incident that
+motivates these rules.
+
+- Never move a working auth flow behind a new boundary (function, BFF, proxy)
+  without an end-to-end smoke test. Unit tests do not catch browser-context
+  regressions (httpOnly cookies, session state).
+- Browser-bound session state (e.g. the pending-MFA session cookie) must never
+  be required by a server-side path — it cannot reach the function. Keep such
+  flows on stock client-side endpoints.
+- `isUnauthorized`-style mappers must not turn every 401 into "session
+  expired": explicitly exclude Appwrite codes with other meanings (e.g.
+  `user_more_factors_required`) and cover them with tests.
+- Appwrite server-key header is `X-Appwrite-Key`, never `X-Api-Key`.
+- Vitest (esbuild) does not typecheck: run `pnpm typecheck` after refactors,
+  and grep for stale `toHaveBeenCalledWith` assertions when call shapes change.
+
 ## Self-review Checklist
 
 Before considering a task complete, review:
