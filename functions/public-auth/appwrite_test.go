@@ -40,7 +40,7 @@ func TestEmailLoginPostsCredentialsWithoutAPIKey(t *testing.T) {
 		if r.Header.Get("X-Appwrite-Project") != "proj1" {
 			t.Errorf("project header = %q", r.Header.Get("X-Appwrite-Project"))
 		}
-		if r.Header.Get("X-Api-Key") != "" {
+		if r.Header.Get("X-Appwrite-Key") != "" {
 			t.Error("login must not carry the API key")
 		}
 		body, _ := io.ReadAll(r.Body)
@@ -155,7 +155,7 @@ func TestCreateLoginTokenUsesAPIKey(t *testing.T) {
 		if r.Method != http.MethodPost || r.URL.Path != "/users/u1/tokens" {
 			t.Errorf("request = %s %s", r.Method, r.URL.Path)
 		}
-		if r.Header.Get("X-Api-Key") != "ephemeral-key" {
+		if r.Header.Get("X-Appwrite-Key") != "ephemeral-key" {
 			t.Error("missing API key")
 		}
 		w.WriteHeader(http.StatusCreated)

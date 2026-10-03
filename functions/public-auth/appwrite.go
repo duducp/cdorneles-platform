@@ -211,7 +211,7 @@ func decodePendingCookie(cookie string) (string, bool) {
 // account.createSession(userId, secret).
 func (o *appwriteOps) CreateLoginToken(userID string) (tokenPair, error) {
 	resp, body, err := o.doJSON(http.MethodPost, "/users/"+userID+"/tokens",
-		map[string]string{"X-Api-Key": o.apiKey}, []byte("{}"))
+		map[string]string{"X-Appwrite-Key": o.apiKey}, []byte("{}"))
 	if err != nil {
 		return tokenPair{}, err
 	}
