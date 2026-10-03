@@ -16,9 +16,6 @@ import {
   FormError,
   MfaChallengeForm,
   ThemeToggle,
-  Turnstile,
-  TurnstileError,
-  useTurnstile,
 } from "@cdorneles/ui";
 import { Flex, Skeleton, Stack, Text } from "@mantine/core";
 import { useRouter } from "next/navigation";
@@ -32,7 +29,6 @@ export interface MfaPageProps {
 export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
   const { service, completeMfa, logout } = useAuth();
   const router = useRouter();
-  const turnstile = useTurnstile();
   const goToApp = useCallback(() => {
     router.replace(resolvePostAuthRedirect(window.location.search));
   }, [router]);
@@ -64,16 +60,13 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
           return;
         }
         setFactor(preferred);
-        const turnstileToken = await turnstile.nextToken();
-        const challenge = await service.createMfaChallenge({ factor: preferred, turnstileToken });
+        const challenge = await service.createMfaChallenge({ factor: preferred });
         if (cancelled) return;
         setChallengeId(challenge.challengeId);
       } catch (err) {
         if (cancelled) return;
         if (err instanceof AuthNotConfiguredError) {
           setError("Autenticação não configurada neste ambiente.");
-        } else if (err instanceof TurnstileError) {
-          setError(err.message);
         } else if (isApiError(err) && isUnauthorized(err)) {
           sessionExpired();
           return;
@@ -88,7 +81,7 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [service, turnstile, sessionExpired]);
+  }, [service, sessionExpired]);
 
   // Page-level `error` is reserved for bootstrap failures, which replace the
   // form entirely. Submit/resend failures must rethrow so MfaChallengeForm
@@ -97,29 +90,25 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
     async (values: { code: string }) => {
       if (!challengeId) return;
       try {
-        const turnstileToken = await turnstile.nextToken();
-        await completeMfa({ challengeId, code: values.code, turnstileToken });
+        await completeMfa({ challengeId, code: values.code });
         // Carry the redirect the login page forwarded, if any.
         router.push(resolvePostAuthRedirect(window.location.search));
       } catch (err) {
-        if (err instanceof TurnstileError) throw err; // pt-BR, the form shows it directly
         throw new Error(describeAuthError(err, "Código inválido."), { cause: err });
       }
     },
-    [challengeId, completeMfa, router, turnstile],
+    [challengeId, completeMfa, router],
   );
 
   const handleResend = useCallback(async () => {
     if (!factor) return;
     try {
-      const turnstileToken = await turnstile.nextToken();
-      const challenge = await service.createMfaChallenge({ factor, turnstileToken });
+      const challenge = await service.createMfaChallenge({ factor });
       setChallengeId(challenge.challengeId);
     } catch (err) {
-      if (err instanceof TurnstileError) throw err;
       throw new Error("Erro ao reenviar código. Tente novamente.", { cause: err });
     }
-  }, [service, factor, turnstile]);
+  }, [service, factor]);
 
   const handleCancel = useCallback(() => {
     void logout()
@@ -148,7 +137,6 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
                   <Skeleton h={36} />
                   <Skeleton h={36} />
                   <Skeleton h={40} />
-                  <Turnstile ref={turnstile.handleRef} />
                 </Stack>
               ) : error ? (
                 <Stack gap="md">
@@ -165,7 +153,6 @@ export function MfaPage({ redirectWhenAuthenticated = true }: MfaPageProps) {
                   onSubmit={handleSubmit}
                   onResend={factor === "email" ? handleResend : undefined}
                   onCancel={handleCancel}
-                  captchaSlot={<Turnstile ref={turnstile.handleRef} />}
                 />
               )
             }

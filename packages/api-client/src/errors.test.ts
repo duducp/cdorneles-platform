@@ -16,6 +16,12 @@ describe("isUnauthorized", () => {
     expect(isUnauthorized(new ApiError("no", { status: 403 }))).toBe(false);
   });
 
+  it("rejects user_more_factors_required — the session is alive, just pending MFA", () => {
+    expect(
+      isUnauthorized(new ApiError("no", { status: 401, code: "user_more_factors_required" })),
+    ).toBe(false);
+  });
+
   it("rejects anything that is not an ApiError", () => {
     expect(isUnauthorized(new Error("boom"))).toBe(false);
     expect(isUnauthorized("401")).toBe(false);

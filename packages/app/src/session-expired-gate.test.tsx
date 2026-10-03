@@ -710,7 +710,6 @@ describe("SessionExpiredGate", () => {
     await waitFor(() =>
       expect(createMfaChallenge).toHaveBeenCalledWith({
         factor: "email",
-        turnstileToken: "test-token",
       }),
     );
     const mfaProps = SessionExpiredMfaDialogMock.mock.calls.at(-1)?.[0] as {
@@ -724,7 +723,6 @@ describe("SessionExpiredGate", () => {
     expect(createMfaChallenge).toHaveBeenCalledTimes(2);
     expect(createMfaChallenge).toHaveBeenLastCalledWith({
       factor: "email",
-      turnstileToken: "test-token",
     });
   });
 
@@ -751,7 +749,6 @@ describe("SessionExpiredGate", () => {
     await waitFor(() =>
       expect(createMfaChallenge).toHaveBeenCalledWith({
         factor: "totp",
-        turnstileToken: "test-token",
       }),
     );
     const mfaProps = SessionExpiredMfaDialogMock.mock.calls.at(-1)?.[0] as { onResend?: unknown };

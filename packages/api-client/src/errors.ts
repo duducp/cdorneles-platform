@@ -38,10 +38,14 @@ const UNAUTHORIZED_CODES = new Set(["user_unauthorized", "general_unauthorized_s
 /**
  * True when the error means the session is dead and the user must authenticate
  * again. A `403` is deliberately excluded: it is authorization, not identity,
- * and re-authenticating would not change the answer.
+ * and re-authenticating would not change the answer. A `user_more_factors_required`
+ * 401 is also excluded: the session is alive, only the MFA gate is pending.
  */
 export function isUnauthorized(error: unknown): boolean {
   if (!isApiError(error)) {
+    return false;
+  }
+  if (error.code === "user_more_factors_required") {
     return false;
   }
   return error.status === 401 || UNAUTHORIZED_CODES.has(error.code);

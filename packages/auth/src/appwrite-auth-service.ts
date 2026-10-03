@@ -76,13 +76,12 @@ export function createAppwriteAuthService(
     },
 
     async completeMfa(input) {
-      if (!functionsApi) {
-        throw new Error("Public authentication is not available in this environment.");
-      }
-      const session = await functionsApi.publicMfaVerify({
+      // Stock Appwrite endpoint (PUT /v1/account/mfa/challenges) on the
+      // pending-MFA session cookie — the challenge was created on this same
+      // session, so verifying updates its factors and returns the session.
+      const session = await accountApi.updateMfaChallenge({
         challengeId: input.challengeId,
         otp: input.code,
-        turnstileToken: input.turnstileToken,
       });
       return mapSession(session);
     },
@@ -98,14 +97,10 @@ export function createAppwriteAuthService(
     },
 
     async createMfaChallenge(input) {
-      if (!functionsApi) {
-        throw new Error("Public authentication is not available in this environment.");
-      }
-      const challenge = await functionsApi.publicMfaChallenge({
-        factor: input.factor,
-        turnstileToken: input.turnstileToken,
-      });
-      return { challengeId: challenge.challengeId, factor: input.factor };
+      // Stock Appwrite endpoint (POST /v1/account/mfa/challenges) on the
+      // pending-MFA session cookie; no functions service involved.
+      const challenge = await accountApi.createMfaChallenge({ factor: input.factor });
+      return { challengeId: challenge.$id, factor: input.factor };
     },
 
     async logout(sessionId) {

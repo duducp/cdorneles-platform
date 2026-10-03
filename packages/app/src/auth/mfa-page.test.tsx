@@ -18,11 +18,8 @@ vi.mock("@cdorneles/auth", () => ({
   describeAuthError: (error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback,
   AuthNotConfiguredError: class AuthNotConfiguredError extends Error {},
-  isUnauthorized: (error: unknown) =>
-    !!error &&
-    typeof error === "object" &&
-    "status" in error &&
-    (error as { status?: number }).status === 401,
+  // isUnauthorized is imported from @cdorneles/api-client by MfaPage — the
+  // real implementation runs here on purpose, so classification is under test.
 }));
 
 vi.mock("next/navigation", () => ({
@@ -147,7 +144,7 @@ describe("MfaPage", () => {
     });
   });
 
-  it("starts the challenge with the turnstile token", async () => {
+  it("starts the challenge without a turnstile token", async () => {
     const createMfaChallenge = vi.fn().mockResolvedValue({ challengeId: "challenge-1" });
     useAuthMock.mockReturnValue({
       service: { listMfaFactors, createMfaChallenge },
@@ -160,15 +157,11 @@ describe("MfaPage", () => {
       </ThemeProvider>,
     );
 
-    await waitFor(() =>
-      expect(createMfaChallenge).toHaveBeenCalledWith({
-        factor: "email",
-        turnstileToken: "test-token",
-      }),
-    );
+    await waitFor(() => expect(createMfaChallenge).toHaveBeenCalledTimes(1));
+    expect(createMfaChallenge).toHaveBeenCalledWith({ factor: "email" });
   });
 
-  it("completes the MFA challenge with the turnstile token", async () => {
+  it("completes the MFA challenge without a turnstile token", async () => {
     const user = userEvent.setup();
     render(
       <ThemeProvider>
@@ -180,23 +173,43 @@ describe("MfaPage", () => {
     await user.click(inputs[0]);
     await user.keyboard("123456");
 
-    await waitFor(() =>
-      expect(completeMfa).toHaveBeenCalledWith({
-        challengeId: "challenge-1",
-        code: "123456",
-        turnstileToken: "test-token",
-      }),
-    );
+    await waitFor(() => expect(completeMfa).toHaveBeenCalledTimes(1));
+    expect(completeMfa).toHaveBeenCalledWith({
+      challengeId: "challenge-1",
+      code: "123456",
+    });
   });
 
-  it("redirects to /login with a session-expired notice when the bootstrap 401s", async () => {
+  it("keeps the visitor on the page when the bootstrap says more factors are required", async () => {
+    // user_more_factors_required (401) is the pending-MFA state itself — the
+    // session is alive. Treating it as a dead session would sign the visitor
+    // out in the middle of the challenge they are meant to complete.
+    const ApiErrorCtor = (await import("@cdorneles/api-client")).ApiError;
+    listMfaFactors.mockRejectedValue(
+      new ApiErrorCtor("More factors are required", {
+        code: "user_more_factors_required",
+        status: 401,
+      }),
+    );
+    render(
+      <ThemeProvider>
+        <MfaPage />
+      </ThemeProvider>,
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/erro ao iniciar desafio mfa/i);
+    expect(logout).not.toHaveBeenCalled();
+    expect(window.location.href).toBe("");
+  });
+
+  it("redirects to /login with a session-expired notice when the bootstrap session is really gone", async () => {
     // The pending-MFA session is gone (or was never handed over): the MFA flow
     // cannot proceed, so the page must sign out and return the visitor to the
     // login screen instead of showing a dead end.
     const ApiErrorCtor = (await import("@cdorneles/api-client")).ApiError;
     listMfaFactors.mockRejectedValue(
-      new ApiErrorCtor("More factors are required", {
-        code: "user_more_factors_required",
+      new ApiErrorCtor("Unauthorized", {
+        code: "user_unauthorized",
         status: 401,
       }),
     );
@@ -211,32 +224,5 @@ describe("MfaPage", () => {
     });
     expect(logout).toHaveBeenCalledTimes(1);
     expect(completeMfa).not.toHaveBeenCalled();
-  });
-
-  it("shows the Turnstile bootstrap failure and keeps the cancel path", async () => {
-    listMfaFactors.mockResolvedValue({ email: true, totp: false });
-    const createMfaChallenge = vi.fn().mockResolvedValue({ challengeId: "challenge-1" });
-    useAuthMock.mockReturnValue({
-      service: { listMfaFactors, createMfaChallenge },
-      completeMfa,
-      logout,
-    });
-    // Fail the token: clear the site key so nextToken rejects as unconfigured.
-    const previous = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "";
-    try {
-      render(
-        <ThemeProvider>
-          <MfaPage />
-        </ThemeProvider>,
-      );
-
-      expect(
-        await screen.findByText("Verificação de segurança não configurada neste ambiente."),
-      ).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /^cancelar$/i })).toBeInTheDocument();
-    } finally {
-      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = previous;
-    }
   });
 });

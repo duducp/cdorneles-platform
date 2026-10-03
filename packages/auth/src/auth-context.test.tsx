@@ -95,11 +95,9 @@ function TestConsumer() {
       </button>
       <button
         onClick={() =>
-          completeMfa({ challengeId: "c1", code: "123456", turnstileToken: "test-token" }).catch(
-            () => {
-              /* intentionally empty */
-            },
-          )
+          completeMfa({ challengeId: "c1", code: "123456" }).catch(() => {
+            /* intentionally empty */
+          })
         }
       >
         completeMfa
@@ -201,7 +199,6 @@ describe("AuthProvider", () => {
     expect(service.completeMfa).toHaveBeenCalledWith({
       challengeId: "c1",
       code: "123456",
-      turnstileToken: "test-token",
     });
     expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
     expect(screen.getByTestId("user")).toHaveTextContent("user@example.com");
@@ -1061,7 +1058,6 @@ describe("reauthentication", () => {
       await current().completeReauthMfa({
         challengeId: "c1",
         code: "123456",
-        turnstileToken: "test-token",
       });
     });
 
@@ -1225,7 +1221,6 @@ describe("reauthentication", () => {
         await current().completeReauthMfa({
           challengeId: "c1",
           code: "000000",
-          turnstileToken: "test-token",
         });
       } catch (error) {
         caught = error;

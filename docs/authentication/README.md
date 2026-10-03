@@ -123,10 +123,31 @@ cliente já tem `updateUserPermissions`, mas nenhuma tela o chama.
 
 ## Turnstile (gate das páginas públicas)
 
-Toda ação pública de autenticação (`login`, `mfaChallenge`, `mfaVerify`,
-`requestRecovery`, `completeRecovery`) roda na function Appwrite `public-auth`,
-que só executa depois do siteverify do Cloudflare Turnstile — **deny-by-default**
+Todas as ações públicas de autenticação (`login`, `requestRecovery`,
+`completeRecovery`) rodam na function Appwrite `public-auth`, que só executa
+depois do siteverify do Cloudflare Turnstile — **deny-by-default**
 (AGENTS.md: a function é a fronteira de segurança, o frontend é só UX).
+
+### MFA via endpoints stock do Appwrite (exceção)
+
+O desafio e a verificação de MFA (`mfaChallenge` → `POST
+/v1/account/mfa/challenges`, `mfaVerify` → `PUT /v1/account/mfa/challenges`)
+**não** passam pela `public-auth` — chamam os endpoints stock do SDK com a
+cookie de sessão pendente (httpOnly) do login:
+
+- `POST` cria o desafio TOTP/e-mail na mesma sessão pendente;
+- `PUT` valida o OTP e **atualiza os fatores na mesma sessão** (`Update.php`
+  revalida a sessão pendente), então a sessão existente passa a ser válida e
+  `GET /v1/account/me` desbloqueia sem troca de cookie;
+- a sessão pendente só existe após um `login` bem-sucedido com fator extra
+  pendente, é httpOnly e de curta duração — não há surface de forjar desafio
+  sem autenticar;
+- o abuse-limit stock do Appwrite (10 chamadas por usuário/URL, `Create.php`)
+  limita tentativas, e o OTP continua sendo o fator de verdade.
+
+**Tradeoff aceito:** Turnstile **não** cobre essas 2 chamadas. Compensação:
+cookie de sessão pendente válida + abuse-limit + OTP. As demais ações
+públicas continuam deny-by-default na function.
 
 ### Variáveis de ambiente
 
@@ -177,6 +198,8 @@ depois do novo login (mesma validação do `resolvePostAuthRedirect`).
 Cada token do Turnstile é single-use e expira em 300s. A tela é dona de **um**
 widget (`useTurnstile`) e cada chamada de service consome um token via
 `nextToken()`, que dispara o reset imediatamente para pré-mintar o próximo.
+O `SessionExpiredGate` consome tokens apenas no fluxo de **senha** (reauth);
+os passos de MFA dele não usam Turnstile (ver exceção acima).
 
 ### Checklist de deploy
 
@@ -185,6 +208,7 @@ widget (`useTurnstile`) e cada chamada de service consome um token via
    `design-system`.
 3. `TURNSTILE_SECRET_KEY` em Settings → Variables da function `public-auth`.
 4. `make -C functions deploy public-auth`.
-5. Smoke: `/login`, `/forgot-password`, `/reset-password`, `/mfa` e o
-   `SessionExpiredGate` (senha + MFA) com o widget visível e token válido; com a
+5. Smoke: `/login`, `/forgot-password`, `/reset-password`, `/mfa` (sem widget
+   — desafio/verificação stock) e o `SessionExpiredGate` (senha com widget +
+   MFA sem widget); com a
    secret vazia → erro de configuração, nunca login silencioso.

@@ -64,12 +64,11 @@ export function SessionExpiredGate() {
     if (!preferred) {
       throw new NoMfaFactorError("Nenhum fator de verificação disponível para esta conta.");
     }
-    const turnstileToken = await turnstile.nextToken();
-    const challenge = await service.createMfaChallenge({ factor: preferred, turnstileToken });
+    const challenge = await service.createMfaChallenge({ factor: preferred });
     setFactor(preferred);
     setChallengeId(challenge.challengeId);
     setStep("mfa");
-  }, [service, turnstile]);
+  }, [service]);
 
   const handlePassword = useCallback(
     async (password: string) => {
@@ -88,9 +87,6 @@ export function SessionExpiredGate() {
           try {
             await beginMfaChallenge();
           } catch (mfaError) {
-            if (mfaError instanceof TurnstileError) {
-              throw mfaError;
-            }
             throw new Error(
               mfaError instanceof NoMfaFactorError
                 ? mfaError.message
@@ -111,24 +107,21 @@ export function SessionExpiredGate() {
       if (!challengeId) return;
       try {
         await cancelStaleRequests(queryClient);
-        const turnstileToken = await turnstile.nextToken();
-        await completeReauthMfa({ challengeId, code: values.code, turnstileToken });
+        await completeReauthMfa({ challengeId, code: values.code });
         window.localStorage.setItem(RENEWED_KEY, String(Date.now()));
         finish();
       } catch (error) {
-        if (error instanceof TurnstileError) throw error;
         throw new Error(describeAuthError(error, "Código inválido."), { cause: error });
       }
     },
-    [challengeId, queryClient, completeReauthMfa, finish, turnstile],
+    [challengeId, queryClient, completeReauthMfa, finish],
   );
 
   const handleResend = useCallback(async () => {
     if (!factor) return;
-    const turnstileToken = await turnstile.nextToken();
-    const challenge = await service.createMfaChallenge({ factor, turnstileToken });
+    const challenge = await service.createMfaChallenge({ factor });
     setChallengeId(challenge.challengeId);
-  }, [service, factor, turnstile]);
+  }, [service, factor]);
 
   const handleGoogleCredential = useCallback(
     async (idToken: string) => {
