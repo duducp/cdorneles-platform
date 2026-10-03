@@ -38,6 +38,8 @@ export function describeAuthError(
         return "Não foi possível concluir a verificação. Tente novamente.";
       case "turnstile_not_configured":
         return "Verificação de segurança não configurada neste ambiente.";
+      case "general_unknown_origin":
+        return "Este domínio não está autorizado neste ambiente.";
       default:
         break;
     }

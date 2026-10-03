@@ -84,6 +84,14 @@ describe("describeAuthError", () => {
     );
   });
 
+  it("maps a request from an untrusted origin", () => {
+    const error = new ApiError("The request originated from an unknown origin.", {
+      code: "general_unknown_origin",
+      status: 403,
+    });
+    expect(describeAuthError(error)).toBe("Este domínio não está autorizado neste ambiente.");
+  });
+
   it("uses the provided fallback for an unknown error", () => {
     const error = new ApiError("odd", { code: "weird_thing", status: 500 });
     expect(describeAuthError(error, "Código inválido.")).toBe("Código inválido.");
